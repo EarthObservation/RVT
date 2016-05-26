@@ -41,6 +41,7 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
   
   ;Difference from trend
   diff = Float(dem - Gauss_smooth(Double(dem), /EDGE_TRUNCATE, WIDTH=in_slrm_r_max*2.))
+  ; spremeni filter iz gauss v mean filter
   
   ;Write results
   out_file = in_file + '.tif'
