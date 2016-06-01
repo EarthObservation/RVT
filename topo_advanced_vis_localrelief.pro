@@ -40,8 +40,10 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
     in_slrm_r_max, sc_slrm_ev
   
   ;Difference from trend
-  diff = Float(dem - Gauss_smooth(Double(dem), /EDGE_TRUNCATE, WIDTH=in_slrm_r_max*2.))
-  ; spremeni filter iz gauss v mean filter
+  ; gaussian gilter
+  ;diff = Float(dem - Gauss_smooth(Double(dem), /EDGE_TRUNCATE, WIDTH=in_slrm_r_max*2.))
+  ; mean filter
+  diff = Float(dem - smooth(Double(dem), in_slrm_r_max*2., /EDGE_TRUNCATE, /nan)) ;if width is even number +1 will be added to the width size
   
   ;Write results
   out_file = in_file + '.tif'
