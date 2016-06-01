@@ -6,14 +6,14 @@ Despite this, techniques are also used for different other purposes. Sky-view fa
 
 Methods currently implemented are:
 
-    hillshading,
-    hillshading from multiple directions,
-    PCA of hillshading,
-    slope gradient,
-    simple local relief model,
-    sky-view factor (as developed by our team),
-    anisotropic sky-view factor,
-    positive and negative openness.
+*   hillshading,
+*   hillshading from multiple directions,
+*   PCA of hillshading,
+*   slope gradient,
+*   simple local relief model,
+*   sky-view factor (as developed by our team),
+*   anisotropic sky-view factor,
+*   positive and negative openness.
 
 For a more detailed description see references given at each method in the manual and a comparative paper describing them (e.g. Kokalj et al. 2013, see below).
 
@@ -21,7 +21,7 @@ The tool also supports elevation raster file data conversion. It is possible to 
 
 Development of RVT was part financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project.
 
-Downloads
+## Downloads
 
 Relief Visualization Toolbox Standalone version (EXE), Windows 32-bit, version 1.1, no ENVI/IDL installation is required.
 Relief Visualization Toolbox manual, version 1.1 (Instructions for use)
@@ -29,9 +29,10 @@ Relief Visualization Toolbox Computation code (SAV), version 1.1, for ENVI 5.0. 
 
 Please report any bugs and suggestions for improvements.
 
-References
+## References
 
 When using the tools, please cite:
 
-    Zakšek, K., Oštir, K., Kokalj, Ž. 2011. Sky-View Factor as a Relief Visualization Technique. Remote Sensing 3: 398-415.
-    Kokalj, Ž., Zakšek, K., Oštir, K. 2011. Application of Sky-View Factor for the Visualization of Historic Landscape Features in Lidar-Derived Relief Models. Antiquity 85, 327: 263-273.
+*   Zakšek, K., Oštir, K., Kokalj, Ž. 2011. Sky-View Factor as a Relief Visualization Technique. Remote Sensing 3: 398-415.
+
+*   Kokalj, Ž., Zakšek, K., Oštir, K. 2011. Application of Sky-View Factor for the Visualization of Historic Landscape Features in Lidar-Derived Relief Models. Antiquity 85, 327: 263-273.
