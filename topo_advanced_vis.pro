@@ -354,7 +354,12 @@ pro user_widget_convert, event
         
     progress_bar2 -> Update, progress_curr
     progress_curr += progress_step
-    topo_advanced_vis_converter, panel_text[nF], format, out_file, lzw_tiff = lzw, envi_interleave = envi, erdas_compression = erdas, erdas_statistics = erdas_stat  
+    topo_advanced_vis_converter, panel_text[nF], format, out_file, $
+                                 lzw_tiff = lzw, $
+                                 envi_interleave = envi, $ 
+                                 jp2000_quality=jp2000_q, jp2000_lossless=jp2000_cb_loss, $
+                                 jpg_quality=0, $ ;default predefined value as GUI has no option for this setting
+                                 erdas_compression = erdas, erdas_statistics = erdas_stat  
   endfor
   progress_bar2 -> Update, progress_curr 
   progress_bar2 -> Destroy
