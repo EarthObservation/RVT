@@ -2138,6 +2138,10 @@ pro topo_advanced_vis, re_run=re_run
     ;Sky illumination
     IF in_skyilm EQ 1 THEN BEGIN
       out_file_skyilm = in_file + '_SIM_' +in_skyilm_model + '_' + in_skyilm_points+'sp'
+      ;set minimum shadow distance
+      if ulong(in_skyilm_shadow_dist) lt 5 then in_skyilm_shadow_dist = '5'
+      ;round to whole numbers
+      in_skyilm_shadow_dist = strtrim(ulong(in_skyilm_shadow_dist),2)
       if in_skyilm_shadow_dist eq 'unlimited' then out_file_skyilm += '_'+in_skyilm_shadow_dist+'_px' $
       else out_file_skyilm += '_'+in_skyilm_shadow_dist+'px'
       if in_skyilm_shadow then begin
