@@ -956,7 +956,7 @@ pro topo_advanced_vis, re_run=re_run
   sc_opns_ev = [60, 95.]
   sc_slp_ev = [0., 51.]
   sc_slrm_ev = [-2., 2.]
-  sc_skyilu_ev = [2.,0.5]   ;percent
+  sc_skyilu_ev = [0.25, 0.]   ;percent
 
   ;If input DEM is larger as the size below, do tiling
   sc_tile_size = 5L*10L^6
