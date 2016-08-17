@@ -2026,7 +2026,7 @@ pro topo_advanced_vis, re_run=re_run
         in_hls_sun_a, in_hls_sun_h, $                   ;solar position
         sc_hls_ev
       ; ... display progress
-      out_file_shadow_only = in_file + '_shadow'
+      out_file_shadow_only = in_file + '_shadow_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
       if shadow_use then begin 
         Topo_advanced_vis_skyillumination, out_file_shadow_only, in_geotiff,$
           heights, resolution, $
