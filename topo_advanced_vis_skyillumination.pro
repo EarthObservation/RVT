@@ -66,7 +66,7 @@ endif else begin
   scale_upper = sc_skyilu_ev[1]   ;percent
   root = programrootdir()
   
-  openr, hill_set, root+'visualization_params\'+sky_model+'_'+sampling_points+'sp.txt',/get_lun
+  openr, hill_set, root+'settings\'+sky_model+'_'+sampling_points+'sp.txt',/get_lun
   
   out_skyillumination_img = make_array(dem_size[0], dem_size[1], /float, value = 0)
     
