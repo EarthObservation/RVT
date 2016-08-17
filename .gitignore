@@ -2,6 +2,9 @@
 ## Subdirectories
 #################
 GDAL
+RVT_1.2_Win64
+RVT_1.2_Win32
+RVT_1.2_Lin64
 
 
 #################
@@ -13,5 +16,5 @@ GDAL
 #################
 ## File extensions
 #################
-
 *.enp
+*.sav
