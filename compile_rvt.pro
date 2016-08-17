@@ -18,6 +18,8 @@ param_dir = rvt_dir + 'settings\'
 
 cd, rvt_dir
 resolve_routine, 'programrootdir', /is_function
+resolve_routine, 'format_string', /is_function
+resolve_routine, 'get_settings', /is_function
 resolve_routine, 'progressbar__define'
 resolve_routine, 'topo_advanced_vis_asc_to_tiff'
 resolve_routine, 'topo_advanced_vis_converter'
@@ -39,6 +41,7 @@ save, /routines, filename='topo_advanced_vis.sav'
 
 ;naredi pripadajoči exe
 out_subdir = 'RVT_1.2_Win64'
+file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
 make_rt, out_subdir, rvt_dir, savefile='topo_advanced_vis.sav', /overwrite, /win64
 ;izbriši nezaželjene datoteke iz izdelane daotekte
 delete_files_topo_advanced_vis, rvt_dir + out_subdir

@@ -711,6 +711,10 @@ pro disable_last_row, event
   endelse
 end
 
+function test_tag, tag, tags
+  return, total(tag eq tags)
+end
+
 
 ;=====================================================================================
 ;=====================================================================================
@@ -755,9 +759,10 @@ end
 ;                     file formats (any of GDAL supported fomats). Added support for conversion of  the input file 
 ;                     into the following output formats: GeoTIFF, ASCII gridded XYZ, Erdas Imagine file or ENVI file
 ;       1.2  October 2014: Added sky illumination visualization
+;            August 2016: Added txt settings reader. 
 ;-
 
-pro topo_advanced_vis, event
+pro topo_advanced_vis
 
   compile_opt idl2
   
@@ -781,8 +786,89 @@ pro topo_advanced_vis, event
   print, 'Relief Visualization Toolbox (version ' + rvt_version + '); (c) ZRC SAZU, ' + rvt_issue_year
   print, '------------------------------------------------------------------------------------------------------'
   print
+  
+  ;=========================================================================================================
+  ;=== Read program settings from settings file ============================================================
+  ;=========================================================================================================
+  set_file = programrootdir()+'settings\default_settings.txt'
+  if file_test(set_file) then input_settings = get_settings(set_file) $
+  else input_settings = create_struct('none','none')
+  settings_tags = strlowcase(tag_names(input_settings))
+  
+  if test_tag('exaggeration_factor', settings_tags) then exaggeration_factor = input_settings.exaggeration_factor $
+  else exaggeration_factor = 1.0
+  if test_tag('hillshading', settings_tags) then hillshading = input_settings.hillshading $
+  else hillshading = 1
+  if test_tag('sun_azimuth', settings_tags) then sun_azimuth = input_settings.sun_azimuth $
+  else sun_azimuth = 315
+  if test_tag('sun_elevation', settings_tags) then sun_elevation = input_settings.sun_elevation $
+  else sun_elevation = 35
+  if test_tag('shadow_modelling', settings_tags) then shadow_modelling = input_settings.shadow_modelling $
+  else shadow_modelling = 0
 
-
+  if test_tag('pca_hillshading', settings_tags) then pca_hillshading = input_settings.pca_hillshading $
+  else pca_hillshading = 0
+  if test_tag('number_components', settings_tags) then number_components = input_settings.number_components $
+  else number_components = 3
+  
+  if test_tag('multiple_hillshading', settings_tags) then multiple_hillshading = input_settings.multiple_hillshading $
+  else multiple_hillshading = 0
+  if test_tag('hillshade_directions', settings_tags) then hillshade_directions = input_settings.hillshade_directions $
+  else hillshade_directions = 16
+  
+  if test_tag('slope_gradient', settings_tags) then slope_gradient = input_settings.slope_gradient $
+  else slope_gradient = 0
+  
+  if test_tag('simple_local_relief', settings_tags) then simple_local_relief = input_settings.simple_local_relief $
+  else simple_local_relief = 0
+  if test_tag('trend_radius', settings_tags) then trend_radius = input_settings.trend_radius $
+  else trend_radius = 20
+  
+  if test_tag('sky_view_factor', settings_tags) then sky_view_factor = input_settings.sky_view_factor $
+  else sky_view_factor = 1
+  if test_tag('svf_directions', settings_tags) then svf_directions = input_settings.svf_directions $
+  else svf_directions = 16
+  if test_tag('search_radius', settings_tags) then search_radius = input_settings.search_radius $
+  else search_radius = 10
+  if test_tag('remove_noise', settings_tags) then remove_noise = input_settings.remove_noise $
+  else remove_noise = 0
+  if test_tag('noise_removal', settings_tags) then noise_removal = input_settings.noise_removal $
+  else noise_removal = 'low'
+  
+  if test_tag('anisotropic_svf', settings_tags) then anisotropic_svf = input_settings.anisotropic_svf $
+  else anisotropic_svf = 0
+  if test_tag('anisotropy_level', settings_tags) then anisotropy_level = input_settings.anisotropy_level $
+  else anisotropy_level = 'low'
+  if test_tag('anisotropy_direction', settings_tags) then anisotropy_direction = input_settings.anisotropy_direction $
+  else anisotropy_direction = 315
+  
+  if test_tag('positive_openness', settings_tags) then positive_openness = input_settings.positive_openness $
+  else positive_openness = 0
+  
+  if test_tag('negative_openness', settings_tags) then negative_openness = input_settings.negative_openness $
+  else negative_openness = 0
+  
+  if test_tag('sky_illumination', settings_tags) then sky_illumination = input_settings.sky_illumination $
+  else sky_illumination = 0
+  if test_tag('sky_model', settings_tags) then sky_model = input_settings.sky_model $
+  else sky_model = 'overcast'
+  if test_tag('number_points', settings_tags) then number_points = input_settings.number_points $
+  else number_points = 250
+  if test_tag('max_shadow_dist', settings_tags) then max_shadow_dist = input_settings.max_shadow_dist $
+  else max_shadow_dist = 100
+  
+  process_file = programrootdir()+'settings\process_files.txt'
+  if file_test(process_file) then begin
+    n_lines = file_lines(process_file)
+    if n_lines gt 0 then begin
+      files_to_process = make_array(n_lines, /string)
+      openr, txt_proc, process_file, /get_lun
+      readf, txt_proc, files_to_process
+      free_lun, txt_proc
+      skip_gui = 1
+    endif
+  endif
+  
   ;=========================================================================================================
   ;=== Setup constnants that cannot be changed by the user =================================================
   ;=========================================================================================================
@@ -937,7 +1023,7 @@ pro topo_advanced_vis, event
   add_files_text = widget_label(main_row_0, value='List of currently selected input files: ')
   add_files_text = widget_label(main_row_0, value='                                                                                                                                               ')
   bt_about = widget_button(main_row_0, event_pro='user_widget_about', value='About', yoffset=20, scr_xsize=65)
-  st = widget_text(base_main, /scroll, value='', xsize=107, ysize=4, uname='u_selection_panel', /editable)
+  st = widget_text(base_main, /scroll, value=files_to_process, xsize=107, ysize=4, uname='u_selection_panel', /editable)
   main_row_1 = widget_base(base_main, /row)
   add_files_text = widget_label(main_row_1, value='Add file(s) to input list:  ')
   add_files_btn = widget_button(main_row_1, event_pro='user_select_files', value='Add file(s)', xoffset=5, yoffset=20, scr_xsize=70)
@@ -954,7 +1040,7 @@ pro topo_advanced_vis, event
 
   base_row_1 = widget_base(base_all, /row)
   ve_text = widget_label(base_row_1, value='Vertical exaggetarion factor (used in all methods) (min=-20., max=20.):  ')
-  ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value='1.0', xsize=5, /editable)
+  ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value=string(exaggeration_factor, format='(F0.2)'), xsize=5, /editable)
  
 
   base_row_2 = widget_base(base_all, /row, ysize=ysize_row+10)
@@ -967,23 +1053,23 @@ pro topo_advanced_vis, event
   hls_checkbox = widget_button(hls_namebox, event_pro='user_widget_toggle_method_checkbox', $
                   value='Analytical hillshading', uname='u_hls_checkbox')
   ; in user menu by default this method is selected and sensitive=1
-  widget_control, hls_checkbox, set_button=1
-  hls_params = widget_base(base_row_3, /column, sensitive=1, xsize=xsize_params, ysize=2*ysize_row, /frame, $
+  widget_control, hls_checkbox, set_button=hillshading
+  hls_params = widget_base(base_row_3, /column, sensitive=hillshading, xsize=xsize_params, ysize=2*ysize_row, /frame, $
                   uname='u_hls_params')
 
 
   hls_az_row = widget_base(hls_params, /row, xsize=xsize_one_param)
   hls_az_text = widget_label(hls_az_row, value='Sun azimuth [deg.]:  ')
-  hls_az_entry = widget_text(hls_az_row, event_pro='user_widget_do_nothing', scroll=0, value='315', xsize=4, /editable)
+  hls_az_entry = widget_text(hls_az_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(sun_azimuth,2), xsize=4, /editable)
   hls_no_text = widget_label(hls_az_row, value='', xsize = 65)
   hls_el_text = widget_label(hls_az_row, value='Sun elevation angle [deg.]:  ')
-  hls_el_entry = widget_text(hls_az_row, event_pro='user_widget_do_nothing', scroll=0, value='35', xsize=4, /editable)
+  hls_el_entry = widget_text(hls_az_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(sun_elevation,2), xsize=4, /editable)
   
   hls_row_2 = widget_base(hls_params, /row)
   shadow_namebox = widget_base(hls_row_2, /nonexclusive, /row, xsize=2*xsize_frame_method_name, ysize=ysize_row)
   shadow_checkbox = widget_button(shadow_namebox, event_pro='user_widget_toggle_shadow_model', $
     value='Shadow modelling (binary output image)', uname='shadow_checkbox')
-  widget_control, shadow_checkbox, set_button=0
+  widget_control, shadow_checkbox, set_button=shadow_modelling
 
 
   ; Widget for Hillshading from multiple directions --------------------
@@ -991,13 +1077,14 @@ pro topo_advanced_vis, event
   mhls_namebox = widget_base(base_row_4, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   mhls_checkbox = widget_button(mhls_namebox, event_pro='user_widget_toggle_mhls_checkbox', $ 
                   value='Hillshading from multiple directions', uname='u_mhls_checkbox')
-  mhls_params = widget_base(base_row_4, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, mhls_checkbox, set_button=multiple_hillshading
+  mhls_params = widget_base(base_row_4, /row, sensitive=multiple_hillshading, xsize=xsize_params, ysize=ysize_row, /frame, $
                   uname='u_mhls_params')
 
   ;mhls_nd_floor = 4
   ;mhls_nd_ceil = 360
   mhls_nd_droplist = strarr(4)
-  mhls_nd_droplist[0] = '16'
+  mhls_nd_droplist[0] = strtrim(hillshade_directions,2)
   mhls_nd_droplist[1] = '8'
   mhls_nd_droplist[2] = '32'
   mhls_nd_droplist[3] = '64'
@@ -1007,7 +1094,7 @@ pro topo_advanced_vis, event
 
   mhls_el_row = widget_base(mhls_params, /row, xsize=xsize_one_param+50)
   mhls_el_text = widget_label(mhls_el_row, value='Sun elevation angle [deg.]:  ')
-  mhls_el_entry = widget_text(mhls_el_row, event_pro='user_widget_do_nothing', scroll=0, value='35', xsize=4, /editable)
+  mhls_el_entry = widget_text(mhls_el_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(sun_elevation,2), xsize=4, /editable)
 
 
   ; Widget for PCA of hillshading --------------------
@@ -1015,12 +1102,13 @@ pro topo_advanced_vis, event
   mhls_pca_namebox = widget_base(base_row_5, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   mhls_pca_checkbox = widget_button(mhls_pca_namebox, event_pro='user_widget_toggle_mhls_pca_checkbox', $
                  value='PCA of hillshading', uname='u_mhls_pca_checkbox')
-  mhls_pca_params = widget_base(base_row_5, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, mhls_pca_checkbox, set_button=pca_hillshading
+  mhls_pca_params = widget_base(base_row_5, /row, sensitive=pca_hillshading, xsize=xsize_params, ysize=ysize_row, /frame, $
                  uname='u_mhls_pca_params')
 
   mhls_pca_row = widget_base(mhls_pca_params, /row, xsize=xsize_one_param+20)
   mhls_pca_text = widget_label(mhls_pca_row, value='Number of components to save:  ')
-  mhls_pca_entry = widget_text(mhls_pca_row, event_pro='user_widget_do_nothing', scroll=0, value='3', xsize=3, /editable)
+  mhls_pca_entry = widget_text(mhls_pca_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(number_components,2), xsize=3, /editable)
   mhls_pca_text_2 = widget_label(mhls_pca_params, value='Set other parameters in the box above.')
 
 
@@ -1029,7 +1117,8 @@ pro topo_advanced_vis, event
   slp_namebox = widget_base(base_row_6, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   slp_checkbox = widget_button(slp_namebox, event_pro='user_widget_toggle_method_checkbox', $
                   value='Slope gradient', uname='u_slp_checkbox')
-  slp_params = widget_base(base_row_6, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, slp_checkbox, set_button=slope_gradient
+  slp_params = widget_base(base_row_6, /row, sensitive=slope_gradient, xsize=xsize_params, ysize=ysize_row, /frame, $
                   uname='u_slp_params')
   slp_text = widget_label(slp_params, value=' No parameters required.')
 
@@ -1039,14 +1128,15 @@ pro topo_advanced_vis, event
   slrm_namebox = widget_base(base_row_7, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   slrm_checkbox = widget_button(slrm_namebox, event_pro='user_widget_toggle_method_checkbox', $
                    value='Simple local relief model', uname='u_slrm_checkbox')
-  slrm_params = widget_base(base_row_7, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, slrm_checkbox, set_button=simple_local_relief
+  slrm_params = widget_base(base_row_7, /row, sensitive=simple_local_relief, xsize=xsize_params, ysize=ysize_row, /frame, $
                   uname='u_slrm_params')
 
 ;  slrm_floor = 1 ; ??
 ;  slrm_ceil = round((nrows>ncols)/3) ; ??
   slrm_row = widget_base(slrm_params, /row)
   slrm_text = widget_label(slrm_row, value='Radius for trend assessment [pixels]:  ')
-  slrm_entry = widget_text(slrm_row, event_pro='user_widget_do_nothing', scroll=0, value='20', xsize=5, /editable)
+  slrm_entry = widget_text(slrm_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(trend_radius,2), xsize=5, /editable)
 
 
 
@@ -1056,8 +1146,8 @@ pro topo_advanced_vis, event
   svf_checkbox = widget_button(svf_namebox, event_pro='user_widget_toggle_svf_checkbox', $
                   value='Sky-View Factor', uname='u_svf_checkbox')
   ; in user menu by default this method is selected and sensitive=1
-  widget_control, svf_checkbox, set_button=1
-  svf_params = widget_base(base_row_8, /row, sensitive=1, xsize=xsize_params, /frame, $
+  widget_control, svf_checkbox, set_button=sky_view_factor
+  svf_params = widget_base(base_row_8, /row, sensitive=sky_view_factor, xsize=xsize_params, /frame, $
                   uname='u_svf_params')
 
   svf_params_column_1 = widget_base(svf_params, /column, xsize=xsize_one_param+50)
@@ -1065,7 +1155,7 @@ pro topo_advanced_vis, event
   ;svf_nd_floor = 4
   ;svf_nd_ceil = 360
   svf_nd_droplist = strarr(3)
-  svf_nd_droplist[0] = '16'
+  svf_nd_droplist[0] = strtrim(svf_directions,2)
   svf_nd_droplist[1] = '8'
   svf_nd_droplist[2] = '32'
   svf_nd_row = widget_base(svf_params_column_1, /row, xsize=xsize_one_param+50)
@@ -1076,16 +1166,17 @@ pro topo_advanced_vis, event
   ;svf_sr_ceil = round((nrows>ncols)/3)
   svf_sr_row = widget_base(svf_params_column_1, /row, xsize=xsize_one_param+50)
   svf_sr_text = widget_label(svf_sr_row, value='Search radius [pixels]:  ')
-  svf_sr_entry = widget_text(svf_sr_row, event_pro='user_widget_do_nothing', scroll=0, value='10', xsize=5, /editable)
+  svf_sr_entry = widget_text(svf_sr_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(search_radius,2), xsize=5, /editable)
 
   svf_rn_droplist = strarr(3)
-  svf_rn_droplist[0] = 'low'
+  svf_rn_droplist[0] = noise_removal
   svf_rn_droplist[1] = 'medium'
   svf_rn_droplist[2] = 'high'
   svf_rn_base = widget_base(svf_params, /column, xsize=xsize_one_param)
   svf_rn_nonexclusive = widget_base(svf_rn_base, /row, /nonexclusive)
   svf_rn_checkbox = widget_button(svf_rn_nonexclusive, event_pro='user_widget_toggle_method_checkbox', value='Remove noise')
-  svf_rn_row = widget_base(svf_rn_base, /row, sensitive=0)
+  widget_control, svf_rn_checkbox, set_button=remove_noise
+  svf_rn_row = widget_base(svf_rn_base, /row, sensitive=remove_noise)
   svf_rn_text = widget_label(svf_rn_row, value='level of noise removal:  ')
   svf_rn_entry = widget_combobox(svf_rn_row, event_pro='user_widget_do_nothing', value=svf_rn_droplist)
 
@@ -1094,12 +1185,13 @@ pro topo_advanced_vis, event
   asvf_namebox = widget_base(base_row_8_an, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   asvf_checkbox = widget_button(asvf_namebox, event_pro='user_widget_toggle_asvf_checkbox', $
                    value='Anisotropic Sky-View Factor', uname='u_asvf_checkbox')
-  asvf_params = widget_base(base_row_8_an, /column, sensitive=0, xsize=xsize_params, /frame, $
+  widget_control, asvf_checkbox, set_button=anisotropic_svf
+  asvf_params = widget_base(base_row_8_an, /column, sensitive=anisotropic_svf, xsize=xsize_params, /frame, $
                    uname='u_asvf_params')
 
   asvf_row_1 = widget_base(asvf_params, /row, xsize=xsize_params)
   asvf_droplist = strarr(2)
-  asvf_droplist[0] = 'low'
+  asvf_droplist[0] = anisotropy_level
   asvf_droplist[1] = 'high'
   asvf_lv_row = widget_base(asvf_row_1, /row, xsize=xsize_one_param)
   asvf_lv_text = widget_label(asvf_lv_row, value='Level of anisotropy:  ')
@@ -1107,7 +1199,7 @@ pro topo_advanced_vis, event
 
   asvf_dr_row = widget_base(asvf_row_1, /row)
   asvf_dr_text = widget_label(asvf_dr_row, value='Main direction of anisotropy [deg.]:  ')
-  asvf_dr_entry = widget_text(asvf_dr_row, event_pro='user_widget_do_nothing', scroll=0, value='315', xsize=4, /editable)
+  asvf_dr_entry = widget_text(asvf_dr_row, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(anisotropy_direction,2), xsize=4, /editable)
 
   asvf_row_2 = widget_base(asvf_params, /row)
   asvf_text_row = widget_base(asvf_row_2)
@@ -1119,7 +1211,8 @@ pro topo_advanced_vis, event
   open_namebox = widget_base(base_row_9, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   open_checkbox = widget_button(open_namebox, event_pro='user_widget_toggle_open_checkbox', $
                    value='Openness - Positive', uname='u_open_checkbox')
-  open_params = widget_base(base_row_9, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, open_checkbox, set_button=positive_openness
+  open_params = widget_base(base_row_9, /row, sensitive=positive_openness, xsize=xsize_params, ysize=ysize_row, /frame, $
                    uname='u_open_params')
   open_text = widget_label(open_params, value=' Set parameters in the box of the Sky-View Factor method (above).')
 
@@ -1131,7 +1224,8 @@ pro topo_advanced_vis, event
   open_neg_namebox = widget_base(base_row_9_neg, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   open_neg_checkbox = widget_button(open_neg_namebox, event_pro='user_widget_toggle_open_neg_checkbox', $
                        value='Openness - Negative', uname='u_open_neg_checkbox')
-  open_neg_params = widget_base(base_row_9_neg, /row, sensitive=0, xsize=xsize_params, ysize=ysize_row, /frame, $
+  widget_control, open_neg_checkbox, set_button=negative_openness
+  open_neg_params = widget_base(base_row_9_neg, /row, sensitive=negative_openness, xsize=xsize_params, ysize=ysize_row, /frame, $
                       uname='u_open_neg_params')
   open_neg_text = widget_label(open_neg_params, value=' Set parameters in the box of the Sky-View Factor method (above).')
   
@@ -1140,26 +1234,26 @@ pro topo_advanced_vis, event
   skyilm_namebox = widget_base(base_row_10, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
   skyilm_checkbox = widget_button(skyilm_namebox, event_pro='user_widget_toggle_method_checkbox', $
     value='Sky illumination', uname='u_skyilm_checkbox')
-  widget_control, skyilm_checkbox, set_button=0
-  skyilm_params = widget_base(base_row_10, /column, sensitive=0, xsize=xsize_params, /frame, $
+  widget_control, skyilm_checkbox, set_button=sky_illumination                                           
+  skyilm_params = widget_base(base_row_10, /column, sensitive=sky_illumination, xsize=xsize_params, /frame, $
     uname='u_skyilm_params')
     
   skyilm_row_1 = widget_base(skyilm_params, /row)  
   skyilm_droplist = strarr(2)
-  skyilm_droplist[0] = 'overcast'
+  skyilm_droplist[0] = sky_model
   skyilm_droplist[1] = 'uniform'
   skyilm_droplist_text = widget_label(skyilm_row_1, value='Sky model:     ')
   skyilm_droplist_entry = widget_combobox(skyilm_row_1, event_pro='user_widget_do_nothing', value=skyilm_droplist)
   
   skyilm_droplist2 = strarr(2)
-  skyilm_droplist2[0] = '250'
+  skyilm_droplist2[0] = strtrim(number_points,2)
   skyilm_droplist2[1] = '500'
   skyilm_droplist2_text = widget_label(skyilm_row_1, value='            Number of sampling points:  ')
   skyilm_droplist2_entry = widget_combobox(skyilm_row_1, event_pro='user_widget_do_nothing', value=skyilm_droplist2)
   
   skyilm_row_4 = widget_base(skyilm_params, /row)
   skyilm_droplist3 = strarr(4)
-  skyilm_droplist3[0] = '100'
+  skyilm_droplist3[0] = strtrim(max_shadow_dist,2)
   skyilm_droplist3[1] = '50'
   skyilm_droplist3[2] = '500'
   skyilm_droplist3[3] = 'unlimited'
@@ -1346,10 +1440,13 @@ pro topo_advanced_vis, event
                             skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, skyilm_droplist3_entry:skyilm_droplist3_entry,$
                             skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text}, /no_copy)  ; data stored in heap only
 ;                        jpgq_text:jpgq_text
-  widget_control, base_main, set_uvalue=p_wdgt_state   
-  widget_control, base_main, /realize     ; create the widget
+
+  ;skip GUI creation if user specied any files in process_files text file
+  widget_control, base_main, set_uvalue=p_wdgt_state    
+  if keyword_set(skip_gui) then user_widget_ok, create_struct('TOP', base_main) $
+  else widget_control, base_main, /realize     ; create the widget
 ;  xmanager, 'rvt_sa_v1', base_main    ; wait for the events
-  xmanager, 'resize', base_main 
+;  xmanager, 'resize', base_main ; wait for the events
   ; Get the user values and free the pointer
   wdgt_state = *p_wdgt_state
   ptr_free, p_wdgt_state
@@ -2187,7 +2284,7 @@ pro topo_advanced_vis, event
   ; End display progress
   progress_bar -> Destroy
   
-  topo_advanced_vis
+  if keyword_set(skip_gui) eq 0 then topo_advanced_vis
   
   
 ;  msg = strarr(8)
