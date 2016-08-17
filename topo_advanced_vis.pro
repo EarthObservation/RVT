@@ -304,6 +304,7 @@ pro user_widget_cancel, event
   (*p_wdgt_state).user_cancel = 1
   ;widget_control, event.top, set_uvalue=wdgt_state  ; pass changes back to calling procedure
   widget_control, event.top, /destroy
+  file_delete, programrootdir()+'settings\temp_settings.sav', /allow_nonexistent, /quiet
 end
 
 
@@ -715,6 +716,51 @@ function test_tag, tag, tags
   return, total(tag eq tags)
 end
 
+pro save_to_sav, wdgt_struct, sav_path
+
+  exaggeration_factor = wdgt_struct.ve
+  
+  hillshading = wdgt_struct.hls_use
+  sun_azimuth = wdgt_struct.hls_az
+  sun_elevation = wdgt_struct.hls_el
+  shadow_modelling = wdgt_struct.shadow_use
+
+  pca_hillshading = wdgt_struct.mhls_pca_use
+  number_components = wdgt_struct.mhls_pca_nc
+
+  multiple_hillshading = wdgt_struct.mhls_use
+  hillshade_directions = wdgt_struct.mhls_nd
+
+  slope_gradient = wdgt_struct.slp_use
+
+  simple_local_relief = wdgt_struct.slrm_use
+  trend_radius = wdgt_struct.slrm_dist
+
+  sky_view_factor = wdgt_struct.svf_use
+  svf_directions = wdgt_struct.svf_nd
+  search_radius = wdgt_struct.svf_sr
+  remove_noise = wdgt_struct.svf_rn_use
+  noise_removal = (['low', 'medium', 'high'])[wdgt_struct.svf_rn-1]
+
+  anisotropic_svf = wdgt_struct.asvf_use
+  anisotropy_level = (['low', 'high'])[wdgt_struct.asvf_lv-1]
+  anisotropy_direction = wdgt_struct.asvf_dr
+
+  positive_openness = wdgt_struct.open_use
+
+  negative_openness = wdgt_struct.open_neg_use
+
+  sky_illumination = wdgt_struct.skyilm_use
+  sky_model = wdgt_struct.skyilm_model
+  number_points = wdgt_struct.skyilm_points
+  max_shadow_dist = wdgt_struct.skyilm_shadow_dist
+  
+  save, exaggeration_factor,hillshading,sun_azimuth,sun_elevation,shadow_modelling,pca_hillshading,number_components,multiple_hillshading,hillshade_directions, $
+        slope_gradient,simple_local_relief,trend_radius,sky_view_factor,svf_directions,search_radius,remove_noise,noise_removal, $
+        anisotropic_svf,anisotropy_level,anisotropy_direction,positive_openness,negative_openness,sky_illumination,sky_model,number_points,max_shadow_dist, $
+        description = '', filename = sav_path  
+end
+
 
 ;=====================================================================================
 ;=====================================================================================
@@ -759,10 +805,11 @@ end
 ;                     file formats (any of GDAL supported fomats). Added support for conversion of  the input file 
 ;                     into the following output formats: GeoTIFF, ASCII gridded XYZ, Erdas Imagine file or ENVI file
 ;       1.2  October 2014: Added sky illumination visualization
-;            August 2016: Added txt settings reader. 
+;            August 2016: Added txt settings reader that enables program running without any GUI manipulatio. New re_run
+;                         keyword that enables settings to be stored between consecutive sessions. 
 ;-
 
-pro topo_advanced_vis
+pro topo_advanced_vis, re_run=re_run
 
   compile_opt idl2
   
@@ -788,86 +835,91 @@ pro topo_advanced_vis
   print
   
   ;=========================================================================================================
-  ;=== Read program settings from settings file ============================================================
+  ;=== Read program settings from settings file or sav file between sessions ===============================
   ;=========================================================================================================
-  set_file = programrootdir()+'settings\default_settings.txt'
-  if file_test(set_file) then input_settings = get_settings(set_file) $
-  else input_settings = create_struct('none','none')
-  settings_tags = strlowcase(tag_names(input_settings))
+  temp_sav = programrootdir()+'settings\temp_settings.sav'
+  if keyword_set(re_run) and file_test(temp_sav) then begin
+    restore, temp_sav
+  endif else begin
+    set_file = programrootdir()+'settings\default_settings.txt'
+    if file_test(set_file) then input_settings = get_settings(set_file) $
+    else input_settings = create_struct('none','none')
+    settings_tags = strlowcase(tag_names(input_settings))
+    
+    if test_tag('exaggeration_factor', settings_tags) then exaggeration_factor = input_settings.exaggeration_factor $
+    else exaggeration_factor = 1.0
+    if test_tag('hillshading', settings_tags) then hillshading = input_settings.hillshading $
+    else hillshading = 1
+    if test_tag('sun_azimuth', settings_tags) then sun_azimuth = input_settings.sun_azimuth $
+    else sun_azimuth = 315
+    if test_tag('sun_elevation', settings_tags) then sun_elevation = input_settings.sun_elevation $
+    else sun_elevation = 35
+    if test_tag('shadow_modelling', settings_tags) then shadow_modelling = input_settings.shadow_modelling $
+    else shadow_modelling = 0
   
-  if test_tag('exaggeration_factor', settings_tags) then exaggeration_factor = input_settings.exaggeration_factor $
-  else exaggeration_factor = 1.0
-  if test_tag('hillshading', settings_tags) then hillshading = input_settings.hillshading $
-  else hillshading = 1
-  if test_tag('sun_azimuth', settings_tags) then sun_azimuth = input_settings.sun_azimuth $
-  else sun_azimuth = 315
-  if test_tag('sun_elevation', settings_tags) then sun_elevation = input_settings.sun_elevation $
-  else sun_elevation = 35
-  if test_tag('shadow_modelling', settings_tags) then shadow_modelling = input_settings.shadow_modelling $
-  else shadow_modelling = 0
-
-  if test_tag('pca_hillshading', settings_tags) then pca_hillshading = input_settings.pca_hillshading $
-  else pca_hillshading = 0
-  if test_tag('number_components', settings_tags) then number_components = input_settings.number_components $
-  else number_components = 3
-  
-  if test_tag('multiple_hillshading', settings_tags) then multiple_hillshading = input_settings.multiple_hillshading $
-  else multiple_hillshading = 0
-  if test_tag('hillshade_directions', settings_tags) then hillshade_directions = input_settings.hillshade_directions $
-  else hillshade_directions = 16
-  
-  if test_tag('slope_gradient', settings_tags) then slope_gradient = input_settings.slope_gradient $
-  else slope_gradient = 0
-  
-  if test_tag('simple_local_relief', settings_tags) then simple_local_relief = input_settings.simple_local_relief $
-  else simple_local_relief = 0
-  if test_tag('trend_radius', settings_tags) then trend_radius = input_settings.trend_radius $
-  else trend_radius = 20
-  
-  if test_tag('sky_view_factor', settings_tags) then sky_view_factor = input_settings.sky_view_factor $
-  else sky_view_factor = 1
-  if test_tag('svf_directions', settings_tags) then svf_directions = input_settings.svf_directions $
-  else svf_directions = 16
-  if test_tag('search_radius', settings_tags) then search_radius = input_settings.search_radius $
-  else search_radius = 10
-  if test_tag('remove_noise', settings_tags) then remove_noise = input_settings.remove_noise $
-  else remove_noise = 0
-  if test_tag('noise_removal', settings_tags) then noise_removal = input_settings.noise_removal $
-  else noise_removal = 'low'
-  
-  if test_tag('anisotropic_svf', settings_tags) then anisotropic_svf = input_settings.anisotropic_svf $
-  else anisotropic_svf = 0
-  if test_tag('anisotropy_level', settings_tags) then anisotropy_level = input_settings.anisotropy_level $
-  else anisotropy_level = 'low'
-  if test_tag('anisotropy_direction', settings_tags) then anisotropy_direction = input_settings.anisotropy_direction $
-  else anisotropy_direction = 315
-  
-  if test_tag('positive_openness', settings_tags) then positive_openness = input_settings.positive_openness $
-  else positive_openness = 0
-  
-  if test_tag('negative_openness', settings_tags) then negative_openness = input_settings.negative_openness $
-  else negative_openness = 0
-  
-  if test_tag('sky_illumination', settings_tags) then sky_illumination = input_settings.sky_illumination $
-  else sky_illumination = 0
-  if test_tag('sky_model', settings_tags) then sky_model = input_settings.sky_model $
-  else sky_model = 'overcast'
-  if test_tag('number_points', settings_tags) then number_points = input_settings.number_points $
-  else number_points = 250
-  if test_tag('max_shadow_dist', settings_tags) then max_shadow_dist = input_settings.max_shadow_dist $
-  else max_shadow_dist = 100
-  
-  process_file = programrootdir()+'settings\process_files.txt'
-  if file_test(process_file) then begin
-    n_lines = file_lines(process_file)
-    if n_lines gt 0 then begin
-      files_to_process = make_array(n_lines, /string)
-      openr, txt_proc, process_file, /get_lun
-      readf, txt_proc, files_to_process
-      free_lun, txt_proc
-      skip_gui = 1
-    endif
-  endif
+    if test_tag('pca_hillshading', settings_tags) then pca_hillshading = input_settings.pca_hillshading $
+    else pca_hillshading = 0
+    if test_tag('number_components', settings_tags) then number_components = input_settings.number_components $
+    else number_components = 3
+    
+    if test_tag('multiple_hillshading', settings_tags) then multiple_hillshading = input_settings.multiple_hillshading $
+    else multiple_hillshading = 0
+    if test_tag('hillshade_directions', settings_tags) then hillshade_directions = input_settings.hillshade_directions $
+    else hillshade_directions = 16
+    
+    if test_tag('slope_gradient', settings_tags) then slope_gradient = input_settings.slope_gradient $
+    else slope_gradient = 0
+    
+    if test_tag('simple_local_relief', settings_tags) then simple_local_relief = input_settings.simple_local_relief $
+    else simple_local_relief = 0
+    if test_tag('trend_radius', settings_tags) then trend_radius = input_settings.trend_radius $
+    else trend_radius = 20
+    
+    if test_tag('sky_view_factor', settings_tags) then sky_view_factor = input_settings.sky_view_factor $
+    else sky_view_factor = 1
+    if test_tag('svf_directions', settings_tags) then svf_directions = input_settings.svf_directions $
+    else svf_directions = 16
+    if test_tag('search_radius', settings_tags) then search_radius = input_settings.search_radius $
+    else search_radius = 10
+    if test_tag('remove_noise', settings_tags) then remove_noise = input_settings.remove_noise $
+    else remove_noise = 0
+    if test_tag('noise_removal', settings_tags) then noise_removal = input_settings.noise_removal $
+    else noise_removal = 'low'
+    
+    if test_tag('anisotropic_svf', settings_tags) then anisotropic_svf = input_settings.anisotropic_svf $
+    else anisotropic_svf = 0
+    if test_tag('anisotropy_level', settings_tags) then anisotropy_level = input_settings.anisotropy_level $
+    else anisotropy_level = 'low'
+    if test_tag('anisotropy_direction', settings_tags) then anisotropy_direction = input_settings.anisotropy_direction $
+    else anisotropy_direction = 315
+    
+    if test_tag('positive_openness', settings_tags) then positive_openness = input_settings.positive_openness $
+    else positive_openness = 0
+    
+    if test_tag('negative_openness', settings_tags) then negative_openness = input_settings.negative_openness $
+    else negative_openness = 0
+    
+    if test_tag('sky_illumination', settings_tags) then sky_illumination = input_settings.sky_illumination $
+    else sky_illumination = 0
+    if test_tag('sky_model', settings_tags) then sky_model = input_settings.sky_model $
+    else sky_model = 'overcast'
+    if test_tag('number_points', settings_tags) then number_points = input_settings.number_points $
+    else number_points = 250
+    if test_tag('max_shadow_dist', settings_tags) then max_shadow_dist = input_settings.max_shadow_dist $
+    else max_shadow_dist = 100
+    
+    process_file = programrootdir()+'settings\process_files.txt'
+    if file_test(process_file) then begin
+      n_lines = file_lines(process_file)
+      if n_lines gt 0 then begin
+        files_to_process = make_array(n_lines, /string)
+        openr, txt_proc, process_file, /get_lun
+        readf, txt_proc, files_to_process
+        free_lun, txt_proc
+        skip_gui = 1
+      endif
+    endif    
+  endelse  
   
   ;=========================================================================================================
   ;=== Setup constnants that cannot be changed by the user =================================================
@@ -1444,9 +1496,12 @@ pro topo_advanced_vis
   ;skip GUI creation if user specied any files in process_files text file
   widget_control, base_main, set_uvalue=p_wdgt_state    
   if keyword_set(skip_gui) then user_widget_ok, create_struct('TOP', base_main) $
-  else widget_control, base_main, /realize     ; create the widget
+  else begin
+    widget_control, base_main, /realize     ; create the widget
+    xmanager, 'resize', base_main ; wait for the events
+  endelse
 ;  xmanager, 'rvt_sa_v1', base_main    ; wait for the events
-;  xmanager, 'resize', base_main ; wait for the events
+  
   ; Get the user values and free the pointer
   wdgt_state = *p_wdgt_state
   ptr_free, p_wdgt_state
@@ -1455,7 +1510,15 @@ pro topo_advanced_vis
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
 ;  file_delete, 'skyview_tmp.sav', /allow_nonexistent
   if wdgt_state.user_cancel eq 3 then topo_advanced_vis  ;user_cancel state from converter
-  if wdgt_state.user_cancel then return
+  if wdgt_state.user_cancel then begin
+    return
+    file_delete, temp_sav, /allow_nonexistent, /quiet
+  endif
+  
+  ;=========================================================================================================
+  ;=== Save settings to temporary .sav file ================================================================
+  ;=========================================================================================================
+  save_to_sav, wdgt_state, temp_sav
 
   ;=========================================================================================================
   ;=== Initialize input parameters by user-selected values =================================================
@@ -2284,7 +2347,7 @@ pro topo_advanced_vis
   ; End display progress
   progress_bar -> Destroy
   
-  if keyword_set(skip_gui) eq 0 then topo_advanced_vis
+  if keyword_set(skip_gui) eq 0 then topo_advanced_vis, /re_run
   
   
 ;  msg = strarr(8)
