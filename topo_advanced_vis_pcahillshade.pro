@@ -49,7 +49,10 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
   size_dem = Size(dem)
   ncol = size_dem[1]
   nlin = size_dem[2]
-  cosi_all = Make_array(size_dem[-1], in_mhls_n_dir)
+  
+  idx_valid = where(slope_dem ge 0., n_idx_valid)  ;can not be a negative number (this can happen if there are NaN values in DEM data)
+  
+  cosi_all = Make_array(size_dem[-1] < n_idx_valid, in_mhls_n_dir)   
    
   ;Do for every direction
   FOR i=0,in_mhls_n_dir-1 DO BEGIN
@@ -61,7 +64,7 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
     cosi = cos(in_hls_sun_z) * cos(slope_dem) + sin(in_hls_sun_z) * sin(slope_dem) * cos(aspect_dem-in_hls_sun_a) 
     
     ;Add to average
-    cosi_all[*,i] = (cosi - Mean(cosi))[*]
+    cosi_all[*,i] = (cosi - Mean(cosi, /nan))[idx_valid]
 
   ENDFOR
   slope_dem = !null & aspect_dem = !null & cosi = !null
@@ -76,9 +79,15 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
   Print, round(eigenvalues / total(eigenvalues) * 1000.)
   
   ;Transform back
-  finalData = Transpose(eigenvectors[*,0:in_mhls_n_psc-1] ## Transpose(cosi_all))
+  finalData_temp = Transpose(eigenvectors[*,0:in_mhls_n_psc-1] ## Transpose(cosi_all))
   cosi_all = !null
-  finalData = reform(finalData, in_mhls_n_psc, ncol, nlin)
+  finalData = make_array(in_mhls_n_psc, ncol, nlin, /float, value=!Values.F_NaN)
+  for i_out=0ul, in_mhls_n_psc-1 do begin
+    finalBand = make_array(ncol, nlin, /float, value=!Values.F_NaN)
+    finalBand[idx_valid] = finalData_temp[i_out,*]
+    finalData[i_out,*,*] = finalBand
+  endfor 
+  finalData_temp = !null & finalBand = !null
   
   ;Write results
   out_file = in_file + '.tif'
