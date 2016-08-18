@@ -33,7 +33,7 @@
 pro topo_advanced_vis_asc_to_tiff, in_img_file, $       ;input path+filename file
                                    error = error, $       ;output error messages
                                    out_img_file = out_img_file, $     ;output path+filename file
-                                   lzw_tiff=lzw_tiff      ;input keyword to enable/disable LZW compression when writing TIFF file
+                                   lzw_tiff=lzw_tiff, overwrite=overwrite      ;input keyword to enable/disable LZW compression when writing TIFF file
 
 start = systime(/seconds)  
 last_dot = strpos(in_img_file, '.' , /reverse_search)
@@ -140,7 +140,10 @@ if error eq '' then begin
   endif  
   ;check if geodata coordinates are meaningful
   if dx eq 1 and dy eq 1 and xllcorner eq 0 and yllcorner eq -1*nrows then begin
-    write_tiff, out_img_file, out_img, compression = compressionValue, /float
+    if keyword_set(overwrite) eq 0 and file_test(out_img_file) eq 1 then $
+      print, ' Image already exists ('+out_img_file+')' $
+    else $
+      write_tiff, out_img_file, out_img, compression = compressionValue, /float
 ;    print, 'equal to zero'
   endif else begin
     out_geotiff = { $
@@ -148,7 +151,10 @@ if error eq '' then begin
       ModelTiepointTag: [0, 0, 0, xllcorner, yllcorner+nrows*dy, 0], $   ; coordinates of UL corner - presuming that coordinates in asc file indicate the ll corner of the pixel
       ProjLinearUnitsGeoKey: 9001  $   ;  == Linear_Meter
     }
-    write_tiff, out_img_file, out_img, geotiff = out_geotiff, compression = compressionValue, /float
+    if keyword_set(overwrite) eq 0 and file_test(out_img_file) eq 1 then $
+      print, ' Image already exists ('+out_img_file+')' $
+    else $
+      write_tiff, out_img_file, out_img, geotiff = out_geotiff, compression = compressionValue, /float
   endelse 
   
 endif

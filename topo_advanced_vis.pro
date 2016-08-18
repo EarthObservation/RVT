@@ -438,6 +438,10 @@ pro user_widget_ok, event
   panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
   panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
   (*p_wdgt_state).selection_str = panel_text_string
+  
+  ; Overwrite ---
+  do_overwrite = widget_info((*p_wdgt_state).overwrite_checkbox, /button_set) 
+  (*p_wdgt_state).overwrite = do_overwrite
 
   ; Vertical exaggeration ---
   widget_control, (*p_wdgt_state).ve_entry, get_value=ve 
@@ -718,6 +722,8 @@ end
 
 pro save_to_sav, wdgt_struct, sav_path
 
+  overwrite = wdgt_struct.overwrite
+
   exaggeration_factor = wdgt_struct.ve
   
   hillshading = wdgt_struct.hls_use
@@ -755,8 +761,8 @@ pro save_to_sav, wdgt_struct, sav_path
   number_points = wdgt_struct.skyilm_points
   max_shadow_dist = wdgt_struct.skyilm_shadow_dist
   
-  save, exaggeration_factor,hillshading,sun_azimuth,sun_elevation,shadow_modelling,pca_hillshading,number_components,multiple_hillshading,hillshade_directions, $
-        slope_gradient,simple_local_relief,trend_radius,sky_view_factor,svf_directions,search_radius,remove_noise,noise_removal, $
+  save, overwrite,exaggeration_factor,hillshading,sun_azimuth,sun_elevation,shadow_modelling,pca_hillshading,number_components,multiple_hillshading, $
+        hillshade_directions,slope_gradient,simple_local_relief,trend_radius,sky_view_factor,svf_directions,search_radius,remove_noise,noise_removal, $
         anisotropic_svf,anisotropy_level,anisotropy_direction,positive_openness,negative_openness,sky_illumination,sky_model,number_points,max_shadow_dist, $
         description = '', filename = sav_path  
 end
@@ -806,7 +812,8 @@ end
 ;                     into the following output formats: GeoTIFF, ASCII gridded XYZ, Erdas Imagine file or ENVI file
 ;       1.2  October 2014: Added sky illumination visualization
 ;            August 2016: Added txt settings reader that enables program running without any GUI manipulatio. New re_run
-;                         keyword that enables settings to be stored between consecutive sessions. 
+;                         keyword that enables settings to be stored between consecutive sessions. Overwrite keyword added 
+;                         to all function/procesures that produce some kind of raster output.
 ;-
 
 pro topo_advanced_vis, re_run=re_run
@@ -845,6 +852,9 @@ pro topo_advanced_vis, re_run=re_run
     if file_test(set_file) then input_settings = get_settings(set_file) $
     else input_settings = create_struct('none','none')
     settings_tags = strlowcase(tag_names(input_settings))
+    
+    if test_tag('overwrite', settings_tags) then overwrite = input_settings.overwrite $
+    else overwrite = 1.0
     
     if test_tag('exaggeration_factor', settings_tags) then exaggeration_factor = input_settings.exaggeration_factor $
     else exaggeration_factor = 1.0
@@ -1080,6 +1090,13 @@ pro topo_advanced_vis, re_run=re_run
   add_files_text = widget_label(main_row_1, value='Add file(s) to input list:  ')
   add_files_btn = widget_button(main_row_1, event_pro='user_select_files', value='Add file(s)', xoffset=5, yoffset=20, scr_xsize=70)
   add_files_btn = widget_button(main_row_1, event_pro='panel_remove_all', value='Remove all files', xoffset=5, yoffset=20, scr_xsize=100)
+  
+  ;overwrite checkbox
+  add_files_text = widget_label(main_row_1, value='                                                                                     ')
+  overwrite_namebox = widget_base(main_row_1, /nonexclusive)
+  overwrite_checkbox = widget_button(overwrite_namebox, event_pro='user_widget_do_nothing', $
+    value='Overwrite existing files', uname='u_overwrite_checkbox')
+  widget_control, overwrite_checkbox, set_button=overwrite
   
   
   empty_text_row = widget_label(base_main, value='  ', scr_ysize=10)
@@ -1462,7 +1479,7 @@ pro topo_advanced_vis, re_run=re_run
   ;wdgt_state = {svf_nd_entry:svf_nd_entry, svf_sr_entry:svf_sr_entry, ve_entry:ve_entry, nd:nd, sr:sr, ve:ve, user_cancel:user_cancel} 
   p_wdgt_state = ptr_new({rvt_vers:rvt_version, rvt_year:rvt_issue_year,  $    ; Version of RVT and year of issue 
                         ve_entry:ve_entry, ve:ve, $   
-                        base_tab:base_tab, $                         ; Vertical exagg.
+                        overwrite:overwrite, overwrite_checkbox:overwrite_checkbox, base_tab:base_tab, $                         ; Vertical exagg.
                         hls_checkbox:hls_checkbox, hls_use:hls_use, shadow_checkbox:shadow_checkbox, shadow_use:shadow_use, $          ; Hillshading
                              hls_az_entry:hls_az_entry, hls_az:hls_az, $
                              hls_el_entry:hls_el_entry, hls_el:hls_el, $
@@ -1526,6 +1543,9 @@ pro topo_advanced_vis, re_run=re_run
   
   ;Initialize input parameters by user-selected values
 
+  ;Overwrite
+  overwrite = float(wdgt_state.overwrite) 
+  
   ;Vertical exaggeration
   in_ve_ex = float(wdgt_state.ve)                   ;-10. to 10.
 
@@ -1788,6 +1808,14 @@ pro topo_advanced_vis, re_run=re_run
     Printf, unit
     Printf, unit, '# Warnings'
   
+    ; Checks for overwrite setting
+    if keyword_set(overwrite) eq 0 then begin
+      print, '     ! Files with the same name as RVT outputs WILL NOT BE overwritten if they already exist!'
+      Printf, unit, '     ! Files with the same name as RVT outputs WILL NOT BE overwritten if they already exist!'
+    endif else begin
+      print, '     ! Files with the same name as RVT outputs WILL BE overwritten if they already exist!'
+      Printf, unit, '     ! Files with the same name as RVT outputs WILL BE overwritten if they already exist!'
+    endelse
     ; Checks for Vertical exagerattion 
     if in_ve_ex eq 0. then begin
       in_ve_ex = 1.
@@ -2024,14 +2052,16 @@ pro topo_advanced_vis, re_run=re_run
       Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
         heights, resolution, $                ;relief
         in_hls_sun_a, in_hls_sun_h, $                   ;solar position
-        sc_hls_ev
+        sc_hls_ev, $
+        overwrite=overwrite
       ; ... display progress
       out_file_shadow_only = in_file + '_shadow_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
       if shadow_use then begin 
         Topo_advanced_vis_skyillumination, out_file_shadow_only, in_geotiff,$
           heights, resolution, $
           '', '', '', '', $
-          in_hls_sun_a, in_hls_sun_h, /shadow_only
+          in_hls_sun_a, in_hls_sun_h, /shadow_only, $
+          overwrite=overwrite
       endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step < 100
@@ -2043,7 +2073,8 @@ pro topo_advanced_vis, re_run=re_run
       Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
         heights, resolution, $                ;relief
         in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
-        sc_mhls_a_rgb, sc_hls_ev                        ;directions for RGB outputRGB
+        sc_mhls_a_rgb, sc_hls_ev , $       ;directions for RGB outputRGB
+        overwrite=overwrite                       
       ; ... display progress
       progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
       nocancel=1, /start, percent = fix(progress_curr<100))
@@ -2056,7 +2087,8 @@ pro topo_advanced_vis, re_run=re_run
       Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
           heights, resolution, $     ;relief
           in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
-          in_mhls_n_psc, sc_hls_ev         ;number of PCs to save
+          in_mhls_n_psc, sc_hls_ev, $     ;number of PCs to save
+          overwrite=overwrite         
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
@@ -2067,7 +2099,8 @@ pro topo_advanced_vis, re_run=re_run
       out_file_slp = in_file + '_SLOPE' + str_ve
       topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
         heights, resolution, $                    ;relief
-        sc_slp_ev
+        sc_slp_ev, $
+        overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
@@ -2078,7 +2111,8 @@ pro topo_advanced_vis, re_run=re_run
       out_file_slrm = in_file + '_SLRM_R' + Strtrim(Long(in_slrm_r_max), 2) + str_ve
       topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
         heights, resolution, $                    ;relief
-        in_slrm_r_max, sc_slrm_ev
+        in_slrm_r_max, sc_slrm_ev, $
+        overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
@@ -2104,7 +2138,8 @@ pro topo_advanced_vis, re_run=re_run
         in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
         in_svf_noise, sc_svf_r_min, $                       ;noise
         sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-        in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol    ;anisotropy
+        in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
+        overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_svf+in_open+in_asvf)
@@ -2129,7 +2164,8 @@ pro topo_advanced_vis, re_run=re_run
           in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
           in_svf_noise, sc_svf_r_min, $                       ;noise
           sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-          in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol    ;anisotropy
+          in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
+          overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_svf+in_open+in_asvf)
@@ -2149,12 +2185,14 @@ pro topo_advanced_vis, re_run=re_run
               heights, resolution, $
               in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$              
               sc_skyilu_ev, $
-              in_skyilm_az, in_skyilm_el
+              in_skyilm_az, in_skyilm_el, $
+              overwrite=overwrite
       endif else begin
         Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
               heights, resolution, $
               in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
-              sc_skyilu_ev
+              sc_skyilu_ev, $
+              overwrite=overwrite
       endelse
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_skyilm)

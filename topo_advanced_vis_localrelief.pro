@@ -37,7 +37,8 @@
 
 PRO topo_advanced_vis_localrelief, in_file, geotiff, $
     dem, resolution, $                    ;relief
-    in_slrm_r_max, sc_slrm_ev
+    in_slrm_r_max, sc_slrm_ev, $
+    overwrite=overwrite
   
   ;Difference from trend
   ; gaussian gilter
@@ -47,10 +48,16 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
   
   ;Write results
   out_file = in_file + '.tif'
-  Write_tiff, out_file, diff, compression=1, geotiff=geotiff, /float
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, diff, compression=1, geotiff=geotiff, /float
   diff = HIST_EQUAL(diff, percent=2)
   out_file = in_file + '_8bit.tif'
-  Write_tiff, out_file, diff, compression=1, geotiff=geotiff
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, diff, compression=1, geotiff=geotiff
   diff = !null
   
 END

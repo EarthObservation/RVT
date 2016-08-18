@@ -8,6 +8,7 @@
 #----------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------
 
+overwrite = 1
 
 exaggeration_factor = 1.0
 
@@ -19,10 +20,10 @@ shadow_modelling = 0
 multiple_hillshading = 0
 hillshade_directions = 16
 
-pca_hillshading = 1
+pca_hillshading = 0
 number_components = 3
 
-slope_gradient = 1
+slope_gradient = 0
 
 simple_local_relief = 0
 trend_radius = 20

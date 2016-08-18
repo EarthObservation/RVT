@@ -36,7 +36,8 @@
 PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
     dem, resolution, $     ;relief
     in_mhls_n_dir, in_hls_sun_h0, $  ;solar position
-    in_mhls_n_psc, sc_hls_ev         ;number of PCs to save
+    in_mhls_n_psc, sc_hls_ev,$         ;number of PCs to save
+    overwrite=overwrite
   
   ;Slope & Aspect
   Topo_advanced_vis_slope, dem, resolution, DEM_SLOPE=slope_dem, DEM_ASPECT=aspect_dem 
@@ -91,7 +92,10 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
   
   ;Write results
   out_file = in_file + '.tif'
-  Write_tiff, out_file, finalData, compression=1, geotiff=geotiff, /float
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, finalData, compression=1, geotiff=geotiff, /float
   
   ;For 8-bit do an RGB
   finalRGB = bytarr(3, ncol, nlin)
@@ -99,7 +103,10 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
     finalRGB[i,*,*] = Hist_equal(Reform(finalData[i,*,*]),percent=2)
   ENDFOR
   out_file = in_file + '_RGB.tif'
-  Write_tiff, out_file, finalRGB, compression=1, geotiff=geotiff
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, finalRGB, compression=1, geotiff=geotiff
   finalRGB = !null & finalData = !null
   
 END
