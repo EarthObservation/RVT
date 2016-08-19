@@ -61,7 +61,7 @@
 ; :History:
 ;       1.0  April 2014: Initial version written by Klemen Cotar.
 ;-
-pro topo_advanced_vis_raster_mosaic, file_list, log_file, out_filename=out_filename, error=error
+pro topo_advanced_vis_raster_mosaic, file_list, log_file, out_filename=out_filename, error=error, overwrite=overwrite
 
 
 if n_elements(log_file) gt 0 then begin
@@ -207,10 +207,14 @@ endfor
 
 if n_elements(out_filename) eq 0 then out_filename = strmid(tif_files[0], 0, strpos(tif_files[0], '.tif', /reverse_search))+'_mosaic.tif'
 
-if (image_type eq 1) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, bits_per_sample=8
-if (image_type eq 2) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /short, /signed
-if (image_type eq 4) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /float
-if (image_type eq 12) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /short
+if keyword_set(overwrite) eq 0 and file_test(out_filename) eq 1 then $
+  print, ' Image already exists ('+out_filename+')' $
+else begin
+  if (image_type eq 1) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, bits_per_sample=8
+  if (image_type eq 2) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /short, /signed
+  if (image_type eq 4) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /float
+  if (image_type eq 12) then write_tiff, out_filename, mosaic_img, planarconfig=2, geotiff = geotiff_out, compression=1, /short
+endelse
 
 if n_elements(log_file) gt 0 then begin
   openw, log, log_file, /get_lun, /append

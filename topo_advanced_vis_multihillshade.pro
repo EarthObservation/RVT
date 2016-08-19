@@ -36,7 +36,8 @@
 PRO Topo_advanced_vis_multihillshade, in_file, geotiff, $
     dem, resolution, $                    ;relief
     in_mhls_n_dir, in_hls_sun_h0, $                 ;solar position
-    sc_mhls_a_rgb, sc_hls_ev                        ;directions for RGB outputRGB
+    sc_mhls_a_rgb, sc_hls_ev, $                       ;directions for RGB outputRGB
+    overwrite=overwrite
   
   ;Slope & Aspect
   topo_advanced_vis_slope, dem, resolution, DEM_SLOPE=slope_dem, DEM_ASPECT=aspect_dem 
@@ -65,7 +66,10 @@ PRO Topo_advanced_vis_multihillshade, in_file, geotiff, $
   
   ;Write results
   out_file = in_file + '.tif'
-  Write_tiff, out_file, cosi_all, compression=1, geotiff=geotiff
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, cosi_all, compression=1, geotiff=geotiff
   cosi = !null & cosi_all = !null
    
   ;For 8-bit do an RGB
@@ -76,7 +80,10 @@ PRO Topo_advanced_vis_multihillshade, in_file, geotiff, $
     cosi_all[i,*,*] = Bytscl(cosi, max=sc_hls_ev[1], min=sc_hls_ev[0])
   ENDFOR
   out_file = in_file + '_RGB.tif'
-  Write_tiff, out_file, cosi_all, compression=1, geotiff=geotiff
+  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+    print, ' Image already exists ('+out_file+')' $
+  else $
+    Write_tiff, out_file, cosi_all, compression=1, geotiff=geotiff
   cosi = !null & slope_dem = !null & aspect_dem = !null & cosi_all = !null
   
 END
