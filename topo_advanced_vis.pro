@@ -811,7 +811,7 @@ end
 ;                     file formats (any of GDAL supported fomats). Added support for conversion of  the input file 
 ;                     into the following output formats: GeoTIFF, ASCII gridded XYZ, Erdas Imagine file or ENVI file
 ;       1.2  October 2014: Added sky illumination visualization
-;            August 2016: Added txt settings reader that enables program running without any GUI manipulatio. New re_run
+;       1.3  August 2016: Added txt settings reader that enables program running without any GUI manipulatio. New re_run
 ;                         keyword that enables settings to be stored between consecutive sessions. Overwrite keyword added 
 ;                         to all function/procesures that produce some kind of raster output.
 ;-
@@ -821,8 +821,8 @@ pro topo_advanced_vis, re_run=re_run
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '1.2'
-  rvt_issue_year = '2015'
+  rvt_version = '1.3'
+  rvt_issue_year = '2016'
   
   ; Establish error handler
   catch, theError
