@@ -695,12 +695,17 @@ pro enable_converter_settings, event
 end
 
 pro resize_event, event
-  magic_y_size_number = 251   ;change this if you are changing GUI
+  magic_y_size_number = 257   ;change this if you are changing GUI - minimum size of GUI window
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
   tab = widget_info(event.top, find_by_uname='base_tab_window')
   tab_all = widget_info(event.top, find_by_uname='base_tab_window_all')
-  widget_control, tab, ysize = (event.y - magic_y_size_number) > 1
-  widget_control, tab_all, ysize = (event.y  -magic_y_size_number) > 1
+  tab_mosaic = widget_info(event.top, find_by_uname='base_tab_mosaic')
+  tab_converter = widget_info(event.top, find_by_uname='base_tab_converter')
+  new_y_size = (event.y - magic_y_size_number) > 1
+  widget_control, tab, ysize = new_y_size
+  widget_control, tab_all, ysize = new_y_size
+  widget_control, tab_mosaic, ysize = new_y_size
+  widget_control, tab_converter, ysize = new_y_size
 ;  print, event.x, event.y
 end
 
@@ -1059,9 +1064,10 @@ pro topo_advanced_vis, re_run=re_run
   ;=========================================================================================================
   ;=== Widget to get user parameters =======================================================================
   ;=========================================================================================================
-
+  
+  window_y_offset = 40  ;pixel space on top and bellow the GUI
   base_title = 'Relief Visualization Toolbox, ver. ' + rvt_version + '; (c) ZRC SAZU, ' + rvt_issue_year
-  base_main = widget_base(title=base_title, xoffset=100, yoffset=50, xsize=710, uname='base_main_window',$
+  base_main = widget_base(title=base_title, xoffset=100, yoffset=window_y_offset, xsize=710, uname='base_main_window',$
                 xpad=15, ypad=15, space=0, /column, tab_mode=1, /TLB_Size_Events)             
   
   ysize_row = 32
@@ -1079,8 +1085,7 @@ pro topo_advanced_vis, re_run=re_run
 
   ;about_row = widget_base(base_main, /row, /align_right)
   ;bt_about = widget_button(about_row, event_pro='user_widget_about', value='About', xoffset=330, yoffset=20, scr_xsize=65)
-
-
+  
   main_row_0 = widget_base(base_main, /row)
   add_files_text = widget_label(main_row_0, value='List of currently selected input files: ')
   add_files_text = widget_label(main_row_0, value='                                                                                                                                               ')
@@ -1356,7 +1361,7 @@ pro topo_advanced_vis, re_run=re_run
 
 
   ; Converter tab --------------------
-  base_convert = WIDGET_BASE(base_tab, TITLE='   Converter   ', /COLUMN)
+  base_convert = WIDGET_BASE(base_tab, TITLE='   Converter   ', /COLUMN, /scroll, uname = 'base_tab_converter', xsize=655)
   convert_row_0 = widget_label(base_convert, value='  ', scr_ysize=30)
   convert_row_1 = widget_base(base_convert, /row)
   convert_text = widget_label(convert_row_1, value='Convert input file(s) to:            ')
@@ -1426,11 +1431,26 @@ pro topo_advanced_vis, re_run=re_run
   bt_cancel2 = widget_button(bt_row2, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
   
   ; Mosaic tab --------------------
-  base_mosaic = WIDGET_BASE(base_tab, TITLE='   Mosaic   ', /COLUMN)
+  base_mosaic = WIDGET_BASE(base_tab, TITLE='   Mosaic   ', /COLUMN, /scroll, uname = 'base_tab_mosaic', xsize=655)
   mosaic_row_0 = widget_label(base_mosaic, value='  ', scr_ysize=30)
   mosaic_row_1 = widget_base(base_mosaic, /align_left)
   bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 20, yoffset=20, scr_xsize=120)
   bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+  
+  ;modify ysize of the GUI depending on user screen resolution
+  gui_geometry = widget_info(base_main, /geometry)
+  ;get information about user screen resolution
+  screen_pixel_size = get_screen_size(resolution=screen_cm_per_pixel_resolution)
+  ;check if GUI needs to be resized
+  if screen_pixel_size[1] lt gui_geometry.ysize + 2*window_y_offset then begin
+    ;GUI won't fit on the screen, resize it before showing it to the user
+    new_y_size = screen_pixel_size[1] - 2*window_y_offset
+    ;simulate resize event
+    gui_size_event = create_struct('TOP', base_main, 'X', gui_geometry.xsize, 'Y', new_y_size)
+    resize_event, gui_size_event
+  endif
+  
+  
 
   ; Realize user widget ===========================
   ve = 1.0
