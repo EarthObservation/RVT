@@ -52,7 +52,7 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
     print, ' Image already exists ('+out_file+')' $
   else $
     Write_tiff, out_file, diff, compression=1, geotiff=geotiff, /float
-  diff = HIST_EQUAL(diff, percent=2)
+  diff = HIST_EQUAL(diff, percent=2, binsize=0.05)
   out_file = in_file + '_8bit.tif'
   if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
     print, ' Image already exists ('+out_file+')' $

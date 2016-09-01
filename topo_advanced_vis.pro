@@ -249,6 +249,10 @@ pro user_widget_all, event
   widget_control, id_open_skyilm_params, sensitive=1
   id_open_skyilm_checkbox = widget_info(event.top, find_by_uname='u_skyilm_checkbox')
   widget_control, id_open_skyilm_checkbox, set_button=1
+  id_locald_checkbox = widget_info(event.top, find_by_uname='u_locald_checkbox')
+  widget_control, id_locald_checkbox, set_button=1
+  id_locald_params = widget_info(event.top, find_by_uname='u_locald_params')
+  widget_control, id_locald_params, sensitive=1
 end
 
 
@@ -295,6 +299,10 @@ pro user_widget_none, event
   widget_control, id_open_skyilm_params, sensitive=0
   id_open_skyilm_checkbox = widget_info(event.top, find_by_uname='u_skyilm_checkbox')
   widget_control, id_open_skyilm_checkbox, set_button=0
+  id_locald_checkbox = widget_info(event.top, find_by_uname='u_locald_checkbox')
+  widget_control, id_locald_checkbox, set_button=0
+  id_locald_params = widget_info(event.top, find_by_uname='u_locald_params')
+  widget_control, id_locald_params, sensitive=0
   
 end
 
@@ -569,6 +577,14 @@ pro user_widget_ok, event
   (*p_wdgt_state).skyilm_az = skyilm_az
   widget_control, (*p_wdgt_state).skyilm_el_entry, get_value=skyilm_el
   (*p_wdgt_state).skyilm_el = skyilm_el
+  
+  ; Local domimamce
+  locald_use = widget_info((*p_wdgt_state).locald_checkbox, /button_set)
+  (*p_wdgt_state).locald_use = locald_use
+  widget_control, (*p_wdgt_state).locald_min_entry, get_value=locald_min_rad
+  (*p_wdgt_state).locald_min_rad = locald_min_rad
+  widget_control, (*p_wdgt_state).locald_max_entry, get_value=locald_max_rad
+  (*p_wdgt_state).locald_max_rad = locald_max_rad
 
   ; user 
   (*p_wdgt_state).user_cancel = 0
@@ -766,9 +782,14 @@ pro save_to_sav, wdgt_struct, sav_path
   number_points = wdgt_struct.skyilm_points
   max_shadow_dist = wdgt_struct.skyilm_shadow_dist
   
+  local_dominance = wdgt_struct.locald_use
+  min_radius = wdgt_struct.locald_min_rad
+  max_radius = wdgt_struct.locald_max_rad
+  
   save, overwrite,exaggeration_factor,hillshading,sun_azimuth,sun_elevation,shadow_modelling,pca_hillshading,number_components,multiple_hillshading, $
         hillshade_directions,slope_gradient,simple_local_relief,trend_radius,sky_view_factor,svf_directions,search_radius,remove_noise,noise_removal, $
-        anisotropic_svf,anisotropy_level,anisotropy_direction,positive_openness,negative_openness,sky_illumination,sky_model,number_points,max_shadow_dist, $
+        anisotropic_svf,anisotropy_level,anisotropy_direction,positive_openness,negative_openness,sky_illumination,sky_model,number_points,max_shadow_dist,$
+        local_dominance,min_radius,max_radius,$
         description = '', filename = sav_path  
 end
 
@@ -819,6 +840,7 @@ end
 ;       1.3  August 2016: Added txt settings reader that enables program running without any GUI manipulatio. New re_run
 ;                         keyword that enables settings to be stored between consecutive sessions. Overwrite keyword added 
 ;                         to all function/procesures that produce some kind of raster output.
+;            September 2016: Added local dominance visualization procedure.
 ;-
 
 pro topo_advanced_vis, re_run=re_run
@@ -922,6 +944,14 @@ pro topo_advanced_vis, re_run=re_run
     else number_points = 250
     if test_tag('max_shadow_dist', settings_tags) then max_shadow_dist = input_settings.max_shadow_dist $
     else max_shadow_dist = 100
+    
+    if test_tag('local_dominance', settings_tags) then local_dominance = input_settings.local_dominance $
+    else local_dominance = 0
+    if test_tag('min_radius', settings_tags) then min_radius = input_settings.min_radius $
+    else min_radius = 2
+    if test_tag('max_radius', settings_tags) then max_radius = input_settings.max_radius $
+    else max_radius = 0
+    
     
     process_file = programrootdir()+'settings\process_files.txt'
     if file_test(process_file) then begin
@@ -1066,8 +1096,9 @@ pro topo_advanced_vis, re_run=re_run
   ;=========================================================================================================
   
   window_y_offset = 40  ;pixel space on top and bellow the GUI
+  window_x_offset = 50  ;pixel space on the left side of GUI
   base_title = 'Relief Visualization Toolbox, ver. ' + rvt_version + '; (c) ZRC SAZU, ' + rvt_issue_year
-  base_main = widget_base(title=base_title, xoffset=100, yoffset=window_y_offset, xsize=710, uname='base_main_window',$
+  base_main = widget_base(title=base_title, xoffset=window_x_offset, yoffset=window_y_offset, xsize=710, uname='base_main_window',$
                 xpad=15, ypad=15, space=0, /column, tab_mode=1, /TLB_Size_Events)             
   
   ysize_row = 32
@@ -1342,10 +1373,26 @@ pro topo_advanced_vis, re_run=re_run
    
   skyilm_row_3 = widget_base(skyilm_params, /row) 
   skyilm_az_text = widget_label(skyilm_row_3, value='Sun azimuth [deg.]:  ', uname='skyilm_az_text')
-  skyilm_az_entry = widget_text(skyilm_row_3, event_pro='user_widget_do_nothing', scroll=0, value='135', xsize=4, /editable, uname='skyilm_az_entry')  
+  skyilm_az_entry = widget_text(skyilm_row_3, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(sun_azimuth,2), xsize=4, /editable, uname='skyilm_az_entry')  
   
   skyilm_el_text = widget_label(skyilm_row_3, value='             Sun elevation angle [deg.]:  ', uname='skyilm_el_text')
-  skyilm_el_entry = widget_text(skyilm_row_3, event_pro='user_widget_do_nothing', scroll=0, value='45', xsize=4, /editable, uname='skyilm_el_entry')
+  skyilm_el_entry = widget_text(skyilm_row_3, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(sun_elevation,2), xsize=4, /editable, uname='skyilm_el_entry')
+  
+  ; Local dominance ..........
+  base_row_11 = widget_base(base_all, /row, ysize=1*ysize_row+10) ; , /frame)
+  locald_namebox = widget_base(base_row_11, /row, /nonexclusive, xsize=xsize_frame_method_name, ysize=ysize_row)
+  locald_checkbox = widget_button(locald_namebox, event_pro='user_widget_toggle_method_checkbox', $
+    value='Local dominance', uname='u_locald_checkbox')
+  widget_control, locald_checkbox, set_button=local_dominance
+  locald_params = widget_base(base_row_11, /column, sensitive=local_dominance, xsize=xsize_params, /frame, $
+    uname='u_locald_params')
+    
+  locald_row_1 = widget_base(locald_params, /row)
+  locald_text_1 = widget_label(locald_row_1, value='Minimum radius:  ')
+  locald_min_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(min_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
+  locald_text_2 = widget_label(locald_row_1, value='                   ')
+  locald_text_3 = widget_label(locald_row_1, value='Maximum radius:  ')
+  locald_max_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(max_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
 
 
   ; Buttons --------------------
@@ -1490,6 +1537,10 @@ pro topo_advanced_vis, re_run=re_run
   skyilm_az = 0
   skyilm_el = 0
 
+  locald_use = 0
+  locald_min_rad = 0
+  locald_max_rad = 0
+
   user_cancel = 0   ; user
   
   selection_str = ''; Input files
@@ -1527,7 +1578,9 @@ pro topo_advanced_vis, re_run=re_run
                         skyilm_checkbox:skyilm_checkbox, skyilm_checkbox2:skyilm_checkbox2, skyilm_use:skyilm_use, skyilm_shadow_use:skyilm_shadow_use, skyilm_shadow_dist:skyilm_shadow_dist, $  ;Sky illumination
                             skyilm_model:skyilm_model, skyilm_points:skyilm_points, skyilm_az:skyilm_az, skyilm_el:skyilm_el,$
                             skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, skyilm_droplist3_entry:skyilm_droplist3_entry,$
-                            skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text}, /no_copy)  ; data stored in heap only
+                            skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
+                        locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
+                        jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text}, /no_copy)  ; data stored in heap only
 ;                        jpgq_text:jpgq_text
 
   ;skip GUI creation if user specied any files in process_files text file
@@ -1610,6 +1663,10 @@ pro topo_advanced_vis, re_run=re_run
   in_skyilm_az = float(wdgt_state.skyilm_az)
   in_skyilm_el = float(wdgt_state.skyilm_el) 
   
+  ;Local domination
+  in_locald = byte(wdgt_state.locald_use) 
+  in_locald_min_rad = ulong(wdgt_state.locald_min_rad)
+  in_locald_max_rad = ulong(wdgt_state.locald_max_rad)
 
   ;Get file names stored inside selection panel on top of the GUI
   ;id_selection_panel = widget_info(base_main, find_by_uname='u_selection_panel')
@@ -1628,7 +1685,7 @@ pro topo_advanced_vis, re_run=re_run
     nocancel=1)
   progress_bar -> Start
   ; ... define values to assist the display
-  progress_total = in_hls + in_mhls + in_mhls_pca + in_slp + in_slrm + in_svf + in_open + in_asvf + in_open_negative + in_skyilm ; number of selected procedures
+  progress_total = in_hls + in_mhls + in_mhls_pca + in_slp + in_slrm + in_svf + in_open + in_asvf + in_open_negative + in_skyilm + in_locald ; number of selected procedures
   progress_step = 100. / progress_total /n_files
   progress_step_image = 100. /n_files
   progress_curr = progress_step / 2
@@ -2041,6 +2098,11 @@ pro topo_advanced_vis, re_run=re_run
       endif $
       else print, '          Note: Shadow modelling disabled.'
     endif
+    if in_locald then begin
+      print, '     > Local dominance'
+      print, '          Minimum radius: ', in_locald_min_rad
+      print, '          Maximum radius: ', in_locald_max_rad
+    endif
   
     
     
@@ -2217,6 +2279,17 @@ pro topo_advanced_vis, re_run=re_run
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_skyilm)
     ENDIF   
+    
+    ;Local dominance
+    IF in_locald EQ 1 THEN BEGIN
+      out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
+      topo_advanced_vis_local_dominance, out_file_ld, i_geotiff, $
+                                         heights, min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
+                                         overwrite=overwrite
+      ; ... display progress
+      progress_bar -> Update, progress_curr
+      progress_curr += progress_step
+    ENDIF
    
    
     ; End processing 
@@ -2395,6 +2468,11 @@ pro topo_advanced_vis, re_run=re_run
       Printf, unit, '          >> Output file 2 (linear histogram stretch with lower '+string(sc_skyilu_ev[0],format="(f3.1)")+'% and upper '+string(sc_skyilu_ev[1],format="(f3.1)")+'% values cut-off for 8-bit output):'
       Printf, unit, '              ' + out_file_skyilm + '_8bit.tif'
     endif    
+    if in_locald then begin
+      Printf, unit, '     > Local dominance'
+      Printf, unit, '          Minimum radius: ', in_locald_min_rad
+      Printf, unit, '          Maximum radius: ', in_locald_max_rad
+    endif
     
     ; Computation time
     Printf, unit
