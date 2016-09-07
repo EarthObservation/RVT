@@ -47,10 +47,12 @@ function format_string, in_string
   exponents   = 'dDeE'    ;representing exponent with base 10
   ;exponentsCapital   = 'E'    ;representing exponent with base 10
   sig = '+-'    ;signs allowed in number
+  range = ':'
 
   ndots = 0
   nInt = 0
   nExp = 0
+  nRange = 0
 
   in_string = strjoin(strsplit(in_string, ' ', /extract), ' ')
 
@@ -62,6 +64,7 @@ function format_string, in_string
     if strpos(numbers,char) ne -1 then nInt++
     if strpos(decimal,char) ne -1 then ndots++
     if strpos(exponents,char) ne -1 then nExp++
+    if strpos(range,char) ne -1 then nRange++
     ;if strpos(exponentsCapital,char) ne -1 then nExp++
     if strpos(sig,char) ne -1 then begin
       if pos eq 0 then totalLen-- ;sign can be located as the first character
@@ -69,6 +72,15 @@ function format_string, in_string
       ;if strpos(exponentsCapital,strmid(in_string, pos-1, 1)) ne -1 then totalLen-- ;sign can be located right after character 'E' representing exponent with base 10
     endif
   endfor
+  
+  if nRange eq 1 and (nExp + ndots + nInt) eq totalLen-1 then begin
+    ;range of values
+    ranges = strsplit(in_string, range, /extract)
+    if n_elements(ranges) eq 2 then begin
+      range_len = ulong(ranges[1])-ulong(ranges[0])+1
+      return, uindgen(range_len) + ulong(ranges[0])
+    endif
+  endif
 
   if nInt eq totalLen then return, long(in_string) ;is long
   if ndots eq 0 and nExp eq 1 and (nExp + ndots + nInt) eq totalLen then return, double(in_string) ;is float
