@@ -40,12 +40,16 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
     in_slrm_r_max, sc_slrm_ev, $
     overwrite=overwrite
   
+  idx_background = where(dem lt -10000 or dem gt 20000, n_idx_background)
+  if n_idx_background gt 0 then begin
+    dem_temp = Double(dem)
+    dem_temp[idx_background] = !Values.F_NaN
+  endif else dem_temp = dem
   ;Difference from trend
   ; gaussian gilter
-  ;diff = Float(dem - Gauss_smooth(Double(dem), /EDGE_TRUNCATE, WIDTH=in_slrm_r_max*2.))
+  ;diff = Float(dem_temp - Gauss_smooth(Double(dem_temp), /EDGE_TRUNCATE, WIDTH=in_slrm_r_max*2.))
   ; mean filter
-  diff = Float(dem - smooth(Double(dem), in_slrm_r_max*2., /EDGE_TRUNCATE, /nan)) ;if width is even number +1 will be added to the width size
-  
+  diff = Float(dem_temp - smooth(Double(dem_temp), in_slrm_r_max*2., /EDGE_TRUNCATE, /nan)) ;if width is even number +1 will be added to the width size
   ;Write results
   out_file = in_file + '.tif'
   if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
