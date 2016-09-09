@@ -15,8 +15,9 @@
 ;        in_file - path+filename of input DEM to save the outputs
 ;        geotiff - geotiff tags
 ;        dem - input DEM (original) as 2D array
-;        min_rad - minimmum radial distance (in pixels) at which the algorithm starts with visualization computation
-;        max_rad - maximmum radial distance (in pixels) at which the algorithm ends with visualization computation
+;        sc_ld_ev - minimum and maximum thresholds used for the conversion from float to 8bit image
+;        min_rad - minimum radial distance (in pixels) at which the algorithm starts with visualization computation
+;        max_rad - maximum radial distance (in pixels) at which the algorithm ends with visualization computation
 ;        rad_inc - radial distance steps in pixels
 ;        angular_res - angular step for determination of number of angular directions
 ;        observer_height - height at which we observe the terrain
@@ -42,6 +43,7 @@
 
 PRO Topo_advanced_vis_local_dominance, in_file, geotiff, $
                                        dem, $     ;relief
+                                       sc_ld_ev, $  ;linear scaling parameters
                                        min_rad=min_rad, max_rad=max_rad, rad_inc=rad_inc, angular_res=angular_res, observer_height=observer_height, $  ;input visualization parameters
                                        overwrite=overwrite
 
@@ -52,6 +54,7 @@ if n_elements(max_rad) eq 0 then max_rad = 5
 if n_elements(rad_inc) eq 0 then rad_inc = 1
 if n_elements(angular_res) eq 0 then angular_res = 15
 if n_elements(observer_height) eq 0 then observer_height = 1.7
+if n_elements(sc_ld_ev) lt 2 then sc_ld_ev = [0.5, 1.8]
 
 ;create vector with possible distances
 n_dist = ulong((max_rad-min_rad)/rad_inc + 1)
@@ -85,16 +88,23 @@ for i_s=0, n_shifts-1 do begin
 endfor
 ld_img_out /= norma
 
-;mask out image borders
-ld_img_out[*,0:max_rad-1] = 0
-ld_img_out[0:max_rad-1,*] = 0
-ld_img_out[*,-1l*max_rad:-1] = 0
-ld_img_out[-1l*max_rad:-1,*] = 0
+;;mask out image borders
+;ld_img_out[*,0:max_rad-1] = 0
+;ld_img_out[0:max_rad-1,*] = 0
+;ld_img_out[*,-1l*max_rad:-1] = 0
+;ld_img_out[-1l*max_rad:-1,*] = 0
 
 out_file = in_file+'.tif'
 if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
   print, ' Image already exists ('+out_file+')' $
 else $
   write_tiff, out_file, ld_img_out, compression=1, /float, geotiff=geotiff
+  
+ld_img_out_8bit = bytscl(ld_img_out, min=sc_ld_ev[0], max=sc_ld_ev[1])
+out_file = in_file+'_8bit.tif'
+if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+  print, ' Image already exists ('+out_file+')' $
+else $
+  write_tiff, out_file, ld_img_out_8bit, compression=1, bits_per_sample=8, geotiff=geotiff
 
 end

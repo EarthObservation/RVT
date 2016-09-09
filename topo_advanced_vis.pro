@@ -1002,6 +1002,7 @@ pro topo_advanced_vis, re_run=re_run
   sc_slp_ev = [0., 51.]
   sc_slrm_ev = [-2., 2.]
   sc_skyilu_ev = [0.25, 0.]   ;percent
+  sc_ld_ev = [0.5, 1.8]
 
   ;If input DEM is larger as the size below, do tiling
   sc_tile_size = 5L*10L^6
@@ -1600,9 +1601,9 @@ pro topo_advanced_vis, re_run=re_run
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
 ;  file_delete, 'skyview_tmp.sav', /allow_nonexistent
   if wdgt_state.user_cancel eq 3 then topo_advanced_vis  ;user_cancel state from converter
-  if wdgt_state.user_cancel then begin
-    return
+  if wdgt_state.user_cancel then begin    
     file_delete, temp_sav, /allow_nonexistent, /quiet
+    return
   endif
   
   ;=========================================================================================================
@@ -1674,6 +1675,7 @@ pro topo_advanced_vis, re_run=re_run
   if (in_file_string eq '') then begin 
     print
     print, '# WARNING: No input files selected. Processing stopped!'
+    file_delete, temp_sav, /allow_nonexistent, /quiet
     return
   endif
   in_file_list = strsplit(in_file_string, '#', /extract)
@@ -2284,7 +2286,8 @@ pro topo_advanced_vis, re_run=re_run
     IF in_locald EQ 1 THEN BEGIN
       out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
       topo_advanced_vis_local_dominance, out_file_ld, i_geotiff, $
-                                         heights, min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
+                                         heights, sc_ld_ev, $
+                                         min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
                                          overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
@@ -2472,6 +2475,10 @@ pro topo_advanced_vis, re_run=re_run
       Printf, unit, '     > Local dominance'
       Printf, unit, '          Minimum radius: ', in_locald_min_rad
       Printf, unit, '          Maximum radius: ', in_locald_max_rad
+      Printf, unit, '          >> Output file 1 (without results manipulation): '
+      Printf, unit, '              ' + out_file_ld + '.tif'
+      Printf, unit, '          >> Output file 2 (linear histogram stretch between '+string(sc_ld_ev[0], format="(f3.1)")+' and '+string(sc_ld_ev[1], format="(f3.1)")+' for 8-bit output):'
+      Printf, unit, '              ' + out_file_ld + '_8bit.tif'
     endif
     
     ; Computation time
