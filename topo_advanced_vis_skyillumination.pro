@@ -61,6 +61,7 @@ endif
 
 if keyword_set(shadow_only) then begin
   dem[novalues] = !Values.F_NaN
+  out_file = in_file + '.tif'
   if n_elements(out_shadow_img) gt 0 then begin
     if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
       print, ' Image already exists ('+out_file+')' $

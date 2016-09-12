@@ -2285,7 +2285,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Local dominance
     IF in_locald EQ 1 THEN BEGIN
       out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
-      topo_advanced_vis_local_dominance, out_file_ld, i_geotiff, $
+      topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
                                          heights, sc_ld_ev, $
                                          min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
                                          overwrite=overwrite
