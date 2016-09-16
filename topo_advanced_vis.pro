@@ -1145,6 +1145,7 @@ pro topo_advanced_vis, re_run=re_run
   ve_ceil = sc_ve_ex[1]
 
   base_row_1 = widget_base(base_all, /row)
+  ve_text = widget_label(base_row_1, value='Vertical exaggetarion factor (used in all methods) (min=-1000., max=1000.):  ')
   ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value=string(exaggeration_factor, format='(F0.2)'), xsize=5, /editable)
  
 
