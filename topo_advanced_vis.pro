@@ -970,8 +970,8 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Setup constnants that cannot be changed by the user =================================================
   ;=========================================================================================================
 
-  ;Vertical exagerattion
-  sc_ve_ex = [-20., 20.]
+  ;Vertical exaggeration
+  sc_ve_ex = [-1000., 1000.]
   
   ;Hillshading
   sc_hls_sun_a = [0., 360.]            ;solar azimuth angle in degrees
@@ -1145,7 +1145,6 @@ pro topo_advanced_vis, re_run=re_run
   ve_ceil = sc_ve_ex[1]
 
   base_row_1 = widget_base(base_all, /row)
-  ve_text = widget_label(base_row_1, value='Vertical exaggetarion factor (used in all methods) (min=-20., max=20.):  ')
   ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value=string(exaggeration_factor, format='(F0.2)'), xsize=5, /editable)
  
 
@@ -1621,7 +1620,7 @@ pro topo_advanced_vis, re_run=re_run
   overwrite = float(wdgt_state.overwrite) 
   
   ;Vertical exaggeration
-  in_ve_ex = float(wdgt_state.ve)                   ;-10. to 10.
+  in_ve_ex = float(wdgt_state.ve)                   ;-1000. to 1000.
 
   ;Hillshading
   in_hls = byte(wdgt_state.hls_use)                 ;1-run, 0-don't run
