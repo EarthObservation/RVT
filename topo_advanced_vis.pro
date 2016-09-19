@@ -2130,6 +2130,15 @@ pro topo_advanced_vis, re_run=re_run
     str_ve = '_Ve' + String(in_ve_ex, Format='(F0.1)')  ;vertical exageration
     IF in_ve_ex EQ 1. then str_ve = ''
     
+    ;save tiff that was multiplied by vertical exageration
+    if in_ve_ex ne 1. then begin
+      out_file_ve = in_file + str_ve + '.tif'
+      if keyword_set(overwrite) eq 0 and file_test(out_file_ve) eq 1 then $
+        print, ' Image already exists ('+out_file_ve+')' $
+      else $
+        write_tiff, out_file_ve, heights, compression=1, /float, geotiff=in_geotiff
+    endif
+    
     ;Hillshading
     IF in_hls EQ 1 THEN BEGIN
       out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
