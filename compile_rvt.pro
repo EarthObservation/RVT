@@ -12,8 +12,8 @@ pro compile_rvt
 
 
 ; nastavi lokacijo kjer se nakahaj koda in vse ostale stvari (parametri, gdal...)
-gdal_dir = 'f:\IDLWorkspace\RVT-IDL\GDAL\'
-rvt_dir = 'f:\IDLWorkspace\RVT-IDL\'
+gdal_dir = 'C:\Code\GitHub\RVT-IDL\GDAL\' ;'f:\IDLWorkspace\RVT-IDL\GDAL\'
+rvt_dir = 'C:\Code\GitHub\RVT-IDL\' ; 'f:\IDLWorkspace\RVT-IDL\'
 param_dir = rvt_dir + 'settings\'
 
 cd, rvt_dir

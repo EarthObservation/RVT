@@ -717,6 +717,7 @@ pro resize_event, event
   tab_all = widget_info(event.top, find_by_uname='base_tab_window_all')
   tab_mosaic = widget_info(event.top, find_by_uname='base_tab_mosaic')
   tab_converter = widget_info(event.top, find_by_uname='base_tab_converter')
+  tab_micer = widget_info(event.top, find_by_uname='base_tab_mixer')
   new_y_size = (event.y - magic_y_size_number) > 1
   widget_control, tab, ysize = new_y_size
   widget_control, tab_all, ysize = new_y_size
@@ -1129,10 +1130,10 @@ pro topo_advanced_vis, re_run=re_run
   add_files_btn = widget_button(main_row_1, event_pro='panel_remove_all', value='Remove all files', xoffset=5, yoffset=20, scr_xsize=100)
   
   ;overwrite checkbox
-  add_files_text = widget_label(main_row_1, value='                                                                                     ')
+  add_files_text = widget_label(main_row_1, value='                                                                         ')
   overwrite_namebox = widget_base(main_row_1, /nonexclusive)
   overwrite_checkbox = widget_button(overwrite_namebox, event_pro='user_widget_do_nothing', $
-    value='Overwrite existing files', uname='u_overwrite_checkbox')
+    value='Overwrite existing output files', uname='u_overwrite_checkbox')
   widget_control, overwrite_checkbox, set_button=overwrite
   
   
@@ -1484,7 +1485,56 @@ pro topo_advanced_vis, re_run=re_run
   mosaic_row_1 = widget_base(base_mosaic, /align_left)
   bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 20, yoffset=20, scr_xsize=120)
   bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+ 
+  ; Mixer tab --------------------
+  base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655)
   
+  mixer_row_0 = widget_base(base_mixer, /row)
+  mixer_row_1_text_preset = widget_label(base_mixer, value='Preset visualization mixes:   ', /align_left)
+  
+  mixer_row_2 = widget_base(base_mixer, /row)
+  mixer_checkboxes = widget_base(mixer_row_2, /row, /nonexclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row)
+  preset1_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset1_checkbox', $
+    value='Visualization Mix 1', uname='u_preset1_checkbox')
+  preset2_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset2_checkbox', $
+    value='Visualization Mix 2', uname='u_preset2_checkbox')
+  preset3_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset3_checkbox', $
+    value='Visualization Mix 3', uname='u_preset3_checkbox')
+  preset4_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset4_checkbox', $
+    value='Visualization Mix 4', uname='u_preset4_checkbox')
+   
+  
+    
+  ;mixer_row_3 = widget_base(base_mixer, /row)
+  ;widget_control, preset1_checkbox, set_button=preset_mix ; ->>>>> ?
+  ;preset1_params = widget_base(mixer_row_3, /row, sensitive=preset_mix, xsize=xsize_params, ysize=ysize_row, /frame, $
+    ;uname='u_preset1_params')
+    
+  mixer_row_4 = widget_base(base_mixer, /row)
+  preset_params = widget_base(mixer_row_4, /row, sensitive=preset_mix, xsize=xsize_params, ysize=ysize_row, /frame, $
+    uname='u_preset_params')
+    
+  preset_droplist = strarr(4)
+  preset_droplist[0] = 'Custom'
+  preset_droplist[1] = 'Preset visualization mix 1'
+  preset_droplist[2] = 'Preset visualization mix 2'
+  preset_droplist[3] = 'Preset visualization mix 3'
+  preset_row = widget_base(preset_params, /row, xsize=xsize_one_param*2)
+  preset_text = widget_label(preset_row, value='Visualizations mix:  ')
+  preset_entry = widget_combobox(preset_row, event_pro='user_widget_do_nothing', value=preset_droplist)
+  
+  ;mixer_row_1 = 
+  ;mixer_row_2 =
+  ;mixer_row_3 =
+  ;mixer_row_4 =
+  ;mixer_row_5 =
+  mixer_row_6 = widget_base(base_mixer, /align_left)
+  
+  
+  
+  bt_mixer_ok = widget_button(mixer_row_6, event_pro='user_widget_mixer', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
+  bt_mixer_cancel = widget_button(mixer_row_6, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+
   ;modify ysize of the GUI depending on user screen resolution
   gui_geometry = widget_info(base_main, /geometry)
   ;get information about user screen resolution
