@@ -58,7 +58,7 @@ end
 ; When user un/checks Hillshading from multiple directions (prerequisite also for PCA of hillshading)
 pro user_widget_toggle_mhls_checkbox, event
   ; get status the Multiple checkbox itself, and id of its parameters
-  id_mhls_checkbox = widget_info(event.top, find_by_uname='u_mhls_checkbox')   
+  id_mhls_checkbox = widget_info(event.top, find_by_uname='u_mhls_checkbox')  
   id_mhls_checkbox_get = widget_info(id_mhls_checkbox, /button_set) 
   id_mhls_params = widget_info(event.top, find_by_uname='u_mhls_params')   
   if id_mhls_checkbox_get then begin
@@ -717,7 +717,7 @@ pro resize_event, event
   tab_all = widget_info(event.top, find_by_uname='base_tab_window_all')
   tab_mosaic = widget_info(event.top, find_by_uname='base_tab_mosaic')
   tab_converter = widget_info(event.top, find_by_uname='base_tab_converter')
-  tab_micer = widget_info(event.top, find_by_uname='base_tab_mixer')
+  tab_mixer = widget_info(event.top, find_by_uname='base_tab_mixer')
   new_y_size = (event.y - magic_y_size_number) > 1
   widget_control, tab, ysize = new_y_size
   widget_control, tab_all, ysize = new_y_size
@@ -794,6 +794,87 @@ pro save_to_sav, wdgt_struct, sav_path
         description = '', filename = sav_path  
 end
 
+pro user_widget_toggle_mixer, event
+  WIDGET_CONTROL, event.TOP, GET_UVALUE=mixer_config
+  WIDGET_CONTROL, event.ID, GET_VALUE=option
+  IF event.SELECT  EQ 1 THEN BEGIN
+    set_preset_mixer, option, event
+  ENDIF
+end
+
+pro set_mixer_layer, event, layer, visualization, blend_mode, opacity
+    layer_vis = widget_info(event.top, find_by_uname=layer+ '_vis')
+    widget_control, layer_vis, set_combobox_select = visualization
+    
+    ;set_layer_parameter_combobox_select, event, 'blend_mode', blend_mode
+    layer_blend_mode = widget_info(event.top, find_by_uname=layer+'_blend_mode')   
+    widget_control, layer_blend_mode, set_combobox_select = blend_mode
+    
+    layer_min = widget_info(event.top, find_by_uname=layer+'_min')
+    widget_control, layer_min, set_value=''
+    
+    layer_max = widget_info(event.top, find_by_uname=layer+'_max')
+    widget_control, layer_max, set_value=''
+    
+    ;set_layer_parameter_value, event, 'opacity', opacity
+    layer_opacity = widget_info(event.top, find_by_uname=layer+'_opacity')
+    widget_control, layer_opacity, set_value=opacity
+end
+
+pro set_layer_parameter_value, event, parameter, value
+   parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+parameter)
+   widget_control, parameter_to_set, set_value = value
+end
+
+pro set_layer_parameter_combobox_select, event, combobox, selected
+  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+combobox)
+  widget_control, parameter_to_set, set_combobox_select = selected
+end
+
+pro set_preset_mixer, option, event
+  IF option EQ 'Custom' THEN BEGIN 
+    print, 'Custom mixer configuration selected' 
+  ENDIF ELSE BEGIN 
+    print, 'Selected preset ' + option
+  ENDELSE
+  
+  COMMON topo_advanced, dict_vis, dict_blend_modes
+  
+  CASE option OF
+    'Visualization Mix 1': BEGIN
+      set_mixer_layer, event, 'layer1', dict_vis['PCA of hillshading'], dict_blend_modes['Overlay'], 70
+      set_mixer_layer, event, 'layer2', dict_vis['Sky illumination'], dict_blend_modes['Luminosity'], 40
+      set_mixer_layer, event, 'layer3', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer4', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+    END
+    'Visualization Mix 2':  BEGIN
+      set_mixer_layer, Nr='1', visualization=3, blend_mode=4
+      set_mixer_layer, Nr='2', visualization=1, blend_mode=2
+      set_mixer_layer, Nr='3', visualization=5, blend_mode=1
+      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+    END
+    'Visualization Mix 3':  BEGIN
+      set_mixer_layer, Nr='1', visualization=7, blend_mode=0
+      set_mixer_layer, Nr='2', visualization=8, blend_mode=1
+      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
+      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+    END
+    'Visualization Mix 4':  BEGIN
+      set_mixer_layer, Nr='1', visualization=6, blend_mode=3
+      set_mixer_layer, Nr='2', visualization=9, blend_mode=2
+      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
+      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+    END
+    ELSE: BEGIN
+      set_mixer_layer, Nr='1', visualization=11, blend_mode=0
+      set_mixer_layer, Nr='2', visualization=11, blend_mode=0
+      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
+      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+    END
+ ENDCASE
+end
+
+
 
 ;=====================================================================================
 ;=====================================================================================
@@ -845,7 +926,6 @@ end
 ;-
 
 pro topo_advanced_vis, re_run=re_run
-
   compile_opt idl2
   
   ; Create string for software version and year of issue
@@ -1493,21 +1573,39 @@ pro topo_advanced_vis, re_run=re_run
   ; Mixer tab --------------------
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
+  
+
+  
   ; --- Preset visualizations checkboxes
   mixer_row_0 = widget_base(base_mixer, /row)
   mixer_row_1_text_preset = widget_label(base_mixer, value='Preset visualization mixes:   ', /align_left)
   
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_frame_method_name*3)
-  mixer_checkboxes = widget_base(mixer_row_2, /row, /nonexclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row) 
-  preset1_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset1_checkbox', $
-    value='Visualization Mix 1', uname='u_preset1_checkbox')
-  preset2_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset2_checkbox', $
-    value='Visualization Mix 2', uname='u_preset2_checkbox')
-  preset3_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset3_checkbox', $
-    value='Visualization Mix 3', uname='u_preset3_checkbox')
-  preset4_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset4_checkbox', $
-    value='Visualization Mix 4', uname='u_preset4_checkbox')
-   
+  mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row) 
+  
+  ;preset1_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset1_checkbox', $
+  ;  value='Visualization Mix 1', uname='u_preset1_checkbox')
+  ;preset2_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset2_checkbox', $
+  ;  value='Visualization Mix 2', uname='u_preset2_checkbox')
+  ;preset3_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset3_checkbox', $
+  ;  value='Visualization Mix 3', uname='u_preset3_checkbox')
+  ;preset4_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset4_checkbox', $
+  ;  value='Visualization Mix 4', uname='u_preset4_checkbox')
+  ;preset5_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_preset5_checkbox', $
+  ;  value='Custom', uname='u_preset5_checkbox')
+    
+  preset1_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_mixer', $
+    value='Visualization Mix 1', uname='u_preset_mixer_1')
+  preset2_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_mixer', $
+    value='Visualization Mix 2', uname='u_preset_mixer_2')
+  preset3_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_mixer', $
+    value='Visualization Mix 3', uname='u_preset_mixer_3')
+  preset4_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_mixer', $
+    value='Visualization Mix 4', uname='u_preset_mixer_4')
+  preset5_checkbox = widget_button(mixer_checkboxes, event_pro='user_widget_toggle_mixer', $
+    value='Custom', uname='u_preset_mixer_custom')
+  widget_control, preset5_checkbox, set_button=1
+
   ; --- Preset visualizations drop list (start) ---
     
   ;mixer_row_3 = widget_base(base_mixer, /row)
@@ -1535,7 +1633,7 @@ pro topo_advanced_vis, re_run=re_run
   mixer_row_2_col4 = widget_label(mixer_row_2, value='Max', xsize = 40)
   mixer_row_2_col5 = widget_label(mixer_row_2, value='Blending mode', xsize = xsize_short_label)
   mixer_row_2_col6 = widget_label(mixer_row_2, value='Opacity', xsize = xsize_short_label * 1.5)
-  
+
   ; Visualization methods
   vis_droplist = strarr(12)
   vis_droplist[0] = 'Analytical hillshading'
@@ -1550,7 +1648,13 @@ pro topo_advanced_vis, re_run=re_run
   vis_droplist[9] = 'Sky illumination'
   vis_droplist[10] = 'Local dominance'
   vis_droplist[11] = '<none>'
-
+  
+  common TOPO_ADVANCED, dict_vis, dict_blend_modes
+  
+  indexes = indgen(vis_droplist.LENGTH)
+  dict_vis = hash(vis_droplist, indexes)
+  print, dict_vis
+  
   ; Blending modes
   blend_droplist = strarr(5)
   blend_droplist[0] = 'Normal'
@@ -1559,22 +1663,31 @@ pro topo_advanced_vis, re_run=re_run
   blend_droplist[3] = 'Luminosity'
   blend_droplist[4] = 'Screen'
   
+  indexes = indgen(blend_droplist.LENGTH)
+  dict_blend_modes = hash(blend_droplist, indexes)
+  
   ; --- Mixer Tab: First Layer
   mixer_row_layer1 = widget_base(base_mixer, /row)
   layer1_params = widget_base(mixer_row_layer1, /row, sensitive=preset_mix, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame, $
     uname='u_layer1_params')
   
-  layer1_vis_droplist = vis_droplist[*]
-  layer1_blend_droplist = blend_droplist[*]
+  ;layer1_vis_droplist = vis_droplist[*]
+  ;layer1_blend_droplist = blend_droplist[*]
   
   layer1_row = widget_base(layer1_params, /row, ysize=ysize_bigrow)
   layer1_text = widget_label(layer1_row, value='First layer:  ', xsize = xsize_short_label)
-  layer1_entry = widget_combobox(layer1_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer1_vis_droplist) 
-  layer1_min = widget_text(layer1_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer1_max = widget_text(layer1_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer1_blend_mode = widget_combobox(layer1_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label, value=layer1_blend_droplist)
+  
+  layer1_vis = widget_combobox(layer1_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=vis_droplist[*], $
+    uname='layer1_vis') 
+  layer1_min = widget_text(layer1_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
+    uname='layer1_min')
+  layer1_max = widget_text(layer1_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
+    uname='layer1_max')
+  layer1_blend_mode = widget_combobox(layer1_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label, value=blend_droplist[*], $
+    uname='layer1_blend_mode')
   ;layer1_opacity_text = widget_text(layer1_row, event_pro='user_widget_do_nothing', value='50', scroll=0, xsize = 5, ysize = 1, /editable)
-  layer1_opacity_slider = widget_slider(layer1_row, event_pro='user_widget_do_nothing', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100) ;/SUPPRESS_VALUE)
+  layer1_opacity_slider = widget_slider(layer1_row, event_pro='user_widget_do_nothing', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
+    uname='layer1_opacity') ;/SUPPRESS_VALUE)
   
   ; --- Mixer Tab: Second Layer
   mixer_row_layer2 = widget_base(base_mixer, /row)
@@ -1586,7 +1699,7 @@ pro topo_advanced_vis, re_run=re_run
   
   layer2_row = widget_base(layer2_params, /row, ysize=ysize_bigrow)
   layer2_text = widget_label(layer2_row, value='Second layer:  ', xsize = xsize_short_label)
-  layer2_entry = widget_combobox(layer2_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer2_vis_droplist)
+  layer2_vis = widget_combobox(layer2_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer2_vis_droplist)
   
   layer2_min = widget_text(layer2_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
   layer2_max = widget_text(layer2_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
@@ -1603,7 +1716,7 @@ pro topo_advanced_vis, re_run=re_run
   
   layer3_row = widget_base(layer3_params, /row, ysize=ysize_bigrow)
   layer3_text = widget_label(layer3_row, value='Third layer:  ', xsize = xsize_short_label)
-  layer3_entry = widget_combobox(layer3_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer3_vis_droplist)
+  layer3_vis = widget_combobox(layer3_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer3_vis_droplist)
   
   layer3_min = widget_text(layer3_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
   layer3_max = widget_text(layer3_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
@@ -1620,7 +1733,7 @@ pro topo_advanced_vis, re_run=re_run
   
   layer4_row = widget_base(layer4_params, /row, ysize=ysize_bigrow)
   layer4_text = widget_label(layer4_row, value='Fourth layer:  ', xsize = xsize_short_label)
-  layer4_entry = widget_combobox(layer4_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer4_vis_droplist)
+  layer4_vis = widget_combobox(layer4_row, event_pro='user_widget_do_nothing', xsize = xsize_short_label*2, value=layer4_vis_droplist)
  
   layer4_min = widget_text(layer4_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
   layer4_max = widget_text(layer4_row, event_pro='user_widget_do_nothing', scroll=0, value='', xsize = 5, ysize = 1, /editable)
@@ -1631,6 +1744,12 @@ pro topo_advanced_vis, re_run=re_run
   mixer_row_finish = widget_base(base_mixer, /align_left)
   bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
   bt_mixer_cancel = widget_button(mixer_row_finish, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+
+  ; --- Preset mixer visualizations ---
+  ;layer1_params
+  ;layer2_params
+  ;layer3_params
+  ;layer4_params
 
   ;---------------------------------------------------------
 
