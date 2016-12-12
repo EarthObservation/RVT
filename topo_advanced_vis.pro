@@ -802,31 +802,20 @@ pro user_widget_toggle_mixer, event
   ENDIF
 end
 
-pro set_mixer_layer, event, layer, visualization, blend_mode, opacity
-    layer_vis = widget_info(event.top, find_by_uname=layer+ '_vis')
-    widget_control, layer_vis, set_combobox_select = visualization
-    
-    ;set_layer_parameter_combobox_select, event, 'blend_mode', blend_mode
-    layer_blend_mode = widget_info(event.top, find_by_uname=layer+'_blend_mode')   
-    widget_control, layer_blend_mode, set_combobox_select = blend_mode
-    
-    layer_min = widget_info(event.top, find_by_uname=layer+'_min')
-    widget_control, layer_min, set_value=''
-    
-    layer_max = widget_info(event.top, find_by_uname=layer+'_max')
-    widget_control, layer_max, set_value=''
-    
-    ;set_layer_parameter_value, event, 'opacity', opacity
-    layer_opacity = widget_info(event.top, find_by_uname=layer+'_opacity')
-    widget_control, layer_opacity, set_value=opacity
+pro set_mixer_layer, event, layer, visualization, blend_mode, opacity  
+    set_layer_parameter_combobox_select, event, layer, 'vis', visualization    
+    set_layer_parameter_combobox_select, event, layer, 'blend_mode', blend_mode
+    set_layer_parameter_value, event, layer, 'min', ''
+    set_layer_parameter_value, event, layer, 'max', ''
+    set_layer_parameter_value, event, layer, 'opacity', opacity
 end
 
-pro set_layer_parameter_value, event, parameter, value
+pro set_layer_parameter_value, event, layer, parameter, value
    parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+parameter)
    widget_control, parameter_to_set, set_value = value
 end
 
-pro set_layer_parameter_combobox_select, event, combobox, selected
+pro set_layer_parameter_combobox_select, event, layer, combobox, selected
   parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+combobox)
   widget_control, parameter_to_set, set_combobox_select = selected
 end
@@ -848,28 +837,28 @@ pro set_preset_mixer, option, event
       set_mixer_layer, event, 'layer4', dict_vis['<none>'], dict_blend_modes['Normal'], 100
     END
     'Visualization Mix 2':  BEGIN
-      set_mixer_layer, Nr='1', visualization=3, blend_mode=4
-      set_mixer_layer, Nr='2', visualization=1, blend_mode=2
-      set_mixer_layer, Nr='3', visualization=5, blend_mode=1
-      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+      set_mixer_layer, event, 'layer1', dict_vis['Sky-View Factor'], dict_blend_modes['Luminosity'], 80
+      set_mixer_layer, event, 'layer2', dict_vis['Openness - Positive'], dict_blend_modes['Normal'], 60
+      set_mixer_layer, event, 'layer3', dict_vis['Local dominance'], dict_blend_modes['Screen'], 30
+      set_mixer_layer, event, 'layer4', dict_vis['<none>'], dict_blend_modes['Normal'], 100
     END
-    'Visualization Mix 3':  BEGIN
-      set_mixer_layer, Nr='1', visualization=7, blend_mode=0
-      set_mixer_layer, Nr='2', visualization=8, blend_mode=1
-      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
-      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+    'Visualization Mix 3':  BEGIN     
+      set_mixer_layer, event, 'layer1', dict_vis['Hillshading from multiple directions'], dict_blend_modes['Luminosity'], 70
+      set_mixer_layer, event, 'layer2', dict_vis['Anisotropic Sky-View Factor'], dict_blend_modes['Multiply'], 30
+      set_mixer_layer, event, 'layer3', dict_vis['Openness - Negative'], dict_blend_modes['Overlay'], 40
+      set_mixer_layer, event, 'layer4', dict_vis['Simple local relief model'], dict_blend_modes['Normal'], 0
     END
     'Visualization Mix 4':  BEGIN
-      set_mixer_layer, Nr='1', visualization=6, blend_mode=3
-      set_mixer_layer, Nr='2', visualization=9, blend_mode=2
-      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
-      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+      set_mixer_layer, event, 'layer1', dict_vis['PCA of hillshading'], dict_blend_modes['Overlay'], 50
+      set_mixer_layer, event, 'layer2', dict_vis['Simple local relief model'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer3', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer4', dict_vis['<none>'], dict_blend_modes['Normal'], 100
     END
     ELSE: BEGIN
-      set_mixer_layer, Nr='1', visualization=11, blend_mode=0
-      set_mixer_layer, Nr='2', visualization=11, blend_mode=0
-      set_mixer_layer, Nr='3', visualization=11, blend_mode=0
-      set_mixer_layer, Nr='4', visualization=11, blend_mode=0
+      set_mixer_layer, event, 'layer1', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer2', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer3', dict_vis['<none>'], dict_blend_modes['Normal'], 100
+      set_mixer_layer, event, 'layer4', dict_vis['<none>'], dict_blend_modes['Normal'], 100
     END
  ENDCASE
 end
@@ -907,7 +896,8 @@ end
 ;       Ziga Kokalj
 ;       Kristof Ostir
 ;       Peter Pehani
-;       Klemen Cotar (ver 1.1+)
+;       Klemen Cotar 
+;       Maja Somrak (ver 1.1+)
 ;
 ; DEPENDENCIES:
 ;       modified version of ProgressBar__define.pro (by David W. Fanning; http://www.dfanning.com)
