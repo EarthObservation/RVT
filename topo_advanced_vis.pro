@@ -255,8 +255,6 @@ pro user_widget_all, event
   widget_control, id_locald_params, sensitive=1
 end
 
-
-
 ; When user presses Select none button
 pro user_widget_none, event
   id_hls_checkbox = widget_info(event.top, find_by_uname='u_hls_checkbox')   
@@ -660,37 +658,46 @@ pro user_widget_ok, event
 end
 
 ;tmp
+; combination_selected => index of selected combination (on radio buttons)
+; when inputing parameters of the combination simply choose combination in an array
 pro user_widget_mixer_toggle_combination_radio, event
-  ; combination_selected => index of selected combination (on radio buttons)
-  ; when inputing parameters of the combination simply choose combination in an array
-  user_widget_mixer_save_radio_state()
+  ;user_widget_mixer_save_radio_state, event
+  user_widget_mixer_save_combination_radio, event
 
   ;DEBUG
   combination_selected = (*p_wdgt_state).combination_index
   print, 'Selected combination: ', combination_selected
-
   
   WIDGET_CONTROL, event.ID, GET_VALUE=combination_name
   IF event.SELECT  EQ 1 THEN BEGIN
     ;set_preset_mixer, combination_name, event
     user_widget_mixer_set_combination, event, combination_selected
     ; This code just checks that the right combination has been detected
-    IF (combination_name EQ (*p_wdgt_state).all_combinations[combination_selected].title) print, 'Yay, combinations matches!'
-    ELSE print, 'Check toggling combination radio - out of sync!'
+    IF (combination_name EQ (*p_wdgt_state).all_combinations[combination_selected].title) then begin
+      print, 'Yay, combinations matches!'
+    endif ELSE begin 
+      print, 'Check toggling combination radio - out of sync!'
+    endelse
   ENDIF
 end
 
-pro user_widget_combination_toggle
-  user_widget_mixer_save_radio_state, event
+; Compare two combination configurations (only layers' values, not the title!)
+function is_equal_combination_config, combination1_config, combination2_config
+  nr_layers1 = combination1_config.layers.LENGTH;
+  nr_layers2 = combination2_config.layers.LENGTH;
+  if (nr_layers1 NE nr_layers2) then return, BOOLEAN(0)
 
-  
-
-end
-
-;to-do : compare two configurations
-function is_equal_combination_config, layer_config, layer_config
-  
-
+  for i=0,nr_layers1-1 do begin
+    ;if (STRMATCH(combination1_config.layers[i].vis, combination2_config.layers[i].vis) NE 1) return, BOOLEAN(0) 
+    if (combination1_config.layers[i].vis NE combination2_config.layers[i].vis) then return, BOOLEAN(0) 
+    if (combination1_config.layers[i].min NE combination2_config.layers[i].min) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].max NE combination2_config.layers[i].max) then return, BOOLEAN(0)
+    ;if (STRMATCH(combination1_config.layers[i].blend_mode, combination2_config.layers[i].blend_mode) NE 1) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].blend_mode NE combination2_config.layers[i].blend_mode) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].blend_mode NE combination1_config.layers[i].blend_mode) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].opacity NE combination2_config.layers[i].opacity) then return, BOOLEAN(0)
+  endfor
+  return, BOOLEAN(1)
 end
 
 pro user_widget_mixer_save_combination_radio, event
@@ -705,8 +712,9 @@ end
 
 pro user_widget_mixer_save_current_combination, event
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
 
-  for i=0,3 do
+  for i=0,nr_layers-1 do begin
     ; read widget value from widget with widgetID = (*p_wdgt_state).mixer_widgetIDs.layers[i].parameter
     ; store value to (*p_wdgt_state).current_combination.layers[i].parameter
   
@@ -722,11 +730,59 @@ pro user_widget_mixer_save_current_combination, event
     val_blend_mode = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, /combobox_gettext)
     (*p_wdgt_state).current_combination.layers[i].blend_mode = val_blend_mode
     
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, get_value = val_max
-    (*p_wdgt_state).current_combination.layers[i].max = val_max
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].opacity, get_value = val_opacity
+    (*p_wdgt_state).current_combination.layers[i].opacity = val_opacity
   endfor
 end
 
+
+function set_combination_layer, combination, layer_index, vis_text, min_val, max_val, blend_mode_text, opacity_val 
+  i = layer_index
+  combination.layers[i].vis = vis_text
+  combination.layers[i].min = min_val
+  combination.layers[i].max = max_val
+  combination.layers[i].blend_mode = blend_mode_text
+  combination.layers[i].opacity = opacity_val
+  return, combination
+end
+
+function gen_combination, title, nr_layers
+  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+  combination_layers = REPLICATE(combination_layer, nr_layers)
+  combination = create_struct('title', title, 'layers', combination_layers)
+  return, combination
+end 
+
+function user_widget_mixer_init_combination, widgetIDs
+  ; inherit number of layers from widgets
+  nr_layers = widgetIDs.layers.length
+
+;;; tmp replaced with gen_combination()
+;  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+;  combination_layers = REPLICATE(combination_layer, nr_layers)
+;  current_combination = create_struct('title', 'Custom combination', 'layers', combination_layers)
+
+  current_combination = gen_combination('Custom combination', nr_layers)
+
+  for i=0,nr_layers-1 do begin
+    val_vis = widget_info(widgetIDs.layers[i].vis, /combobox_gettext)
+    current_combination.layers[i].vis = val_vis
+    
+    widget_control, widgetIDs.layers[i].min, get_value = val_min
+    current_combination.layers[i].min = val_min
+    
+    widget_control, widgetIDs.layers[i].max, get_value = val_max
+    current_combination.layers[i].max = val_max
+    
+    val_blend_mode = widget_info(widgetIDs.layers[i].blend_mode, /combobox_gettext)
+    current_combination.layers[i].blend_mode = val_blend_mode
+    
+    widget_control, widgetIDs.layers[i].opacity, get_value = val_opacity
+    current_combination.layers[i].opacity = val_opacity
+  endfor
+  
+  return, current_combination
+end
 
 pro user_widget_mixer_set_combination_radio, event, index
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
@@ -752,10 +808,10 @@ pro user_widget_mixer_check_if_preset_combination, event
   user_widget_mixer_save_current_combination, event
   
   nr_combinations = (*p_wdgt_state).all_combinations.length
-  for index=0,nr_combinations-1 do
+  for index=0,nr_combinations-1 do begin
     ; if current configuration is equal to some preset configuration
     preset_combination = (*p_wdgt_state).all_combinations[index]
-    if (is_equal_combination_config((*p_wdgt_state).current_combination, preset_combination) then begin
+    if (is_equal_combination_config((*p_wdgt_state).current_combination, preset_combination)) then begin
         ; switch radio button to corresponding preset combination
         user_widget_mixer_set_combination_radio, event, index
       return 
@@ -763,7 +819,19 @@ pro user_widget_mixer_check_if_preset_combination, event
   endfor
 end
 
+; Generate widgets for mixer's layers
+function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
+  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
+  widget_layers = REPLICATE(widget_layer, nr_layers)
+  
+  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
+  for i=0,nr_layers-1 do begin
+    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
+  endfor
 
+  mixer_widgetIDs = create_struct('layers', widget_layers)
+  return, mixer_widgetIDs
+end
 
 pro user_widget_mixer_ok, event
   user_widget_save_state, event
@@ -980,6 +1048,39 @@ pro save_to_sav, wdgt_struct, sav_path
         description = '', filename = sav_path  
 end
 
+
+; lower two functions are actually the same
+function user_widget_mixer_read_all_combinations
+
+  nr_layers = 4
+  
+  ;set_combination_layer, combination, layer_index, vis_text, min_val, max_val, blend_mode_text, opacity_val 
+
+  c1 = gen_combination('Test visualization 1', nr_layers)
+  c1 = set_combination_layer(c1, 0, 'PCA of hillshading', 0, 100, 'Overlay', 90)
+  c1 = set_combination_layer(c1, 1, 'Hillshading from multiple directions', 0, 100, 'Screen', 85)
+  c1 = set_combination_layer(c1, 2, 'Slope gradient', 0, 100, 'Multiply', 60)
+  c1 = set_combination_layer(c1, 3, 'Openness - Negative', 0, 100, 'Normal', 0)
+  
+  c2 = gen_combination('Test visualization 2', nr_layers)
+  c2 = set_combination_layer(c2, 0, 'Sky-View Factor', 0, 100, 'Screen', 50)
+  c2 = set_combination_layer(c2, 1, 'PCA of hillshading', 0, 100, 'Luminosity', 0)
+
+  
+  c3 = gen_combination('Test visualization 3', nr_layers)
+  c3 = set_combination_layer(c3, 0, 'Anisotropic Sky-View Factor', 0, 100, 'Normal', 25)
+  c3 = set_combination_layer(c3, 1, 'Sky illumination', 0, 100, 'Normal', 50)
+  c3 = set_combination_layer(c3, 2, 'PCA of hillshading', 0, 100, 'Normal', 0)
+  
+  c4 = gen_combination('Test visualization 4', nr_layers)
+  c4 = set_combination_layer(c4, 0, 'PCA of hillshading', 1, 200, 'Multiply', 80)
+  c4 = set_combination_layer(c4, 1, 'Local dominance', 1, 200, 'Overlay', 0)
+  
+  all_combinations = [c1, c2, c3, c4]
+
+  return, all_combinations
+end
+
 pro read_visual_mixer_presets, input_file
     ;read from file
 
@@ -987,6 +1088,7 @@ pro read_visual_mixer_presets, input_file
     ;common preset_mixer_states
     ;preset_mixer_states = create_struct()
 end
+
 
 function get_mixer_layer, event
   widget_control, event.ID, get_uvalue=active_layer
@@ -997,17 +1099,22 @@ pro mixer_widget_change_vis, event
   layer = get_mixer_layer(event)
   visualization = widget_info(event.id, /combobox_gettext)
   
-  set_mixer_layer_parameter_value, event, layer, 'min', get_min(visualization)
-  set_mixer_layer_parameter_value, event, layer, 'max', get_max(visualization)
+  ;to-do: rewrite
+  IF (visualization EQ '<none>') THEN BEGIN
+    ; disable other fields
+    
+  ENDIF ELSE BEGIN
+    set_mixer_layer_parameter_value, event, layer, 'min', get_min(visualization)
+    set_mixer_layer_parameter_value, event, layer, 'max', get_max(visualization)
+  ENDELSE
 end
  
 pro mixer_widget_change_blend_mode, event
   layer = get_mixer_layer(event)
   selection = widget_info(event.id, /combobox_gettext)
-
-;  update_mixer_state, layer, 'blend_mode', selection
 end
 
+; uname = type of ''
 function get_widget_sibling, event, uname
   child_widgets = widget_info(event.top, /all_children)
   foreach child, child_widgets do begin
@@ -1016,6 +1123,15 @@ function get_widget_sibling, event, uname
   endforeach
   return, widget
 end
+
+;function get_widget_parent, event, uname
+;  child_widgets = widget_info(event.top, /all_children)
+;  foreach child, child_widgets do begin
+;    widget = widget_info(child, find_by_uname=uname)
+;    if (widget gt 0) then break
+;  endforeach
+;  return, widget
+;end
 
 function validate_number_limits, event, visualization
   widget_control, event.ID, GET_VALUE=str_number
@@ -1087,35 +1203,14 @@ pro check_mixer_config_if_preset
   ;    endforeach
 end
 
-;pro get_mixer_state
-;   ;layer = widget_info(event.top, find_by_uname='layer1_vis')
-;end
-
-;pro update_mixer_state, layer, parameter, value
-;
-;  check_mixer_config_if_preset, mixer_state, preset_mixer_states
-;end
-
-; Puts the value of the parameter onto corresponding widget, on a selected layer
-pro set_mixer_layer_parameter_value, layer, parameter, value
-  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+parameter)
-  widget_control, parameter_to_set, set_value = value
-end
-
-;;tmp
-;pro set_mixer_layer_parameter_value, event, layer, parameter, value
+;; Puts the value of the parameter onto corresponding widget, on a selected layer
+;pro set_mixer_layer_parameter_value, layer, parameter, value
 ;  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+parameter)
 ;  widget_control, parameter_to_set, set_value = value
 ;end
-
-; Selects the value from a list on corresponding combobox widget, on a selected layer
-pro set_mixer_layer_parameter_combobox, layer, combobox, value
-  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+combobox)
-  widget_control, parameter_to_set, set_combobox_select = value
-end
-
-;;tmp
-;pro set_mixer_layer_parameter_combobox, event, layer, combobox, value
+;
+;; Selects the value from a list on corresponding combobox widget, on a selected layer
+;pro set_mixer_layer_parameter_combobox, layer, combobox, value
 ;  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+combobox)
 ;  widget_control, parameter_to_set, set_combobox_select = value
 ;end
@@ -1165,20 +1260,25 @@ pro set_mixer_layer_full, layer, visualization, blend_mode, opacity, min_limit, 
   set_mixer_layer_parameter_value, layer, 'opacity', opacity
 end
 
+; Change values of widgets to contain selected combination values
+; Also include combination index to
 pro user_widget_mixer_set_combination, event, index, combination_name
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
 
-  IF combination_name EQ 'Custom combination' THEN BEGIN
+  ;IF (strmatch(combination_name,'Custom combination') EQ 1) THEN BEGIN
+  IF (combination_name EQ 'Custom combination') THEN BEGIN
     print, 'Custom mixer combination/configuration  selected'
-    IF (combination_selected NQ (*p_wdgt_state).all_combinations.length) print, 'Index and type of combination do not match!'
+    IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
   ENDIF ELSE BEGIN
-    print, 'Selected preset configuration:' + combination_name
-    IF (combination_name NQ (*p_wdgt_state).all_combinations[index].title) print, 'Index and title of combination do not match!'
+    print, 'Selected preset configuration:' + combination_name 
+    ;IF (strmatch(combination_name, (*p_wdgt_state).all_combinations[index].title) NE 1) print, 'Index and title of combination do not match!'
+    IF (combination_name NE (*p_wdgt_state).all_combinations[index].title) then print, 'Index and title of combination do not match!'
   ENDELSE
   
   combination = (*p_wdgt_state).all_combinations[index]
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
   
-  for i=0,3 do
+  for i=0,nr_layers-1 do begin
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].vis, set_combobox_select = combination.layers[i].vis
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].min, set_value = combination.layers[i].min
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, set_value = combination.layers[i].max
@@ -1187,27 +1287,41 @@ pro user_widget_mixer_set_combination, event, index, combination_name
   endfor
 end
 
-pro new_mixer_layer, base_mixer, layer, layer_label, vis_droplist, blend_droplist
+function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, blend_droplist
   COMMON topo_advanced_tab_widgets, ysize_row, ysize_bigrow, xsize_frame_method_name, xsize_params, xsize_one_param, xsize_short_label, xsize_slider, xsize_wide_row
+
+  txt_layer = 'layer'+(layer_index+1)
 
   mixer_row_layer = widget_base(base_mixer, /row)
   layer_params = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame, $ ;sensitive=preset_mix,
-    uname='u_'+layer+'_params')
+    uname='u_'+txt_layer+'_params')
+    
+  layer = create_struct('base', mixer_row_layer, 'params', layer_params)
 
   layer_row = widget_base(layer_params, /row, ysize=ysize_bigrow)
-  layer_text = widget_label(layer_row, value=layer_label, xsize = xsize_short_label)
+  layer_label = widget_label(layer_row, value=label_text, xsize = xsize_short_label)
+  
+  layer = create_struct(layer, 'row', layer_row, 'text', layer_label)
 
   layer_vis = widget_combobox(layer_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*], $
-    uname=layer+'_vis', uvalue=layer)
+    uname=txt_layer+'_vis', uvalue=layer_index)  
   layer_min = widget_text(layer_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
-    uname=layer+'_min', uvalue=layer)
+    uname=txt_layer+'_min', uvalue=layer_index)
   layer_max = widget_text(layer_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
-    uname=layer+'_max', uvalue=layer)
+    uname=txt_layer+'_max', uvalue=layer_index)
   layer_blend_mode = widget_combobox(layer_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*], $
-    uname=layer+'_blend_mode', uvalue=layer)
+    uname=txt_layer+'_blend_mode', uvalue=layer_index)
   ;layer_opacity_text = widget_text(layer_row, event_pro='mixer_change_opacity_txt', value='50', scroll=0, xsize = 5, ysize = 1, /editable)
   layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
-    uname=layer+'_opacity', uvalue=layer) ;/SUPPRESS_VALUE)
+    uname=txt_layer+'_opacity', uvalue=layer_index) ;/SUPPRESS_VALUE)
+    
+  layer = create_struct(layer, 'vis', layer_vis)
+  layer = create_struct(layer, 'min', layer_min)
+  layer = create_struct(layer, 'max', layer_max)
+  layer = create_struct(layer, 'blend_mode', layer_blend_mode)
+  layer = create_struct(layer, 'opacity', layer_opacity_slider)
+    
+  return, layer  
 end
 
 
@@ -1919,19 +2033,20 @@ pro topo_advanced_vis, re_run=re_run
   mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row) 
 
   combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 1')
-  (*p_wdgt_state).combination1_radio = combination1_radio
   combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 2')
-  (*p_wdgt_state).combination2_radio = combination2_radio
   combination3_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 3')
-  (*p_wdgt_state).combination3_radio = combination3_radio 
   combination4_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 4')
-  (*p_wdgt_state).combination4_radio = combination4_radio
   combination5_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Custom combination')
-  (*p_wdgt_state).combination5_radio = combination5_radio
+
   widget_control, combination5_radio, set_button=1
-  ; is this necessary?
-  (*p_wdgt_state).combination_index = 4
+  combination_index = 4
   
+; Is this necccessary?
+;    (*p_wdgt_state).combination1_radio = combination1_radio
+;    (*p_wdgt_state).combination2_radio = combination2_radio
+;    (*p_wdgt_state).combination3_radio = combination3_radio 
+;    (*p_wdgt_state).combination4_radio = combination4_radio
+;    (*p_wdgt_state).combination5_radio = combination5_radio
     
   ; Select visualizations to blend
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_wide_row)
@@ -1948,51 +2063,34 @@ pro topo_advanced_vis, re_run=re_run
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
-;  layer1 = new_mixer_layer, base_mixer, 'layer1', 'First layer:  ', vis_droplist, blend_droplist
-;  layer2 = new_mixer_layer, base_mixer, 'layer2', 'Second layer:  ', vis_droplist, blend_droplist
-;  layer3 = new_mixer_layer, base_mixer, 'layer3', 'Third layer:  ', vis_droplist, blend_droplist
-;  layer4 = new_mixer_layer, base_mixer, 'layer4', 'Fourth layer:  ', vis_droplist, blend_droplist
-
-  ; Generate every widget separately
-  mixer_row_layer = widget_base(base_mixer, /row)
-  layer1_row = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame)
-  layer1_label = widget_label(layer1_row, value=layer1_label, xsize = xsize_short_label)
-  layer1_vis = widget_combobox(layer1_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*])
-  (*p_wdgt_state).layer1_vis = layer1_vis
-  layer1_min = widget_text(layer1_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  (*p_wdgt_state).layer1_min = layer1_min
-  layer1_max = widget_text(layer1_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  (*p_wdgt_state).layer1_max = layer1_max
-  layer1_blend_mode = widget_combobox(layer1_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*])
-  (*p_wdgt_state).layer1_blend_mode = layer1_blend_mode
-  layer1_opacity = widget_slider(layer1_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100) 
-  (*p_wdgt_state).layer1_opacity = layer1_opacity
   
-  layer2_row = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame)
-  layer2_label = widget_label(layer2_row, value=layer2_label, xsize = xsize_short_label)
-  layer2_vis = widget_combobox(layer2_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*])
-  layer2_min = widget_text(layer2_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer2_max = widget_text(layer2_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer2_blend_mode = widget_combobox(layer2_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*])
-  layer2_opacity = widget_slider(layer2_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100)
+  ; Should be global variable!!
+  nr_layers = 4 
+  layers_tag = ['First layer:', 'Second layer', 'Third layer:', 'Fourth layer:' ]
+  
+  ; TMP - uncomment after fixing 'user_widget_mixer_gen_widgets' function
+  ;mixer_widgetIDs = user_widget_mixer_gen_widgets(base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
 
-  layer3_row = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame)
-  layer3_label = widget_label(layer3_row, value=layer3_label, xsize = xsize_short_label)
-  layer3_vis = widget_combobox(layer3_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*])
-  layer3_min = widget_text(layer3_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer3_max = widget_text(layer3_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer3_blend_mode = widget_combobox(layer3_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*])
-  layer3_opacity = widget_slider(layer3_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100)
+  ; TMP - delete after uncommenting the line above
+  ; START user_widget_mixer_gen_widgets
+  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
+  widget_layers = REPLICATE(widget_layer, nr_layers)
 
-  layer4_row = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame)
-  layer4_label = widget_label(layer4_row, value=layer4_label, xsize = xsize_short_label)
-  layer4_vis = widget_combobox(layer4_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*])
-  layer4_min = widget_text(layer4_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer4_max = widget_text(layer4_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable)
-  layer4_blend_mode = widget_combobox(layer4_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*])
-  layer4_opacity = widget_slider(layer4_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100)
+  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
+  for i=0,nr_layers-1 do begin
+    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
+  endfor
+  
+  mixer_widgetIDs = create_struct('layers', widget_layers)
+  ;return, mixer_widgetIDs
+  ; END user_widget_mixer_gen_widgets
   
   
+  current_combination = user_widget_mixer_init_combination(mixer_widgetIDs) 
+  ;(*p_wdgt_state).current_combination = current_combination
+ 
+  all_combinations = user_widget_mixer_read_all_combinations()
+
   ; --- Mixer Tab: Buttons to Mix selected
   mixer_row_finish = widget_base(base_mixer, /align_left)
   bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
@@ -2105,20 +2203,18 @@ pro topo_advanced_vis, re_run=re_run
                             skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, skyilm_droplist3_entry:skyilm_droplist3_entry,$
                             skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
-                        jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text}$
+                        jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
-                        preset1_checkbox:preset1_checkbox,preset2_checkbox:preset2_checkbox,preset3_checkbox:preset3_checkbox,preset4_checkbox:preset4_checkbox,preset5_checkbox:preset5_checkbox, $
+                        combination1_radio:combination1_radio, $
+                        combination2_radio:combination2_radio, $
+                        combination3_radio:combination3_radio, $
+                        combination4_radio:combination4_radio, $
+                        combination5_radio:combination5_radio, $
                         mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, $
-                        layer1:layer1, layer2:layer2, layer3:layer3, layer4:layer4, $
-                        layer1_vis:layer1_vis, layer2_vis:layer2_vis, layer3_vis:layer3_vis, layer4_vis:layer4_vis,  $    ; Version of RVT and year of issue
-                        layer1_min:layer1_min, layer2_min:layer2_min, layer3_min:layer3_min, layer4_min:layer4_min, $
-                        layer1_max:layer1_max, layer2_max:layer2_max, layer3_max:layer3_max, layer4_max:layer4_max, $
-                        layer1_blend_mode:layer1_blend_mode, layer2_blend_mode:layer2_blend_mode, layer3_blend_mode:layer3_blend_mode, layer4_blend_mode:layer4_blend_mode, $
-                        layer1_opacity:layer1_opacity, layer2_opacity:layer2_opacity, layer3_opacity:layer3_opacity, layer4_opacity:layer4_opacity, $
+                        mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $
-                        all_combinations:all_combinations, combination_index:combination_index, $
+                        all_combinations:all_combinations, combination_index:combination_index}, $
                         /no_copy)  ; data stored in heap only
-;                        jpgq_text:jpgq_text
 
   ;skip GUI creation if user specied any files in process_files text file
   widget_control, base_main, set_uvalue=p_wdgt_state    
