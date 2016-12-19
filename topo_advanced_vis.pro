@@ -463,21 +463,45 @@ function gen_blend_droplist
   return, blend_droplist
 end
 
-function get_dictionary, droplist
+;function get_dictionary, droplist
+;  indexes = indgen(droplist.LENGTH)
+;  dictionary = hash(droplist, indexes)
+;  return, dictionary
+;end
+
+function get_hash_strings, droplist
   indexes = indgen(droplist.LENGTH)
   dictionary = hash(droplist, indexes)
   return, dictionary
 end
 
-function gen_vis_dictionary
+function get_hash_indexes, droplist
+  indexes = indgen(droplist.LENGTH)
+  dictionary = hash(indexes, droplist)
+  return, dictionary
+end
+
+function gen_vis_hash_strings
   vis_droplist = gen_vis_droplist()
-  dict_vis = get_dictionary(vis_droplist)
+  dict_vis = get_hash_strings(vis_droplist)
   return, dict_vis
 end
 
-function gen_blend_dictionary
+function gen_vis_hash_indexes
+  vis_droplist = gen_vis_droplist()
+  dict_vis = get_hash_strings(vis_droplist)
+  return, dict_vis
+end
+
+function gen_blend_hash_strings
   blend_droplist = gen_blend_droplist()
-  dict_blend_modes = get_dictionary(blend_droplist)
+  dict_blend_modes = get_hash_strings(blend_droplist)
+  return, dict_blend_modes
+end
+
+function gen_blend_hash_indexes
+  blend_droplist = gen_blend_droplist()
+  dict_blend_modes = get_hash_indexes(blend_droplist)
   return, dict_blend_modes
 end
 
@@ -665,17 +689,18 @@ pro user_widget_mixer_toggle_combination_radio, event
   user_widget_mixer_save_combination_radio, event
 
   ;DEBUG
+  widget_control, event.top, get_uvalue=p_wdgt_state
   combination_selected = (*p_wdgt_state).combination_index
-  print, 'Selected combination: ', combination_selected
+  print, 'Selected combination: ', combination_selected+1 ; because indices start with 0 in array, but with 1 in GUI
   
   WIDGET_CONTROL, event.ID, GET_VALUE=combination_name
   IF event.SELECT  EQ 1 THEN BEGIN
     ;set_preset_mixer, combination_name, event
-    user_widget_mixer_set_combination, event, combination_selected
+    user_widget_mixer_set_combination, event, combination_selected, combination_name
     ; This code just checks that the right combination has been detected
     IF (combination_name EQ (*p_wdgt_state).all_combinations[combination_selected].title) then begin
       print, 'Yay, combinations matches!'
-    endif ELSE begin 
+    ENDIF ELSE begin 
       print, 'Check toggling combination radio - out of sync!'
     endelse
   ENDIF
@@ -722,16 +747,16 @@ pro user_widget_mixer_save_current_combination, event
     (*p_wdgt_state).current_combination.layers[i].vis = val_vis
     
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].min, get_value = val_min
-    (*p_wdgt_state).current_combination.layers[i].min = val_min
+    (*p_wdgt_state).current_combination.layers[i].min = float(val_min)
     
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, get_value = val_max
-    (*p_wdgt_state).current_combination.layers[i].max = val_max
+    (*p_wdgt_state).current_combination.layers[i].max = float(val_max)
     
     val_blend_mode = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, /combobox_gettext)
     (*p_wdgt_state).current_combination.layers[i].blend_mode = val_blend_mode
     
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].opacity, get_value = val_opacity
-    (*p_wdgt_state).current_combination.layers[i].opacity = val_opacity
+    (*p_wdgt_state).current_combination.layers[i].opacity = fix(val_opacity)
   endfor
 end
 
@@ -739,10 +764,10 @@ end
 function set_combination_layer, combination, layer_index, vis_text, min_val, max_val, blend_mode_text, opacity_val 
   i = layer_index
   combination.layers[i].vis = vis_text
-  combination.layers[i].min = min_val
-  combination.layers[i].max = max_val
+  combination.layers[i].min = float(min_val)
+  combination.layers[i].max = float(max_val)
   combination.layers[i].blend_mode = blend_mode_text
-  combination.layers[i].opacity = opacity_val
+  combination.layers[i].opacity = fix(opacity_val)
   return, combination
 end
 
@@ -769,16 +794,16 @@ function user_widget_mixer_init_combination, widgetIDs
     current_combination.layers[i].vis = val_vis
     
     widget_control, widgetIDs.layers[i].min, get_value = val_min
-    current_combination.layers[i].min = val_min
+    current_combination.layers[i].min = float(val_min)
     
     widget_control, widgetIDs.layers[i].max, get_value = val_max
-    current_combination.layers[i].max = val_max
+    current_combination.layers[i].max = float(val_max)
     
     val_blend_mode = widget_info(widgetIDs.layers[i].blend_mode, /combobox_gettext)
     current_combination.layers[i].blend_mode = val_blend_mode
     
     widget_control, widgetIDs.layers[i].opacity, get_value = val_opacity
-    current_combination.layers[i].opacity = val_opacity
+    current_combination.layers[i].opacity = fix(val_opacity)
   endfor
   
   return, current_combination
@@ -1100,13 +1125,13 @@ pro mixer_widget_change_vis, event
   visualization = widget_info(event.id, /combobox_gettext)
   
   ;to-do: rewrite
-  IF (visualization EQ '<none>') THEN BEGIN
-    ; disable other fields
-    
-  ENDIF ELSE BEGIN
-    set_mixer_layer_parameter_value, event, layer, 'min', get_min(visualization)
-    set_mixer_layer_parameter_value, event, layer, 'max', get_max(visualization)
-  ENDELSE
+;  IF (visualization EQ '<none>') THEN BEGIN
+;    ; disable other fields
+;    
+;  ENDIF ELSE BEGIN
+;    set_mixer_layer_parameter_value, event, layer, 'min', get_min(visualization)
+;    set_mixer_layer_parameter_value, event, layer, 'max', get_max(visualization)
+;  ENDELSE
 end
  
 pro mixer_widget_change_blend_mode, event
@@ -1277,12 +1302,13 @@ pro user_widget_mixer_set_combination, event, index, combination_name
   
   combination = (*p_wdgt_state).all_combinations[index]
   nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+
   
   for i=0,nr_layers-1 do begin
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].vis, set_combobox_select = combination.layers[i].vis
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].min, set_value = combination.layers[i].min
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, set_value = combination.layers[i].max
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, set_combobox_select = combination.layers[i].blend_mode
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].opacity, set_value = combination.layers[i].opacity
   endfor
 end
@@ -1290,7 +1316,7 @@ end
 function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, blend_droplist
   COMMON topo_advanced_tab_widgets, ysize_row, ysize_bigrow, xsize_frame_method_name, xsize_params, xsize_one_param, xsize_short_label, xsize_slider, xsize_wide_row
 
-  txt_layer = 'layer'+(layer_index+1)
+  txt_layer = 'layer'+strtrim(layer_index+1, 1)
 
   mixer_row_layer = widget_base(base_mixer, /row)
   layer_params = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame, $ ;sensitive=preset_mix,
@@ -2031,22 +2057,6 @@ pro topo_advanced_vis, re_run=re_run
   
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_frame_method_name*3)
   mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row) 
-
-  combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 1')
-  combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 2')
-  combination3_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 3')
-  combination4_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Combination 4')
-  combination5_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Custom combination')
-
-  widget_control, combination5_radio, set_button=1
-  combination_index = 4
-  
-; Is this necccessary?
-;    (*p_wdgt_state).combination1_radio = combination1_radio
-;    (*p_wdgt_state).combination2_radio = combination2_radio
-;    (*p_wdgt_state).combination3_radio = combination3_radio 
-;    (*p_wdgt_state).combination4_radio = combination4_radio
-;    (*p_wdgt_state).combination5_radio = combination5_radio
     
   ; Select visualizations to blend
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_wide_row)
@@ -2060,6 +2070,11 @@ pro topo_advanced_vis, re_run=re_run
 
   vis_droplist = gen_vis_droplist()
   blend_droplist = gen_blend_droplist()
+  
+  hash_vis_get_string = gen_vis_hash_indexes()
+  hash_vis_get_index = gen_vis_hash_strings()
+  hash_blend_get_string = gen_blend_hash_indexes()
+  hash_blend_get_index = gen_blend_hash_strings()
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
@@ -2085,11 +2100,17 @@ pro topo_advanced_vis, re_run=re_run
   ;return, mixer_widgetIDs
   ; END user_widget_mixer_gen_widgets
   
-  
   current_combination = user_widget_mixer_init_combination(mixer_widgetIDs) 
-  ;(*p_wdgt_state).current_combination = current_combination
- 
   all_combinations = user_widget_mixer_read_all_combinations()
+  
+  combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[0].title)
+  combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[1].title)
+  combination3_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[2].title)
+  combination4_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[3].title)
+  combination5_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Custom combination')
+
+  widget_control, combination5_radio, set_button=1
+  combination_index = 4
 
   ; --- Mixer Tab: Buttons to Mix selected
   mixer_row_finish = widget_base(base_mixer, /align_left)
@@ -2205,6 +2226,11 @@ pro topo_advanced_vis, re_run=re_run
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
+                        vis_droplist:vis_droplist, blend_droplist:blend_droplist, $
+                        hash_vis_get_string:hash_vis_get_string, $
+                        hash_vis_get_index:hash_vis_get_index, $
+                        hash_blend_get_string:hash_blend_get_string, $
+                        hash_blend_get_index:hash_blend_get_index, $
                         combination1_radio:combination1_radio, $
                         combination2_radio:combination2_radio, $
                         combination3_radio:combination3_radio, $
