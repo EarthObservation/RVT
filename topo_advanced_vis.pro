@@ -507,14 +507,14 @@ end
 
 function get_vis_max
   vis_droplist = gen_vis_droplist()
-  default_max = replicate('100',vis_droplist.LENGTH)
+  default_max = replicate(float(1000),vis_droplist.LENGTH)
   find_max = hash(vis_droplist, default_max)
   return, find_max
 end
 
 function get_vis_min
   vis_droplist = gen_vis_droplist()
-  default_min = replicate('1',vis_droplist.LENGTH)
+  default_min = replicate(float(-1000),vis_droplist.LENGTH)
   find_min = hash(vis_droplist, default_min)
   return, find_min
 end
@@ -681,29 +681,23 @@ pro user_widget_ok, event
   widget_control, event.top, /destroy
 end
 
-;tmp
 ; combination_selected => index of selected combination (on radio buttons)
 ; when inputing parameters of the combination simply choose combination in an array
 pro user_widget_mixer_toggle_combination_radio, event
-  ;user_widget_mixer_save_radio_state, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
   user_widget_mixer_save_combination_radio, event
 
-  ;DEBUG
-  widget_control, event.top, get_uvalue=p_wdgt_state
-  combination_selected = (*p_wdgt_state).combination_index
+combination_selected = (*p_wdgt_state).combination_index
   print, 'Selected combination: ', combination_selected+1 ; because indices start with 0 in array, but with 1 in GUI
   
   WIDGET_CONTROL, event.ID, GET_VALUE=combination_name
   IF event.SELECT  EQ 1 THEN BEGIN
     ;set_preset_mixer, combination_name, event
     user_widget_mixer_set_combination, event, combination_selected, combination_name
-    ; This code just checks that the right combination has been detected
-    IF (combination_name EQ (*p_wdgt_state).all_combinations[combination_selected].title) then begin
-      print, 'Yay, combinations matches!'
-    ENDIF ELSE begin 
-      print, 'Check toggling combination radio - out of sync!'
-    endelse
   ENDIF
+
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
 end
 
 ; Compare two combination configurations (only layers' values, not the title!)
@@ -711,15 +705,14 @@ function is_equal_combination_config, combination1_config, combination2_config
   nr_layers1 = combination1_config.layers.LENGTH;
   nr_layers2 = combination2_config.layers.LENGTH;
   if (nr_layers1 NE nr_layers2) then return, BOOLEAN(0)
+  
+ ;nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
 
   for i=0,nr_layers1-1 do begin
-    ;if (STRMATCH(combination1_config.layers[i].vis, combination2_config.layers[i].vis) NE 1) return, BOOLEAN(0) 
     if (combination1_config.layers[i].vis NE combination2_config.layers[i].vis) then return, BOOLEAN(0) 
     if (combination1_config.layers[i].min NE combination2_config.layers[i].min) then return, BOOLEAN(0)
     if (combination1_config.layers[i].max NE combination2_config.layers[i].max) then return, BOOLEAN(0)
-    ;if (STRMATCH(combination1_config.layers[i].blend_mode, combination2_config.layers[i].blend_mode) NE 1) then return, BOOLEAN(0)
     if (combination1_config.layers[i].blend_mode NE combination2_config.layers[i].blend_mode) then return, BOOLEAN(0)
-    if (combination1_config.layers[i].blend_mode NE combination1_config.layers[i].blend_mode) then return, BOOLEAN(0)
     if (combination1_config.layers[i].opacity NE combination2_config.layers[i].opacity) then return, BOOLEAN(0)
   endfor
   return, BOOLEAN(1)
@@ -816,11 +809,11 @@ pro user_widget_mixer_set_combination_radio, event, index
   (*p_wdgt_state).combination_index = index
 
   case index of
-    0: widget_control, (*p_wdgt_state).combination1_radio, set_value=1
-    1: widget_control, (*p_wdgt_state).combination2_radio, set_value=1
-    2: widget_control, (*p_wdgt_state).combination3_radio, set_value=1
-    3: widget_control, (*p_wdgt_state).combination4_radio, set_value=1
-  else: widget_control, (*p_wdgt_state).combination5_radio, set_value=1
+    0: widget_control, (*p_wdgt_state).combination1_radio, set_button=1
+    1: widget_control, (*p_wdgt_state).combination2_radio, set_button=1
+    2: widget_control, (*p_wdgt_state).combination3_radio, set_button=1
+    3: widget_control, (*p_wdgt_state).combination4_radio, set_button=1
+  else: widget_control, (*p_wdgt_state).combination5_radio, set_button=1
   endcase
   
 end
@@ -831,7 +824,8 @@ pro user_widget_mixer_check_if_preset_combination, event
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
   
   user_widget_mixer_save_current_combination, event
-  
+  preset_found = BOOLEAN(0)
+
   nr_combinations = (*p_wdgt_state).all_combinations.length
   for index=0,nr_combinations-1 do begin
     ; if current configuration is equal to some preset configuration
@@ -839,9 +833,16 @@ pro user_widget_mixer_check_if_preset_combination, event
     if (is_equal_combination_config((*p_wdgt_state).current_combination, preset_combination)) then begin
         ; switch radio button to corresponding preset combination
         user_widget_mixer_set_combination_radio, event, index
+        preset_found = BOOLEAN(1)
       return 
     endif
   endfor
+  if (preset_found EQ BOOLEAN(0)) then begin
+    ; change to custom combination
+;      widget_control, combination5_radio, set_button=1
+      widget_control, (*p_wdgt_state).combination5_radio, set_button=1  
+      (*p_wdgt_state).combination_index = 4
+  endif
 end
 
 ; Generate widgets for mixer's layers
@@ -1106,37 +1107,63 @@ function user_widget_mixer_read_all_combinations
   return, all_combinations
 end
 
-pro read_visual_mixer_presets, input_file
-    ;read from file
-
-    ;TO-DO
-    ;common preset_mixer_states
-    ;preset_mixer_states = create_struct()
-end
-
-
 function get_mixer_layer, event
   widget_control, event.ID, get_uvalue=active_layer
   return, active_layer
 end
 
-pro mixer_widget_change_vis, event
-  layer = get_mixer_layer(event)
-  visualization = widget_info(event.id, /combobox_gettext)
+pro user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].opacity, sensitive = sensitivity
+end
+
+pro user_widget_mixer_disable_layer, p_wdgt_state, layer
+  user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 0
+end
+
+pro user_widget_mixer_enable_layer, p_wdgt_state, layer
+  user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 1
+end
+
+pro user_widget_mixer_validate_visualization_all, p_wdgt_state
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+
+  for layer=0,nr_layers-1 do begin
+    visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+    IF (visualization EQ '<none>') THEN BEGIN
+      ; disable other fields: min, max, blend_mode, opacity
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = ''
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = ''
+      user_widget_mixer_disable_layer, p_wdgt_state, layer
+    ENDIF ELSE BEGIN
+      ; make sure other elements are enabled(min, max, blend_mode, opacity)
+      user_widget_mixer_enable_layer, p_wdgt_state, layer
   
-  ;to-do: rewrite
-;  IF (visualization EQ '<none>') THEN BEGIN
-;    ; disable other fields
-;    
-;  ENDIF ELSE BEGIN
-;    set_mixer_layer_parameter_value, event, layer, 'min', get_min(visualization)
-;    set_mixer_layer_parameter_value, event, layer, 'max', get_max(visualization)
-;  ENDELSE
+;; IF UNCOMMENTED all layers below 1st become disabled (sensitive = 0)
+;; TO-DO! 
+;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, getvalue = str_number
+;      number = validate_number_limits(float(str_number), visualization)
+;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
+;      
+;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, getvalue = str_number
+;      number = validate_number_limits(float(str_number), visualization)
+;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
+ 
+    ENDELSE
+  endfor
+end
+
+pro mixer_widget_change_vis, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  user_widget_mixer_check_if_preset_combination, event
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
 end
  
 pro mixer_widget_change_blend_mode, event
-  layer = get_mixer_layer(event)
-  selection = widget_info(event.id, /combobox_gettext)
+  user_widget_mixer_check_if_preset_combination, event
 end
 
 ; uname = type of ''
@@ -1158,9 +1185,7 @@ end
 ;  return, widget
 ;end
 
-function validate_number_limits, event, visualization
-  widget_control, event.ID, GET_VALUE=str_number
-  number = float(str_number)
+function validate_number_limits, number, visualization
  
   min_limit = float(get_min(visualization))
   max_limit = float(get_max(visualization))
@@ -1175,80 +1200,49 @@ function validate_number_limits, event, visualization
 end
 
 pro mixer_widget_change_min, event
+  widget_control, event.top, get_uvalue=p_wdgt_state 
   layer = get_mixer_layer(event)
+  
+  vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+  widget_control, event.ID, GET_VALUE=str_number
 
-  vis_widget = get_widget_sibling(event, layer+'_vis')
-  vis_value = widget_info(vis_widget, /combobox_gettext)
-
-  number = validate_number_limits(event, vis_value)
+  number = validate_number_limits(float(str_number), vis_value)
   widget_control, event.ID, set_value = strtrim(string(number),1)
-
+  
+  user_widget_mixer_check_if_preset_combination, event
 end
 
 pro mixer_widget_change_max, event
+  widget_control, event.top, get_uvalue=p_wdgt_state 
   layer = get_mixer_layer(event)
  
-  vis_widget = get_widget_sibling(event, layer+'_vis')
-  vis_value = widget_info(vis_widget, /combobox_gettext)
+  vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+  widget_control, event.ID, GET_VALUE=str_number
 
-  number = validate_number_limits(event, vis_value)
+  number = validate_number_limits(float(str_number), vis_value)
   widget_control, event.ID, set_value = strtrim(string(number),1)
-
+  
+  user_widget_mixer_check_if_preset_combination, event
 end
 
 pro mixer_widget_change_opacity, event
   layer = get_mixer_layer(event)
   widget_control, event.ID, GET_VALUE=slider_value
-
+  
+  user_widget_mixer_check_if_preset_combination, event
 end
 
-pro check_mixer_config_if_equal, visual_config, mixer_state
-  print, 'Comparing with configuration: ', mixer_state
 
-;    FOREACH element, visual_config DO BEGIN
-;      IF (element NE (*p_mixer_state).element)
-;      BREAK
-;      ENDIF ELSE BEGIN
-;        return, BOOLEAN(1)
-;      ENDELSE
-;    ENDFOREACH
-;    return, BOOLEAN(0)
-end
-
-pro check_mixer_config_if_preset
-  ;    common visual_mix_presets
-  ;
-  ;    foreach visual, visual_mix_presets DO BEGIN
-  ;      if (check_mixer_config_if_equal, visual, (*p_mixer_state)) then begin
-  ;        ;set radio button to correct option
-  ;
-  ;        ;
-  ;        break
-  ;      endif
-  ;    endforeach
-end
-
-;; Puts the value of the parameter onto corresponding widget, on a selected layer
-;pro set_mixer_layer_parameter_value, layer, parameter, value
-;  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+parameter)
-;  widget_control, parameter_to_set, set_value = value
+;; TMP COMMENTED - not sure if it is needed or not
+;function visualization_index, visualization
+;  dictionary_visualization = gen_vis_dictionary()
+;  return, dictionary_visualization[visualization]
 ;end
-;
-;; Selects the value from a list on corresponding combobox widget, on a selected layer
-;pro set_mixer_layer_parameter_combobox, layer, combobox, value
-;  parameter_to_set = widget_info(event.top, find_by_uname=layer+'_'+combobox)
-;  widget_control, parameter_to_set, set_combobox_select = value
+;; TMP COMMENTED - not sure if it is needed or not
+;function blend_mode_index, blend_mode
+;  dictionary_blend_modes = gen_blend_dictionary()
+;  return, dictionary_blend_modes[blend_mode]
 ;end
-
-function visualization_index, visualization
-  dictionary_visualization = gen_vis_dictionary()
-  return, dictionary_visualization[visualization]
-end
-
-function blend_mode_index, blend_mode
-  dictionary_blend_modes = gen_blend_dictionary()
-  return, dictionary_blend_modes[blend_mode]
-end
 
 function get_min, visualization
   find_min = get_vis_min()
@@ -1260,57 +1254,33 @@ function get_max, visualization
   return, find_max[visualization]
 end
 
-;;tmp
-;pro set_mixer_layer_full, event, layer, visualization, blend_mode, opacity, min_limit, max_limit
-;  set_mixer_layer_parameter_combobox, event, layer, 'vis', visualization_index(visualization)
-;  set_mixer_layer_parameter_combobox, event, layer, 'blend_mode', blend_mode_index(blend_mode)
-;  set_mixer_layer_parameter_value, event, layer, 'min', min_limit
-;  set_mixer_layer_parameter_value, event, layer, 'max', max_limit
-;  set_mixer_layer_parameter_value, event, layer, 'opacity', opacity
-;end
-;;tmp
-;pro set_mixer_layer, event, layer, visualization, blend_mode, opacity 
-;  set_mixer_layer_full, event, layer, visualization, blend_mode, opacity, get_min(visualization), get_max(visualization)
-;end
-
-pro set_mixer_layer, layer, visualization, blend_mode, opacity
-  set_mixer_layer_full, layer, visualization, blend_mode, opacity, get_min(visualization), get_max(visualization)
-end
-
-pro set_mixer_layer_full, layer, visualization, blend_mode, opacity, min_limit, max_limit
-  set_mixer_layer_parameter_combobox, layer, 'vis', visualization_index(visualization)
-  set_mixer_layer_parameter_combobox, layer, 'blend_mode', blend_mode_index(blend_mode)
-  set_mixer_layer_parameter_value, layer, 'min', min_limit
-  set_mixer_layer_parameter_value, layer, 'max', max_limit
-  set_mixer_layer_parameter_value, layer, 'opacity', opacity
-end
-
 ; Change values of widgets to contain selected combination values
-; Also include combination index to
+; Also include combination index, too
 pro user_widget_mixer_set_combination, event, index, combination_name
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
 
   ;IF (strmatch(combination_name,'Custom combination') EQ 1) THEN BEGIN
   IF (combination_name EQ 'Custom combination') THEN BEGIN
     print, 'Custom mixer combination/configuration  selected'
-    IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
+      IF ((*p_wdgt_state).combination_index NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
+    ;IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
   ENDIF ELSE BEGIN
     print, 'Selected preset configuration:' + combination_name 
     ;IF (strmatch(combination_name, (*p_wdgt_state).all_combinations[index].title) NE 1) print, 'Index and title of combination do not match!'
     IF (combination_name NE (*p_wdgt_state).all_combinations[index].title) then print, 'Index and title of combination do not match!'
-  ENDELSE
-  
-  combination = (*p_wdgt_state).all_combinations[index]
-  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+    
+    combination = (*p_wdgt_state).all_combinations[index]
+    nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
 
-  
-  for i=0,nr_layers-1 do begin
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].min, set_value = combination.layers[i].min
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, set_value = combination.layers[i].max
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
-    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].opacity, set_value = combination.layers[i].opacity
-  endfor
+    for i=0,nr_layers-1 do begin
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].min, set_value = strtrim(combination.layers[i].min, 1)
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].max, set_value = strtrim(combination.layers[i].max, 1)
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[i].opacity, set_value = strtrim(combination.layers[i].opacity, 1)
+    endfor
+  ENDELSE
+
 end
 
 function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, blend_droplist
@@ -1331,6 +1301,8 @@ function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, ble
 
   layer_vis = widget_combobox(layer_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*], $
     uname=txt_layer+'_vis', uvalue=layer_index)  
+  widget_control, layer_vis, set_combobox_select = vis_droplist.LENGTH-1
+  
   layer_min = widget_text(layer_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
     uname=txt_layer+'_min', uvalue=layer_index)
   layer_max = widget_text(layer_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
@@ -2111,6 +2083,7 @@ pro topo_advanced_vis, re_run=re_run
 
   widget_control, combination5_radio, set_button=1
   combination_index = 4
+  
 
   ; --- Mixer Tab: Buttons to Mix selected
   mixer_row_finish = widget_base(base_mixer, /align_left)
@@ -2120,7 +2093,6 @@ pro topo_advanced_vis, re_run=re_run
 
 
   ;---------------------------------------------------------
-
 
   ;modify ysize of the GUI depending on user screen resolution
   gui_geometry = widget_info(base_main, /geometry)
@@ -2247,6 +2219,7 @@ pro topo_advanced_vis, re_run=re_run
   if keyword_set(skip_gui) then user_widget_ok, create_struct('TOP', base_main) $
   else begin
     widget_control, base_main, /realize     ; create the widget
+    user_widget_mixer_validate_visualization_all, p_wdgt_state
     xmanager, 'resize', base_main ; wait for the events
   endelse
 ;  xmanager, 'rvt_sa_v1', base_main    ; wait for the events
