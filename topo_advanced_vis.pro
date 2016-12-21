@@ -463,12 +463,6 @@ function gen_blend_droplist
   return, blend_droplist
 end
 
-;function get_dictionary, droplist
-;  indexes = indgen(droplist.LENGTH)
-;  dictionary = hash(droplist, indexes)
-;  return, dictionary
-;end
-
 function get_hash_strings, droplist
   indexes = indgen(droplist.LENGTH)
   dictionary = hash(droplist, indexes)
@@ -481,42 +475,36 @@ function get_hash_indexes, droplist
   return, dictionary
 end
 
-function gen_vis_hash_strings
-  vis_droplist = gen_vis_droplist()
-  dict_vis = get_hash_strings(vis_droplist)
-  return, dict_vis
+function gen_hash_strings, droplist
+  hash_map = get_hash_strings(droplist)
+  return, hash_map
 end
 
-function gen_vis_hash_indexes
-  vis_droplist = gen_vis_droplist()
-  dict_vis = get_hash_strings(vis_droplist)
-  return, dict_vis
+function gen_hash_indexes, droplist
+  hash_map = get_hash_indexes(droplist)
+  return, hash_map
 end
 
-function gen_blend_hash_strings
-  blend_droplist = gen_blend_droplist()
-  dict_blend_modes = get_hash_strings(blend_droplist)
-  return, dict_blend_modes
-end
-
-function gen_blend_hash_indexes
-  blend_droplist = gen_blend_droplist()
-  dict_blend_modes = get_hash_indexes(blend_droplist)
-  return, dict_blend_modes
-end
-
-function get_vis_max
-  vis_droplist = gen_vis_droplist()
-  default_max = replicate(float(1000),vis_droplist.LENGTH)
-  find_max = hash(vis_droplist, default_max)
+function set_vis_max_limit, vis_droplist, max_limit
+  limit = replicate(float(max_limit),vis_droplist.LENGTH)
+  find_max = hash(vis_droplist, limit)
   return, find_max
+;  
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  default_max = replicate(float(1000),(*p_wdgt_state).vis_droplist.LENGTH)
+;  find_max = hash(vis_droplist, default_max)
+;  return, find_max
 end
 
-function get_vis_min
-  vis_droplist = gen_vis_droplist()
-  default_min = replicate(float(-1000),vis_droplist.LENGTH)
-  find_min = hash(vis_droplist, default_min)
+function set_vis_min_limit, vis_droplist, min_limit
+  limit = replicate(float(min_limit),vis_droplist.LENGTH)
+  find_min = hash(vis_droplist, limit)
   return, find_min
+;  
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  default_min = replicate(float(-1000),(*p_wdgt_state).vis_droplist.LENGTH)
+;  find_min = hash(vis_droplist, default_min)
+;  return, find_min
 end
 
 
@@ -771,16 +759,11 @@ function gen_combination, title, nr_layers
   return, combination
 end 
 
-function user_widget_mixer_init_combination, widgetIDs
+function user_widget_mixer_init_combination, widgetIDs, custom_combination_name
   ; inherit number of layers from widgets
   nr_layers = widgetIDs.layers.length
 
-;;; tmp replaced with gen_combination()
-;  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
-;  combination_layers = REPLICATE(combination_layer, nr_layers)
-;  current_combination = create_struct('title', 'Custom combination', 'layers', combination_layers)
-
-  current_combination = gen_combination('Custom combination', nr_layers)
+  current_combination = gen_combination(custom_combination_name, nr_layers)
 
   for i=0,nr_layers-1 do begin
     val_vis = widget_info(widgetIDs.layers[i].vis, /combobox_gettext)
@@ -1137,20 +1120,29 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = ''
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = ''
       user_widget_mixer_disable_layer, p_wdgt_state, layer
+    
     ENDIF ELSE BEGIN
       ; make sure other elements are enabled(min, max, blend_mode, opacity)
       user_widget_mixer_enable_layer, p_wdgt_state, layer
+      
+      ;set default min and max values if the field was empty before
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, get_value = min_str
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, get_value = max_str
+    
+      if (min_str EQ '') then begin
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min(visualization, p_wdgt_state),1)
+      endif else begin
+        number = validate_number_limits(float(min_str), visualization, p_wdgt_state)
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
+      endelse
+      
+      if (max_str EQ '') then begin
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max(visualization, p_wdgt_state),1)
+      endif else begin
+        number = validate_number_limits(float(max_str), visualization, p_wdgt_state)
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
+      endelse
   
-;; IF UNCOMMENTED all layers below 1st become disabled (sensitive = 0)
-;; TO-DO! 
-;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, getvalue = str_number
-;      number = validate_number_limits(float(str_number), visualization)
-;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
-;      
-;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, getvalue = str_number
-;      number = validate_number_limits(float(str_number), visualization)
-;      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
- 
     ENDELSE
   endfor
 end
@@ -1185,10 +1177,10 @@ end
 ;  return, widget
 ;end
 
-function validate_number_limits, number, visualization
+function validate_number_limits, number, visualization, p_wdgt_state
  
-  min_limit = float(get_min(visualization))
-  max_limit = float(get_max(visualization))
+  min_limit = float(get_min(visualization, p_wdgt_state))
+  max_limit = float(get_max(visualization, p_wdgt_state))
 
   if (number gt max_limit) then begin
     number = max_limit
@@ -1206,7 +1198,7 @@ pro mixer_widget_change_min, event
   vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
   widget_control, event.ID, GET_VALUE=str_number
 
-  number = validate_number_limits(float(str_number), vis_value)
+  number = validate_number_limits(float(str_number), vis_value, p_wdgt_state)
   widget_control, event.ID, set_value = strtrim(string(number),1)
   
   user_widget_mixer_check_if_preset_combination, event
@@ -1219,7 +1211,7 @@ pro mixer_widget_change_max, event
   vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
   widget_control, event.ID, GET_VALUE=str_number
 
-  number = validate_number_limits(float(str_number), vis_value)
+  number = validate_number_limits(float(str_number), vis_value, p_wdgt_state)
   widget_control, event.ID, set_value = strtrim(string(number),1)
   
   user_widget_mixer_check_if_preset_combination, event
@@ -1232,25 +1224,13 @@ pro mixer_widget_change_opacity, event
   user_widget_mixer_check_if_preset_combination, event
 end
 
-
-;; TMP COMMENTED - not sure if it is needed or not
-;function visualization_index, visualization
-;  dictionary_visualization = gen_vis_dictionary()
-;  return, dictionary_visualization[visualization]
-;end
-;; TMP COMMENTED - not sure if it is needed or not
-;function blend_mode_index, blend_mode
-;  dictionary_blend_modes = gen_blend_dictionary()
-;  return, dictionary_blend_modes[blend_mode]
-;end
-
-function get_min, visualization
-  find_min = get_vis_min()
+function get_min, visualization, p_wdgt_state
+  find_min = (*p_wdgt_state).vis_min_limit
   return, find_min[visualization]
 end
 
-function get_max, visualization
-  find_max = get_vis_max()
+function get_max, visualization, p_wdgt_state
+  find_max = (*p_wdgt_state).vis_max_limit
   return, find_max[visualization]
 end
 
@@ -1259,8 +1239,7 @@ end
 pro user_widget_mixer_set_combination, event, index, combination_name
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
 
-  ;IF (strmatch(combination_name,'Custom combination') EQ 1) THEN BEGIN
-  IF (combination_name EQ 'Custom combination') THEN BEGIN
+  IF (combination_name EQ (*p_wdgt_state).custom_combination_name) THEN BEGIN
     print, 'Custom mixer combination/configuration  selected'
       IF ((*p_wdgt_state).combination_index NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
     ;IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
@@ -2043,10 +2022,16 @@ pro topo_advanced_vis, re_run=re_run
   vis_droplist = gen_vis_droplist()
   blend_droplist = gen_blend_droplist()
   
-  hash_vis_get_string = gen_vis_hash_indexes()
-  hash_vis_get_index = gen_vis_hash_strings()
-  hash_blend_get_string = gen_blend_hash_indexes()
-  hash_blend_get_index = gen_blend_hash_strings()
+  hash_vis_get_string = gen_hash_indexes(vis_droplist)    ;gen_vis_hash_indexes()
+  hash_vis_get_index = gen_hash_strings(vis_droplist)     ;gen_vis_hash_strings()
+  hash_blend_get_string = gen_hash_indexes(blend_droplist);gen_blend_hash_indexes()
+  hash_blend_get_index = gen_hash_strings(blend_droplist) ;gen_blend_hash_strings()
+ 
+  vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
+  vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
+  
+  ;vis_max_default = get_vis_max_default()
+  ;vis_min_default = get_vis_max_default()
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
@@ -2072,14 +2057,15 @@ pro topo_advanced_vis, re_run=re_run
   ;return, mixer_widgetIDs
   ; END user_widget_mixer_gen_widgets
   
-  current_combination = user_widget_mixer_init_combination(mixer_widgetIDs) 
+  custom_combination_name = 'Custom combination'
+  current_combination = user_widget_mixer_init_combination(mixer_widgetIDs, custom_combination_name) 
   all_combinations = user_widget_mixer_read_all_combinations()
   
   combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[0].title)
   combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[1].title)
   combination3_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[2].title)
   combination4_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[3].title)
-  combination5_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value='Custom combination')
+  combination5_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=custom_combination_name)
 
   widget_control, combination5_radio, set_button=1
   combination_index = 4
@@ -2203,6 +2189,12 @@ pro topo_advanced_vis, re_run=re_run
                         hash_vis_get_index:hash_vis_get_index, $
                         hash_blend_get_string:hash_blend_get_string, $
                         hash_blend_get_index:hash_blend_get_index, $
+;                        nr_layers:nr_layers, $
+                        vis_max_limit:vis_max_limit, $
+                        vis_min_limit:vis_min_limit, $
+;                        vis_max_default:vis_max_default, $
+;                        vis_min_default:vis_min_default, $
+                        custom_combination_name:custom_combination_name, $
                         combination1_radio:combination1_radio, $
                         combination2_radio:combination2_radio, $
                         combination3_radio:combination3_radio, $
