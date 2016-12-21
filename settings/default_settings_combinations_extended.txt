@@ -7,8 +7,48 @@
 #
 #----------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------
-#
-# Visualizations combinations
+
+# 1.) LIMITS for min and max values for visualization options
+# ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file
+
+Analytical hillshading, min = 0
+Analytical hillshading, max = 100
+
+Hillshading from multiple directions, min = 0
+Hillshading from multiple directions, max = 100
+
+PCA of hillshading, min =  0
+PCA of hillshading, max = 100
+
+Slope gradient, min = 
+Slope gradient, max =  
+
+Simple local relief model, min =  
+Simple local relief model, max = 
+
+Sky-View Factor, min = 
+Sky-View Factor, max = 
+
+Anisotropic Sky-View Factor, min = 
+Anisotropic Sky-View Factor, max = 
+
+Openness - Positive, min = 
+Openness - Positive, max = 
+
+Openness - Negative, min = 
+Openness - Negative, max = 
+
+Sky illumination, min = 
+Sky illumination, max = 
+
+Local dominance, min = 
+Local dominance, max = 
+
+#<none>
+
+#----------------------------------------------------------------------------------------------------------
+
+# 2.) Visualizations combinations
 
 combination = Combination 1
 

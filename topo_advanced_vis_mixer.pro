@@ -61,3 +61,148 @@
 pro topo_advanced_vis_mixer
 
 end
+
+function test_tag, tag, tags
+  return, total(tag eq tags)
+end
+
+function extract_parameter_string, parameters, parameter_name
+  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+
+  ; indexes of pairs 'parameter:value', split by semicolon
+  parameter = 0
+  value = 1
+
+  ; indexes in array of line splits for parameters
+  keys = ['layer', 'vis', 'min', 'max', 'blend_mode', 'opacity']
+  indexes = [0,1,2,3,4,5]
+  idx = HASH(keys, indexes)
+  
+  pair = strsplit(parameters[idx[parameter_name]], ':', /EXTRACT)
+  foreach str, pair do begin
+    str = strtrim(str, 2)
+  endforeach
+  
+  if (pair[parameter] EQ parameter_name AND (pair.length GT 1)) then return, pair[value]
+  print, 'There is no value given for a selected parameter!'
+  return, ''
+
+end
+
+function parse_layer, parameters
+  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+
+  ; visualization
+  combination_layer.vis = extract_parameter_string(parameters, 'vis')
+
+  if (combination_layer.vis NE '<none>') then begin
+    combination_layer.min = float(extract_parameter_string(parameters, 'min'))
+    combination_layer.max = float(extract_parameter_string(parameters, 'max'))
+    combination_layer.blend_mode = extract_parameter_string(parameters, 'blend_mode')
+    if (combination_layer.blend_mode EQ '') combination_layer.blend_mode = 'Normal' 
+    combination_layer.opacity = fix(extract_parameter_string(parameters, 'opacity'))
+  endif
+  
+  return, layer
+end
+
+function parse_combination, combination_name, array
+   combination = gen_combination(title, array.length)
+   
+   for i=0,array.length-1 do begin
+      ; split line into parameter:value chunks
+      parameters = strsplit(array[i], ',', /EXTRACT)
+      ; parse layer with parameters   
+      combination.layers[i] = parse_layer(parameters)
+      ; number of layer
+      layer_nr = fix(extract_parameter_string(parameters, 'layer'))
+      ; check
+      if (i NE layer_nr) then print, 'Layer numbers do not match! Please check default_settings_combinations file! '
+   endfor
+   return, combination
+end
+
+function read_combinations_from_file, file_path
+  OPENR, fu, file_path, /GET_LUN
+  
+  line = ''
+  array = ''
+  combinations =  ;TO-DO create empty array of structures??
+  
+  while not eof(fu) do begin
+    readf, fu, line
+    
+    ; skip empty lines
+    if (line='') then continue
+    
+    ; new combination
+    if (strmatch(line,'combination*'), /FOLD_CASE) then begin
+      
+      title = ''
+      splitted = strsplit(line, '=', /EXTRACT)
+      if (splitted[0] EQ 'combination') then title = strtrim(splitted[1],2)
+      endif
+      
+      new_combination = parse_combination(title, array)
+
+      ; save combination to array
+      combinations = [combinations, new_combination]
+      
+      ;reset array of layers
+      array = ''
+    endif 
+    
+    ; still same combination, new layer - put layer in array
+    if (strmatch(line,'layer:*'), /FOLD_CASE) then begin 
+       array = [array, line]
+    endif
+  endwhile
+  
+  FREE_LUN, fu
+end
+
+;=========================================================================================================
+;=== Read program settings from COMBINATIONS settings file or sav file between sessions ==================
+;=========================================================================================================
+
+;settings_folder = programrootdir()+'settings'
+
+function read_combination_settings, settings_folder
+  temp_comb_sav = settings_folder + '\temp_combination_settings.sav'
+  if keyword_set(re_run) and file_test(temp_comb_sav) then begin
+    restore, temp_comb_sav
+  endif else begin
+    comb_file = settings_folder +'\default_settings_combinations.txt'
+    
+    if file_test(comb_file) then combination_settings = get_settings_combinations(comb_file) $
+    else combination_settings = create_struct('none','none')
+    combination_settings_tags = strlowcase(tag_names(combination_settings))
+  
+    if test_tag('overwrite', combination_settings_tags) then overwrite = combination_settings.overwrite $
+    else overwrite = 1.0
+  
+    if test_tag('Analytical hillshading - min') then 
+    
+    else 
+   
+    if test_tag('min_limit', settings_tags) then min_radius = input_settings.min_radius $
+    else min_radius = 2
+    if test_tag('max_limit', settings_tags) then max_radius = input_settings.max_radius $
+    else max_radius = 0
+  
+  
+    process_file = programrootdir()+'settings\process_files.txt'
+    if file_test(process_file) then begin
+      n_lines = file_lines(process_file)
+      if n_lines gt 0 then begin
+        files_to_process = make_array(n_lines, /string)
+        openr, txt_proc, process_file, /get_lun
+        readf, txt_proc, files_to_process
+        free_lun, txt_proc
+        skip_gui = 1
+      endif
+    endif
+    
+    
+  endelse
+end
