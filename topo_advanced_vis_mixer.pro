@@ -62,10 +62,6 @@ pro topo_advanced_vis_mixer
 
 end
 
-function test_tag, tag, tags
-  return, total(tag eq tags)
-end
-
 function extract_parameter_string, parameters, parameter_name
   combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
 
@@ -83,7 +79,7 @@ function extract_parameter_string, parameters, parameter_name
     str = strtrim(str, 2)
   endforeach
   
-  if (pair[parameter] EQ parameter_name AND (pair.length GT 1)) then return, pair[value]
+  if (strtrim(pair[parameter],2) EQ parameter_name AND (pair.length GT 1)) then return, strtrim(pair[value],2)
   print, 'There is no value given for a selected parameter!'
   return, ''
 
@@ -99,15 +95,15 @@ function parse_layer, parameters
     combination_layer.min = float(extract_parameter_string(parameters, 'min'))
     combination_layer.max = float(extract_parameter_string(parameters, 'max'))
     combination_layer.blend_mode = extract_parameter_string(parameters, 'blend_mode')
-    if (combination_layer.blend_mode EQ '') combination_layer.blend_mode = 'Normal' 
+    if (combination_layer.blend_mode EQ '') then combination_layer.blend_mode = 'Normal' 
     combination_layer.opacity = fix(extract_parameter_string(parameters, 'opacity'))
   endif
   
-  return, layer
+  return, combination_layer
 end
 
 function parse_combination, combination_name, array
-   combination = gen_combination(title, array.length)
+   combination = gen_combination(combination_name, array.length)
    
    for i=0,array.length-1 do begin
       ; split line into parameter:value chunks
@@ -117,49 +113,89 @@ function parse_combination, combination_name, array
       ; number of layer
       layer_nr = fix(extract_parameter_string(parameters, 'layer'))
       ; check
-      if (i NE layer_nr) then print, 'Layer numbers do not match! Please check default_settings_combinations file! '
+      if (i+1 NE layer_nr) then print, 'Layer numbers do not match! Please check default_settings_combinations file! '
    endfor
    return, combination
 end
 
-function read_combinations_from_file, file_path
-  OPENR, fu, file_path, /GET_LUN
+function parse_combinations_from_lines, lines
+  nr_combinations = 4
+  empty_combination = gen_combination('', 4)
+  all_combinations = []
+  ;all_combinations = make_array(nr_combinations, /empty_combination)
   
-  line = ''
-  array = ''
-  combinations =  ;TO-DO create empty array of structures??
+  ; init
+  title = ''
+  array = []
+  nr = 0
+
+  for i=0,lines.length-1 do begin
+    line = strtrim(lines[i], 2)
   
-  while not eof(fu) do begin
-    readf, fu, line
-    
-    ; skip empty lines
-    if (line='') then continue
-    
-    ; new combination
-    if (strmatch(line,'combination*'), /FOLD_CASE) then begin
+    ; skip empty lines and comments
+    if (line EQ '' OR strmatch(line,'#*', /FOLD_CASE)) then begin
+       print, 'Line not to be parsed: ', line
+    endif else begin
       
-      title = ''
-      splitted = strsplit(line, '=', /EXTRACT)
-      if (splitted[0] EQ 'combination') then title = strtrim(splitted[1],2)
+      ; (A) new combination
+      if (strmatch(line,'combination*', /FOLD_CASE)) then begin
+        
+         if (array NE !NULL) then begin
+           if (array.length GT 0) then begin
+            ; parse combination in array
+            new_combination = parse_combination(title, array)
+            all_combinations = [all_combinations, new_combination] 
+            
+            ;SET PARAMETERS FOR NEXT COMBINATION
+            ; sequential number
+            nr = nr+1
+          endif
+        endif
+        
+        ;SET PARAMETERS FOR NEXT COMBINATION
+        ; title .... in this line is for next combination
+        splitted = strsplit(line, '=', /EXTRACT)
+        if (strtrim(splitted[0],2) EQ 'combination') then begin
+          title = strtrim(splitted[1],2)    
+        endif   
+        ; reset array of layers
+        array = []
+      endif
+
+      ; (B) still same combination, new layer - put layer in array
+      if (strmatch(line,'layer:*', /FOLD_CASE)) then begin
+         array = [array, line]
       endif
       
-      new_combination = parse_combination(title, array)
-
-      ; save combination to array
-      combinations = [combinations, new_combination]
-      
-      ;reset array of layers
-      array = ''
-    endif 
-    
-    ; still same combination, new layer - put layer in array
-    if (strmatch(line,'layer:*'), /FOLD_CASE) then begin 
-       array = [array, line]
-    endif
-  endwhile
+    endelse
+  endfor
   
-  FREE_LUN, fu
+   if (array NE !NULL) then begin
+      if (array.length GT 0) then begin
+          new_combination = parse_combination(title, array)
+          all_combinations = [all_combinations, new_combination] 
+      endif
+  endif
+  
+  return, all_combinations
 end
+
+function read_combinations_from_file, file_path
+  if file_test(file_path) then begin
+    n_lines = file_lines(file_path)
+
+    if n_lines gt 0 then begin
+      lines = make_array(n_lines, /string)
+      openr, fu, file_path, /get_lun
+      readf, fu, lines
+      free_lun, fu
+
+      return, parse_combinations_from_lines(lines)
+    endif
+  endif
+  return, 0
+end
+
 
 ;=========================================================================================================
 ;=== Read program settings from COMBINATIONS settings file or sav file between sessions ==================
@@ -167,42 +203,42 @@ end
 
 ;settings_folder = programrootdir()+'settings'
 
-function read_combination_settings, settings_folder
-  temp_comb_sav = settings_folder + '\temp_combination_settings.sav'
-  if keyword_set(re_run) and file_test(temp_comb_sav) then begin
-    restore, temp_comb_sav
-  endif else begin
-    comb_file = settings_folder +'\default_settings_combinations.txt'
-    
-    if file_test(comb_file) then combination_settings = get_settings_combinations(comb_file) $
-    else combination_settings = create_struct('none','none')
-    combination_settings_tags = strlowcase(tag_names(combination_settings))
-  
-    if test_tag('overwrite', combination_settings_tags) then overwrite = combination_settings.overwrite $
-    else overwrite = 1.0
-  
-    if test_tag('Analytical hillshading - min') then 
-    
-    else 
-   
-    if test_tag('min_limit', settings_tags) then min_radius = input_settings.min_radius $
-    else min_radius = 2
-    if test_tag('max_limit', settings_tags) then max_radius = input_settings.max_radius $
-    else max_radius = 0
-  
-  
-    process_file = programrootdir()+'settings\process_files.txt'
-    if file_test(process_file) then begin
-      n_lines = file_lines(process_file)
-      if n_lines gt 0 then begin
-        files_to_process = make_array(n_lines, /string)
-        openr, txt_proc, process_file, /get_lun
-        readf, txt_proc, files_to_process
-        free_lun, txt_proc
-        skip_gui = 1
-      endif
-    endif
-    
-    
-  endelse
-end
+;function read_combination_settings, settings_folder
+;  temp_comb_sav = settings_folder + '\temp_combination_settings.sav'
+;  if keyword_set(re_run) and file_test(temp_comb_sav) then begin
+;    restore, temp_comb_sav
+;  endif else begin
+;    comb_file = settings_folder +'\default_settings_combinations.txt'
+;    
+;    if file_test(comb_file) then combination_settings = get_settings_combinations(comb_file) $
+;    else combination_settings = create_struct('none','none')
+;    combination_settings_tags = strlowcase(tag_names(combination_settings))
+;  
+;    if test_tag('overwrite', combination_settings_tags) then overwrite = combination_settings.overwrite $
+;    else overwrite = 1.0
+;  
+;    if test_tag('Analytical hillshading - min') then 
+;    
+;    else 
+;   
+;    if test_tag('min_limit', settings_tags) then min_radius = input_settings.min_radius $
+;    else min_radius = 2
+;    if test_tag('max_limit', settings_tags) then max_radius = input_settings.max_radius $
+;    else max_radius = 0
+;  
+;  
+;    process_file = programrootdir()+'settings\process_files.txt'
+;    if file_test(process_file) then begin
+;      n_lines = file_lines(process_file)
+;      if n_lines gt 0 then begin
+;        files_to_process = make_array(n_lines, /string)
+;        openr, txt_proc, process_file, /get_lun
+;        readf, txt_proc, files_to_process
+;        free_lun, txt_proc
+;        skip_gui = 1
+;      endif
+;    endif
+;    
+;    
+;  endelse
+;end

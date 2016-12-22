@@ -1059,34 +1059,8 @@ end
 
 
 ; lower two functions are actually the same
-function user_widget_mixer_read_all_combinations
-
-  nr_layers = 4
-  
-  ;set_combination_layer, combination, layer_index, vis_text, min_val, max_val, blend_mode_text, opacity_val 
-
-  c1 = gen_combination('Test visualization 1', nr_layers)
-  c1 = set_combination_layer(c1, 0, 'PCA of hillshading', 0, 100, 'Overlay', 90)
-  c1 = set_combination_layer(c1, 1, 'Hillshading from multiple directions', 0, 100, 'Screen', 85)
-  c1 = set_combination_layer(c1, 2, 'Slope gradient', 0, 100, 'Multiply', 60)
-  c1 = set_combination_layer(c1, 3, 'Openness - Negative', 0, 100, 'Normal', 0)
-  
-  c2 = gen_combination('Test visualization 2', nr_layers)
-  c2 = set_combination_layer(c2, 0, 'Sky-View Factor', 0, 100, 'Screen', 50)
-  c2 = set_combination_layer(c2, 1, 'PCA of hillshading', 0, 100, 'Luminosity', 0)
-
-  
-  c3 = gen_combination('Test visualization 3', nr_layers)
-  c3 = set_combination_layer(c3, 0, 'Anisotropic Sky-View Factor', 0, 100, 'Normal', 25)
-  c3 = set_combination_layer(c3, 1, 'Sky illumination', 0, 100, 'Normal', 50)
-  c3 = set_combination_layer(c3, 2, 'PCA of hillshading', 0, 100, 'Normal', 0)
-  
-  c4 = gen_combination('Test visualization 4', nr_layers)
-  c4 = set_combination_layer(c4, 0, 'PCA of hillshading', 1, 200, 'Multiply', 80)
-  c4 = set_combination_layer(c4, 1, 'Local dominance', 1, 200, 'Overlay', 0)
-  
-  all_combinations = [c1, c2, c3, c4]
-
+function user_widget_mixer_read_all_combinations, file_path
+  all_combinations = read_combinations_from_file(file_path)
   return, all_combinations
 end
 
@@ -2059,7 +2033,9 @@ pro topo_advanced_vis, re_run=re_run
   
   custom_combination_name = 'Custom combination'
   current_combination = user_widget_mixer_init_combination(mixer_widgetIDs, custom_combination_name) 
-  all_combinations = user_widget_mixer_read_all_combinations()
+  
+  file_path = programrootdir()+'settings\default_settings_combinations.txt'
+  all_combinations = user_widget_mixer_read_all_combinations(file_path)
   
   combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[0].title)
   combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[1].title)
@@ -2233,6 +2209,7 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Save settings to temporary .sav file ================================================================
   ;=========================================================================================================
   save_to_sav, wdgt_state, temp_sav
+  ;save_to_sav_combination, wdgt_state, temp_sav
 
   ;=========================================================================================================
   ;=== Initialize input parameters by user-selected values =================================================
