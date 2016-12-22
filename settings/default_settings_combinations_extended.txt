@@ -7,12 +7,42 @@
 #
 #----------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------
+#
+# VISUALIZATION METHODS:
+#
+# Analytical hillshading
+# Hillshading from multiple directions
+# PCA of hillshading
+# Slope gradient
+# Simple local relief model
+# Sky-View Factor
+# Anisotropic Sky-View Factor
+# Openness - Positive
+# Openness - Negative
+# Sky illumination
+# Local dominance
+# <none>
+#
+#
+# BLEND MODES:
+#
+# Normal
+# Multiply
+# Overlay
+# Luminosity
+# Screen
+#
+#----------------------------------------------------------------------------------------------------------
+# It has to be written "# SECTION" to separate between different parts of settings below:
+#----------------------------------------------------------------------------------------------------------
 
-# It has to be written "# SECTION" to separate between different parts of settings
 
-# SECTION 1: DEFAULT min & max values for 
+#----------------------------------------------------------------------------------------------------------
+# SECTION 1: DEFAULT min & max values for visualizations
+# 
 # ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file 
 #     -> this is something completely different
+#
 
 Analytical hillshading, min, 0
 Analytical hillshading, max, 100
@@ -50,7 +80,6 @@ Local dominance, max, 100
 #<none>
 
 #----------------------------------------------------------------------------------------------------------
-#
 # SECTION 2: Visualizations combinations
 #
 
