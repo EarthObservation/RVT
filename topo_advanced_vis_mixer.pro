@@ -118,20 +118,56 @@ function parse_combination, combination_name, array
    return, combination
 end
 
+function parse_min_max, lines
+  ; hashmaps:
+  ;   keys = vis_droplist -> but it is read from file not generated from vis_droplist
+  ;   indexes = default min/max
+  
+  def_min = HASH()
+  def_max = HASH()
+  section = 0
+
+  for i=0,lines.length-1 do begin
+    line = strtrim(lines[i], 2)
+
+    if (strmatch(line,'# SECTION*', /FOLD_CASE)) then section++
+    if (section NE 1) then continue
+    
+    if (line EQ '' OR strmatch(line,'#*', /FOLD_CASE)) then begin
+      print, 'Line not to be parsed: ', line
+      continue
+    endif 
+    
+    splitted = strsplit(line, ',', /EXTRACT)
+    visualization = strtrim(splitted[0],2)
+    parameter = strtrim(splitted[1],2)
+    default_value = strtrim(splitted[2],2)
+    
+    case parameter of
+      'min': def_min += HASH(visualization, default_value)
+      'max': def_max += HASH(visualization, default_value)
+    endcase
+  endfor
+
+  return, create_struct('min_hash', def_min, 'max_hash', def_max)
+end
+
 function parse_combinations_from_lines, lines
-  nr_combinations = 4
-  empty_combination = gen_combination('', 4)
   all_combinations = []
-  ;all_combinations = make_array(nr_combinations, /empty_combination)
   
   ; init
   title = ''
   array = []
   nr = 0
+  section = 0
 
   for i=0,lines.length-1 do begin
     line = strtrim(lines[i], 2)
-  
+    
+    if (strmatch(line,'# SECTION*')) then section++
+    
+    if (section NE 2) then continue
+
     ; skip empty lines and comments
     if (line EQ '' OR strmatch(line,'#*', /FOLD_CASE)) then begin
        print, 'Line not to be parsed: ', line
@@ -191,6 +227,22 @@ function read_combinations_from_file, file_path
       free_lun, fu
 
       return, parse_combinations_from_lines(lines)
+    endif
+  endif
+  return, 0
+end
+
+function read_default_min_max_from_file, file_path
+  if file_test(file_path) then begin
+    n_lines = file_lines(file_path)
+
+    if n_lines gt 0 then begin
+      lines = make_array(n_lines, /string)
+      openr, fu, file_path, /get_lun
+      readf, fu, lines
+      free_lun, fu
+
+      return, parse_min_max(lines)
     endif
   endif
   return, 0

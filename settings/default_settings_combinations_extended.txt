@@ -8,72 +8,76 @@
 #----------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------
 
-# 1.) LIMITS for min and max values for visualization options
-# ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file
+# It has to be written "# SECTION" to separate between different parts of settings
 
-Analytical hillshading, min = 0
-Analytical hillshading, max = 100
+# SECTION 1: DEFAULT min & max values for 
+# ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file 
+#     -> this is something completely different
 
-Hillshading from multiple directions, min = 0
-Hillshading from multiple directions, max = 100
+Analytical hillshading, min, 0
+Analytical hillshading, max, 100
 
-PCA of hillshading, min =  0
-PCA of hillshading, max = 100
+Hillshading from multiple directions, min, 0
+Hillshading from multiple directions, max, 100
 
-Slope gradient, min = 
-Slope gradient, max =  
+PCA of hillshading, min, 0
+PCA of hillshading, max, 100
 
-Simple local relief model, min =  
-Simple local relief model, max = 
+Slope gradient, min, 1
+Slope gradient, max, 100
 
-Sky-View Factor, min = 
-Sky-View Factor, max = 
+Simple local relief model, min, 0
+Simple local relief model, max, 100
 
-Anisotropic Sky-View Factor, min = 
-Anisotropic Sky-View Factor, max = 
+Sky-View Factor, min, 0
+Sky-View Factor, max, 1
 
-Openness - Positive, min = 
-Openness - Positive, max = 
+Anisotropic Sky-View Factor, min, 0
+Anisotropic Sky-View Factor, max, 10
 
-Openness - Negative, min = 
-Openness - Negative, max = 
+Openness - Positive, min, 1
+Openness - Positive, max, 20
 
-Sky illumination, min = 
-Sky illumination, max = 
+Openness - Negative, min, 1
+Openness - Negative, max, 100
 
-Local dominance, min = 
-Local dominance, max = 
+Sky illumination, min, 2
+Sky illumination, max, 100
+
+Local dominance, min, 1
+Local dominance, max, 100
 
 #<none>
 
 #----------------------------------------------------------------------------------------------------------
-
-# 2.) Visualizations combinations
+#
+# SECTION 2: Visualizations combinations
+#
 
 combination = Combination 1
 
 layer:1, vis:PCA of hillshading, min:1, max:100, blend_mode:Overlay, opacity:70
-layer:2, vis:Sky illumination, min:1, max:10, blend_mode:, opacity:40
+layer:2, vis:Sky illumination, min:1, max:10, blend_mode:Screen, opacity:40
 layer:3, vis:<none>, min:, max: , blend_mode:, opacity:
 layer:4, vis:<none>, min:, max: , blend_mode:, opacity:
 
 combination = Combination 2
 
-layer:1, vis:Sky-View Factor, min:, max: , blend_mode:Luminosity, opacity:70
-layer:2, vis:Openness - Positive, min:, max: , blend_mode:Normal, opacity:40
-layer:3, vis:Local dominance, min:, max: , blend_mode:Screen, opacity:30
+layer:1, vis:Sky-View Factor, min:1, max:200, blend_mode:Luminosity, opacity:70
+layer:2, vis:Openness - Positive, min:1, max:200, blend_mode:Normal, opacity:40
+layer:3, vis:Local dominance, min:0, max:200, blend_mode:Screen, opacity:30
 layer:4, vis:<none>, min:, max: , blend_mode:, opacity:
 
 combination = Combination 3
 
-layer:1, vis:Hillshading from multiple directions, min:, max: , blend_mode:Screen, opacity:70
-layer:2, vis:Anisotropic Sky-View Factor, min:, max: , blend_mode:Multiply, opacity:30
-layer:3, vis:Openness - Negative, min:, max: , blend_mode:Overlay, opacity:40
-layer:4, vis:Simple local relief model, min:, max: , blend_mode:Normal, opacity:0
+layer:1, vis:Hillshading from multiple directions, min:1, max:100, blend_mode:Screen, opacity:70
+layer:2, vis:Anisotropic Sky-View Factor, min:1, max:100, blend_mode:Multiply, opacity:30
+layer:3, vis:Openness - Negative, min:1, max:100, blend_mode:Overlay, opacity:40
+layer:4, vis:Simple local relief model, min:1, max:100, blend_mode:Normal, opacity:0
 
 combination = Combination 4
 
-layer:1, vis:PCA of hillshading, min:, max: , blend_mode:Multiply, opacity:50
-layer:2, vis:Simple local relief model, min:, max: , blend_mode:, opacity:100
+layer:1, vis:PCA of hillshading, min:1, max:100, blend_mode:Multiply, opacity:50
+layer:2, vis:Simple local relief model, min:1, max:100, blend_mode:Luminosity, opacity:100
 layer:3, vis:<none>, min:, max: , blend_mode:, opacity:
 layer:4, vis:<none>, min:, max: , blend_mode:, opacity:

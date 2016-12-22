@@ -1104,14 +1104,14 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, get_value = max_str
     
       if (min_str EQ '') then begin
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min(visualization, p_wdgt_state),1)
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
       endif else begin
         number = validate_number_limits(float(min_str), visualization, p_wdgt_state)
         widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
       endelse
       
       if (max_str EQ '') then begin
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max(visualization, p_wdgt_state),1)
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
       endif else begin
         number = validate_number_limits(float(max_str), visualization, p_wdgt_state)
         widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
@@ -1153,8 +1153,8 @@ end
 
 function validate_number_limits, number, visualization, p_wdgt_state
  
-  min_limit = float(get_min(visualization, p_wdgt_state))
-  max_limit = float(get_max(visualization, p_wdgt_state))
+  min_limit = float(get_min_limit(visualization, p_wdgt_state))
+  max_limit = float(get_max_limit(visualization, p_wdgt_state))
 
   if (number gt max_limit) then begin
     number = max_limit
@@ -1198,13 +1198,23 @@ pro mixer_widget_change_opacity, event
   user_widget_mixer_check_if_preset_combination, event
 end
 
-function get_min, visualization, p_wdgt_state
+function get_min_limit, visualization, p_wdgt_state
   find_min = (*p_wdgt_state).vis_min_limit
   return, find_min[visualization]
 end
 
-function get_max, visualization, p_wdgt_state
+function get_max_limit, visualization, p_wdgt_state
   find_max = (*p_wdgt_state).vis_max_limit
+  return, find_max[visualization]
+end
+
+function get_min_default, visualization, p_wdgt_state
+  find_min = (*p_wdgt_state).vis_min_default
+  return, find_min[visualization]
+end
+
+function get_max_default, visualization, p_wdgt_state
+  find_max = (*p_wdgt_state).vis_max_default
   return, find_max[visualization]
 end
 
@@ -2001,8 +2011,14 @@ pro topo_advanced_vis, re_run=re_run
   hash_blend_get_string = gen_hash_indexes(blend_droplist);gen_blend_hash_indexes()
   hash_blend_get_index = gen_hash_strings(blend_droplist) ;gen_blend_hash_strings()
  
-  vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
+  file_settings_combinations = programrootdir()+'settings\default_settings_combinations_extended.txt'
   vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
+  vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
+  
+  vis_defaults = read_default_min_max_from_file(file_settings_combinations)
+  
+  vis_min_default = vis_defaults.min_hash
+  vis_max_default = vis_defaults.max_hash
   
   ;vis_max_default = get_vis_max_default()
   ;vis_min_default = get_vis_max_default()
@@ -2033,9 +2049,8 @@ pro topo_advanced_vis, re_run=re_run
   
   custom_combination_name = 'Custom combination'
   current_combination = user_widget_mixer_init_combination(mixer_widgetIDs, custom_combination_name) 
-  
-  file_path = programrootdir()+'settings\default_settings_combinations.txt'
-  all_combinations = user_widget_mixer_read_all_combinations(file_path)
+ 
+  all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
   
   combination1_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[0].title)
   combination2_radio = widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[1].title)
@@ -2068,14 +2083,6 @@ pro topo_advanced_vis, re_run=re_run
     gui_size_event = create_struct('TOP', base_main, 'X', gui_geometry.xsize, 'Y', new_y_size)
     resize_event, gui_size_event
   endif
-  
-  ; REPLICATE DROPLIST
-  ;function replicate_droplist, droplist
-  ;  N = droplist.LENGTH
-  ;  new_droplist = strarr(N)
-  ;  for i=0,N-1 do new_droplist[N] = droplist[N]
-  ;  return new_droplist
-  ;end
 
   ; Realize user widget ===========================
   ve = 1.0
@@ -2168,8 +2175,8 @@ pro topo_advanced_vis, re_run=re_run
 ;                        nr_layers:nr_layers, $
                         vis_max_limit:vis_max_limit, $
                         vis_min_limit:vis_min_limit, $
-;                        vis_max_default:vis_max_default, $
-;                        vis_min_default:vis_min_default, $
+                        vis_max_default:vis_max_default, $
+                        vis_min_default:vis_min_default, $
                         custom_combination_name:custom_combination_name, $
                         combination1_radio:combination1_radio, $
                         combination2_radio:combination2_radio, $
