@@ -826,18 +826,30 @@ pro user_widget_mixer_check_if_preset_combination, event
   endif
 end
 
-; Generate widgets for mixer's layers
-function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
-  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
-  widget_layers = REPLICATE(widget_layer, nr_layers)
-  
+function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
   if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
   for i=0,nr_layers-1 do begin
     widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
   endfor
 
-  mixer_widgetIDs = create_struct('layers', widget_layers)
-  return, mixer_widgetIDs
+  return, create_struct('layers', widget_layers)
+end
+
+; Generate widgets for mixer's layers
+function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
+
+  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
+  widget_layers = REPLICATE(widget_layer, nr_layers)
+
+  return, widget_layers
+  
+;  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
+;  for i=0,nr_layers-1 do begin
+;    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
+;  endfor
+;
+;  mixer_widgetIDs = create_struct('layers', widget_layers)
+;  return, mixer_widgetIDs
 end
 
 pro user_widget_mixer_ok, event
@@ -2040,27 +2052,32 @@ pro topo_advanced_vis, re_run=re_run
   layers_tag = ['First layer:', 'Second layer', 'Third layer:', 'Fourth layer:' ]
   
   ; TMP - uncomment after fixing 'user_widget_mixer_gen_widgets' function
-  ;mixer_widgetIDs = user_widget_mixer_gen_widgets(base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
+  ; mixer_widgetIDs = user_widget_mixer_gen_widgets(base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
 
-  ; TMP - delete after uncommenting the line above
-  ; START user_widget_mixer_gen_widgets
+  
+
+;  ; TMP - delete after uncommenting the line above
+;  ; START user_widget_mixer_gen_widgets
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
   widget_layers = REPLICATE(widget_layer, nr_layers)
 
-  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
-  for i=0,nr_layers-1 do begin
-    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
-  endfor
-  
-  mixer_widgetIDs = create_struct('layers', widget_layers)
-  ;return, mixer_widgetIDs
-  ; END user_widget_mixer_gen_widgets
+  mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
+
+;  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
+;  for i=0,nr_layers-1 do begin
+;    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
+;  endfor
+;  
+;  mixer_widgetIDs = create_struct('layers', widget_layers)
+;  ;return, mixer_widgetIDs
+;  ; END user_widget_mixer_gen_widgets
   
   custom_combination_name = 'Custom combination'
   current_combination = user_widget_mixer_init_combination(mixer_widgetIDs, custom_combination_name) 
  
   all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
   
+  ; TO-DO: If more preset visualizations are needed, rethink the placement of radio buttons
   nr_combinations = 4
   
   all_combinations = limit_combinations(all_combinations, nr_combinations)
