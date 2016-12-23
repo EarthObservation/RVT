@@ -62,8 +62,12 @@ pro topo_advanced_vis_mixer
 
 end
 
+function create_new_mixer_layer
+  return, create_struct('vis', '<none>', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 0)
+end
+
 function extract_parameter_string, parameters, parameter_name
-  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+  combination_layer = create_new_mixer_layer()
 
   ; indexes of pairs 'parameter:value', split by semicolon
   parameter = 0
@@ -86,7 +90,7 @@ function extract_parameter_string, parameters, parameter_name
 end
 
 function parse_layer, parameters
-  combination_layer = create_struct('vis', '<none>', 'min', 0, 'max', 0, 'blend_mode', 'Normal', 'opacity', 0)
+  combination_layer = create_new_mixer_layer()
 
   ; visualization
   combination_layer.vis = extract_parameter_string(parameters, 'vis')

@@ -39,43 +39,56 @@
 
 #----------------------------------------------------------------------------------------------------------
 # SECTION 1: DEFAULT min & max values for visualizations
+#
+# Recommended histogram stretch (see Ziga's book)
 # 
 # ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file 
 #     -> this is something completely different
 #
 
 Analytical hillshading, min, 0
-Analytical hillshading, max, 100
+Analytical hillshading, max, 2
+#linear stretch, % cut off
 
 Hillshading from multiple directions, min, 0
-Hillshading from multiple directions, max, 100
+Hillshading from multiple directions, max, 2
+#linear stretch, % cut off
 
-PCA of hillshading, min, 0
-PCA of hillshading, max, 100
+PCA of hillshading, min, 2
+PCA of hillshading, max, 2
+#linear stretch, % cut off
 
-Slope gradient, min, 1
-Slope gradient, max, 100
+Slope gradient, min, 0
+Slope gradient, max, 50
+#linear stretch, degrees
 
-Simple local relief model, min, 0
-Simple local relief model, max, 100
+Simple local relief model, min, -1
+Simple local relief model, max, 1
+#meters
 
-Sky-View Factor, min, 0
+Sky-View Factor, min, 0.65 
 Sky-View Factor, max, 1
+#linear stretch
 
-Anisotropic Sky-View Factor, min, 0
-Anisotropic Sky-View Factor, max, 10
+Anisotropic Sky-View Factor, min, 0.65
+Anisotropic Sky-View Factor, max, 1
+#linear stretch
 
-Openness - Positive, min, 1
-Openness - Positive, max, 20
+Openness - Positive, min, 65
+Openness - Positive, max, 95
+#linear stretch, degrees
 
-Openness - Negative, min, 1
-Openness - Negative, max, 100
+Openness - Negative, min, 60
+Openness - Negative, max, 95
+#linear stretch, degrees
 
-Sky illumination, min, 2
-Sky illumination, max, 100
+Sky illumination, min, 0.25
+Sky illumination, max, 0.3
+#linear stretch, % cut off
 
-Local dominance, min, 1
-Local dominance, max, 100
+Local dominance, min, 0.5
+Local dominance, max, 1.8
+#linear stretch
 
 #<none>
 
