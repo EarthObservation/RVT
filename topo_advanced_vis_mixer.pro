@@ -253,6 +253,15 @@ function read_default_min_max_from_file, file_path
 end
 
 
+function limit_combinations, all_combinations, nr_combinations  
+  if (nr_combinations LT all_combinations.length) then begin
+   ; TO-DO: What if there are too many combinations? Now it just cuts them off after fourth
+    all_combinations = all_combinations[0:nr_combinations-1]
+  endif
+  return, all_combinations
+end
+
+
 ;=========================================================================================================
 ;=== Read program settings from COMBINATIONS settings file or sav file between sessions ==================
 ;=========================================================================================================

@@ -19,7 +19,7 @@ pro user_widget_about, event
   msg = strarr(16)
   msg[0] = 'Relief Visualization Toolbox (RVT), ver. ' + (*p_wdgt_state).rvt_vers
   msg[1] = '-------------------------------------------------------------------'
-  msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar and Ziga Kokalj'
+  msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar, Maja Somrak and Ziga Kokalj'
   msg[4] = '* Online resource and manual'
   msg[5] = 'http://iaps.zrc-sazu.si/en/rvt'
   msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to peter.pehani@zrc-sazu.si'
@@ -698,6 +698,9 @@ function is_equal_combination_config, combination1_config, combination2_config
 
   for i=0,nr_layers1-1 do begin
     if (combination1_config.layers[i].vis NE combination2_config.layers[i].vis) then return, BOOLEAN(0) 
+    ; if vis is '<none>' then it doesn't matter anyway!
+    if ((combination1_config.layers[i].vis EQ '<none>') AND (combination2_config.layers[i].vis EQ '<none>')) then continue
+      
     if (combination1_config.layers[i].min NE combination2_config.layers[i].min) then return, BOOLEAN(0)
     if (combination1_config.layers[i].max NE combination2_config.layers[i].max) then return, BOOLEAN(0)
     if (combination1_config.layers[i].blend_mode NE combination2_config.layers[i].blend_mode) then return, BOOLEAN(0)
@@ -818,7 +821,6 @@ pro user_widget_mixer_check_if_preset_combination, event
   endfor
   if (preset_found EQ BOOLEAN(0)) then begin
     ; change to custom combination
-;      widget_control, combination5_radio, set_button=1
       widget_control, (*p_wdgt_state).combination_radios[nr_combinations], set_button=1  
       (*p_wdgt_state).combination_index = nr_combinations
   endif
@@ -1279,8 +1281,8 @@ function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, ble
     uname=txt_layer+'_max', uvalue=layer_index)
   layer_blend_mode = widget_combobox(layer_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*], $
     uname=txt_layer+'_blend_mode', uvalue=layer_index)
-  ;layer_opacity_text = widget_text(layer_row, event_pro='mixer_change_opacity_txt', value='50', scroll=0, xsize = 5, ysize = 1, /editable)
-  layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=50, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
+  ;layer_opacity_text = widget_text(layer_row, event_pro='mixer_change_opacity_txt', value='0', scroll=0, xsize = 5, ysize = 1, /editable)
+  layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=0, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
     uname=txt_layer+'_opacity', uvalue=layer_index) ;/SUPPRESS_VALUE)
     
   layer = create_struct(layer, 'vis', layer_vis)
@@ -2018,7 +2020,7 @@ pro topo_advanced_vis, re_run=re_run
   hash_blend_get_string = gen_hash_indexes(blend_droplist);gen_blend_hash_indexes()
   hash_blend_get_index = gen_hash_strings(blend_droplist) ;gen_blend_hash_strings()
  
-  file_settings_combinations = programrootdir()+'settings\default_settings_combinations_extended.txt'
+  file_settings_combinations = programrootdir()+'settings\default_settings_combinations_extended_2.txt'
   vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
   vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
   
@@ -2060,11 +2062,9 @@ pro topo_advanced_vis, re_run=re_run
   all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
   
   nr_combinations = 4
-  if (all_combinations.length < nr_combinations) then nr_combinations = all_combinations.length
-  if (all_combinations.length > nr_combinations) then begin
-    ; TO-DO: What if there are too many combinations? Now it just cuts them off after fourth
-    all_combinations = allcombinations[0:nr_combinations]
-  endif
+  
+  all_combinations = limit_combinations(all_combinations, nr_combinations)
+  nr_combinations = all_combinations.length
   
   combination_radios = []
   ; nr_combinations + 1 = nr_radio_buttons
