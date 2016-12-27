@@ -738,6 +738,8 @@ pro user_widget_save_state, event
 
   ; user 
   (*p_wdgt_state).user_cancel = 0
+  
+  
 
 end
 
@@ -931,7 +933,6 @@ function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_d
 end
 
 pro user_widget_mixer_ok, event
-  user_widget_save_state, event
 
   ; Combination index - radio buttons
   user_widget_mixer_save_combination_radio, event
@@ -939,9 +940,16 @@ pro user_widget_mixer_ok, event
   ; Current combination - wiget configuration by layers
   user_widget_mixer_save_current_combination, event
   
-  ; Transfer visualizations parameters between Mixer tab and Visualizations tab
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
   mixer_select_checkboxes_visualizations_tab, event
+  
+  ; Only save state after checkboxes on 'Visualizations' tab are changed, too
+  user_widget_save_state, event
 
+  ;TO-DO
+  ;prompt
+
+  ;TO-DO - uncomment
   ;widget_control, event.top, /destroy
 end
 

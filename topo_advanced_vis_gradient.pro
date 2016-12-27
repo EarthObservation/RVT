@@ -46,17 +46,23 @@ PRO topo_advanced_vis_gradient, in_file, geotiff, $
   
   ;Write results
   out_file = in_file + '.tif'
-  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-    print, ' Image already exists ('+out_file+')' $
-  else $
-    Write_tiff, out_file, slope_dem, compression=1, geotiff=geotiff, /float
+  
+  write_image_to_geotiff_float, overwrite, out_file, slope_dem
+;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+;    print, ' Image already exists ('+out_file+')' $
+;  else $
+;    Write_tiff, out_file, slope_dem, compression=1, geotiff=geotiff, /float
+    
 ;  Write_tiff, in_file + '_aspect.tif', aspect_dem, compression=1, geotiff=geotiff, /float
   slope_dem = 255 - Bytscl(slope_dem, max=sc_slp_ev[1], min=sc_slp_ev[0])
   out_file = in_file + '_8bit.tif'
-  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-    print, ' Image already exists ('+out_file+')' $
-  else $
-    Write_tiff, out_file, slope_dem, compression=1, geotiff=geotiff
+  
+   write_image_to_geotiff, overwrite, out_file, slope_dem
+;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+;    print, ' Image already exists ('+out_file+')' $
+;  else $
+;    Write_tiff, out_file, slope_dem, compression=1, geotiff=geotiff
+    
   slope_dem = !null & aspect_dem = !null
   
 END

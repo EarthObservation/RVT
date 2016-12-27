@@ -95,16 +95,20 @@ ld_img_out /= norma
 ;ld_img_out[-1l*max_rad:-1,*] = 0
 
 out_file = in_file+'.tif'
-if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-  print, ' Image already exists ('+out_file+')' $
-else $
-  write_tiff, out_file, ld_img_out, compression=1, /float, geotiff=geotiff
+
+write_image_to_geotiff_float, overwrite, out_file, ld_img_out
+;if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+;  print, ' Image already exists ('+out_file+')' $
+;else $
+;  write_tiff, out_file, ld_img_out, compression=1, /float, geotiff=geotiff
   
 ld_img_out_8bit = bytscl(ld_img_out, min=sc_ld_ev[0], max=sc_ld_ev[1])
 out_file = in_file+'_8bit.tif'
-if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-  print, ' Image already exists ('+out_file+')' $
-else $
-  write_tiff, out_file, ld_img_out_8bit, compression=1, bits_per_sample=8, geotiff=geotiff
+
+write_image_to_geotiff_bits_per_sample, overwrite, out_file, ld_img_out_8bit, 8
+;if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
+;  print, ' Image already exists ('+out_file+')' $
+;else $
+;  write_tiff, out_file, ld_img_out_8bit, compression=1, bits_per_sample=8, geotiff=geotiff
 
 end
