@@ -11,8 +11,6 @@ pro user_widget_do_nothing, event
   ; dummy pro
 end
 
-
-
 ; When user presses About button
 pro user_widget_about, event 
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
@@ -432,6 +430,85 @@ pro user_widget_toggle_shadow_model, event
   widget_control, widget_info(event.top, find_by_uname='skyilm_el_text'), sensitive=sens
 end
 
+function hash_visualizations_tab_widget_unames
+  hashmap = hash('Analytical hillshading', 'u_hls')
+  hashmap += hash('Hillshading from multiple directions', 'u_mhls')
+  hashmap += hash('PCA of hillshading', 'u_mhls_pca')
+  hashmap += hash('Slope gradient', 'u_slp')
+  hashmap += hash('Simple local relief model', 'u_slrm')
+  hashmap += hash('Sky-View Factor', 'u_svf')
+  hashmap += hash('Anisotropic Sky-View Factor', 'u_asvf')
+  hashmap += hash('Openness - Positive', 'u_open')
+  hashmap += hash('Openness - Negative', 'u_open_neg')
+  hashmap += hash('Sky illumination', 'u_skyilm')
+  hashmap += hash('Local dominance', 'u_locald')
+  return, hashmap
+end
+
+; For a visualization, used in mixer,
+; select checkbox in first tab ('Visualizations')
+pro select_used_visualization_mixer, visualization, hash_unames, event
+  uname = hash_unames[visualization]
+
+  ; check if visualization is already set, otherwise select it
+  id_checkbox = widget_info(event.top, find_by_uname=uname+'_checkbox')
+  ;if (widget_info(id_checkbox, /buttonset) EQ 0) then begin
+    widget_control, id_checkbox, set_button=1
+    id_params = widget_info(event.top, find_by_uname=uname+'_params')
+    widget_control, id_params, sensitive=1
+  ;endif
+end
+
+; For all visualizations that are NOT used in mixer,
+; deselect their checkboxes in first tab ('Visualizations')
+pro deselect_unused_visualizations_mixer, hash_unames, event
+  widget_control, event.top, get_uvalue = p_wdgt_state
+
+  foreach visualization, (*p_wdgt_state).vis_droplist do begin
+    if (visualization EQ '<none>') then continue
+
+    ; Check for visualization if it's used in mixer
+    vis_used = boolean(0)
+    foreach layer,(*p_wdgt_state).mixer_widgetIDs.layers do begin
+       selected_visualization = widget_info(layer.vis, /combobox_gettext)
+       ;visualization = (*p_wdgt_state).current_combination.layers[layer].vis
+           
+      if (selected_visualization EQ visualization) then vis_used = boolean(1)
+    endforeach
+
+    ; If visualization is not used, deselect it on first tab
+    if (vis_used EQ 0) then begin
+      uname = hash_unames[visualization]
+      ; de-select checkbox and parameters
+      id_checkbox = widget_info(event.top, find_by_uname=uname+'_checkbox')
+      widget_control, id_checkbox, set_button=0
+      id_params = widget_info(event.top, find_by_uname=uname+'_params')
+      widget_control, id_params, sensitive=0
+    endif
+  endforeach
+end
+
+; Trigger when 'Mix selected' button is pressed
+; For each visualization on layers
+pro mixer_select_checkboxes_visualizations_tab, event
+  widget_control, event.top, get_uvalue = p_wdgt_state  ; structure containing widget state
+  hash_unames = hash_visualizations_tab_widget_unames()
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+  
+  ; go through all visualizations, only use those, who will be used for layers 
+  for layer=0,nr_layers-1 do begin
+    visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+    ;visualization = (*p_wdgt_state).current_combination.layers[layer].vis
+    
+    if (visualization NE '<none>') then begin
+      select_used_visualization_mixer, visualization, hash_unames, event
+    endif
+  endfor
+  
+  ; deselect other visualizations?
+  deselect_unused_visualizations_mixer, hash_unames, event
+end
+
 function gen_vis_droplist
   ; Visualization methods
   vis_droplist = strarr(12)
@@ -661,7 +738,7 @@ pro user_widget_save_state, event
 
   ; user 
   (*p_wdgt_state).user_cancel = 0
-  user
+
 end
 
 pro user_widget_ok, event
@@ -826,6 +903,7 @@ pro user_widget_mixer_check_if_preset_combination, event
   endif
 end
 
+; Generate widgets for mixer's layers
 function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
   if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
   for i=0,nr_layers-1 do begin
@@ -835,7 +913,7 @@ function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layer
   return, create_struct('layers', widget_layers)
 end
 
-; Generate widgets for mixer's layers
+; Obsolete?
 function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
 
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
@@ -860,8 +938,11 @@ pro user_widget_mixer_ok, event
 
   ; Current combination - wiget configuration by layers
   user_widget_mixer_save_current_combination, event
+  
+  ; Transfer visualizations parameters between Mixer tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event
 
-  widget_control, event.top, /destroy
+  ;widget_control, event.top, /destroy
 end
 
 ; Called when user presses Add file(s) button
@@ -2046,32 +2127,15 @@ pro topo_advanced_vis, re_run=re_run
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
-  
-  ; Should be global variable!!
   nr_layers = 4 
   layers_tag = ['First layer:', 'Second layer', 'Third layer:', 'Fourth layer:' ]
   
-  ; TMP - uncomment after fixing 'user_widget_mixer_gen_widgets' function
-  ; mixer_widgetIDs = user_widget_mixer_gen_widgets(base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
-
-  
-
-;  ; TMP - delete after uncommenting the line above
-;  ; START user_widget_mixer_gen_widgets
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
   widget_layers = REPLICATE(widget_layer, nr_layers)
 
   mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)
-
-;  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
-;  for i=0,nr_layers-1 do begin
-;    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
-;  endfor
-;  
-;  mixer_widgetIDs = create_struct('layers', widget_layers)
-;  ;return, mixer_widgetIDs
-;  ; END user_widget_mixer_gen_widgets
   
+  ; Custom combination
   custom_combination_name = 'Custom combination'
   current_combination = user_widget_mixer_init_combination(mixer_widgetIDs, custom_combination_name) 
  
