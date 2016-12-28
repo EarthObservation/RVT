@@ -65,7 +65,7 @@ end
 
 PRO Topo_advanced_vis_hillshade, in_file, geotiff, $
     dem, resolution, $                    ;relief
-    in_hls_sun_a0, in_hls_sun_h0, $                 ;solar position
+    in_hls_sun_a0, in_hls_sun_h0, $       ;solar position
     sc_hls_ev, $
     suppress_output = suppress_output, $ ; 
     cosi = cosi, $  ;result of hillshade computation, is equal to !Null if suppress_output is not set    

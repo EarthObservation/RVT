@@ -738,8 +738,6 @@ pro user_widget_save_state, event
 
   ; user 
   (*p_wdgt_state).user_cancel = 0
-  
-  
 
 end
 
@@ -915,21 +913,41 @@ function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layer
   return, create_struct('layers', widget_layers)
 end
 
-; Obsolete?
-function user_widget_mixer_gen_widgets, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist
-
-  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
-  widget_layers = REPLICATE(widget_layer, nr_layers)
-
-  return, widget_layers
+; 
+pro mixer_input_files_to_layers, event
+  widget_control, event.top, get_uvalue = p_wdgt_state
   
-;  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
-;  for i=0,nr_layers-1 do begin
-;    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist)
-;  endfor
-;
-;  mixer_widgetIDs = create_struct('layers', widget_layers)
-;  return, mixer_widgetIDs
+  ; Get paths to input files
+  input_files = (*p_wdgt_state).output_files_array
+  format_ending = '.tif'
+
+  foreach value, input_files do begin
+    value += format_ending
+  endforeach
+  
+  ; Parameters for reading tiff
+  in_orientation = (*p_wdgt_state).in_orientation
+  ;in_geotiff = (*p_wdgt_state).in_geotiff
+  pixels_size_temp = (*p_wdgt_state).pixels_size_temp
+  ul_x_temp = (*p_wdgt_state).ul_x_temp
+  ul_y_temp = (*p_wdgt_state).ul_y_temp
+
+  ; Open the files into appropriate layers
+  blend_images = []
+  foreach layer, (*p_wdgt_state).current_combination.layers do begin
+    visualization = layer.vis
+    file_name = input_files[visualization] + format_ending
+ 
+    image = read_image_geotiff(file_name, $
+                                in_orientation, $ ;in_geotiff, $
+                                pixels_size_temp, $
+                                ul_x_temp, ul_y_temp)
+                                    
+    index = hash_vis_get_index[visualization]
+    blend_images[index] = image
+  endforeach
+  (*p_wdgt_state).blend_images = blend_images
+  
 end
 
 pro user_widget_mixer_ok, event
@@ -943,14 +961,18 @@ pro user_widget_mixer_ok, event
   ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
   mixer_select_checkboxes_visualizations_tab, event
   
+  ; Make visualizations
+  user_widget_ok, event
+  
   ; Only save state after checkboxes on 'Visualizations' tab are changed, too
-  user_widget_save_state, event
+  ;user_widget_save_state, event
 
   ;TO-DO
   ;prompt
+  
+  ; Get file names of produced files and open them for layering
+  mixer_input_files_to_layers, event
 
-  ;TO-DO - uncomment
-  ;widget_control, event.top, /destroy
 end
 
 ; Called when user presses Add file(s) button
@@ -2095,6 +2117,8 @@ pro topo_advanced_vis, re_run=re_run
  
   ; Mixer tab --------------------
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
+  
+  output_files_array = hash()
  
   ; --- Preset visualization combinations ---
   mixer_row_0 = widget_base(base_mixer, /row)
@@ -2271,6 +2295,13 @@ pro topo_advanced_vis, re_run=re_run
                             skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
+                        output_files_array:output_files_array, $
+;                        in_orientation:0, $        ; tiff reading parameters
+;                        in_geotiff:0, $
+;                        pixels_size_temp:0, $
+;                        ul_x_temp:0, $
+;                        ul_y_temp:0, $
+;                        blend_images:[], $
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
                         vis_droplist:vis_droplist, blend_droplist:blend_droplist, $
                         hash_vis_get_string:hash_vis_get_string, $
@@ -2379,7 +2410,7 @@ pro topo_advanced_vis, re_run=re_run
   in_skyilm_el = float(wdgt_state.skyilm_el) 
   
   ;Local domination
-  in_locald = byte(wdgt_state.locald_use) 
+  in_locald = byte(wdgt_state.locald_use)
   in_locald_min_rad = ulong(wdgt_state.locald_min_rad)
   in_locald_max_rad = ulong(wdgt_state.locald_max_rad)
 
@@ -2477,6 +2508,12 @@ pro topo_advanced_vis, re_run=re_run
     in_orientation = 1
     in_rotation = 7
     
+;    wdgt_state.in_orientation = in_orientation
+;    wdgt_state.in_geotiff = in_geotiff
+;    wdgt_state.pixels_size_temp = pixels_size_temp
+;    wdgt_state.ul_x_temp = ul_x_temp
+;    wdgt_state.ul_y_temp = ul_y_temp
+    
     if file_test(in_fname) eq 0 then begin
       errMsg = 'ERROR: Processing stopped! Selected TIF image was not found. '+ in_fname
       Get_lun, unit
@@ -2491,15 +2528,10 @@ pro topo_advanced_vis, re_run=re_run
       continue
     endif $
     else begin
-      heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
-      if size(in_geotiff, /type) ne 8 then begin
-        ;geotiff is not a structure type, try to read world file
-        world_temp = read_worldfile(in_fname, pixels_size_temp, ul_x_temp, ul_y_temp, /to_geotiff)
-        if world_temp gt 1 then begin
-          in_geotiff = {MODELPIXELSCALETAG: [pixels_size_temp, pixels_size_temp, 0d], $
-                        MODELTIEPOINTTAG: [0, 0, 0, ul_x_temp, ul_y_temp, 0]}
-        endif        
-      endif
+       heights = read_image_geotiff(in_fname, $
+                             in_orientation, $ ;in_geotiff, $
+                             pixels_size_temp, $
+                             ul_x_temp, ul_y_temp)
     endelse
     
     ; Define number of bands
@@ -2826,6 +2858,8 @@ pro topo_advanced_vis, re_run=re_run
     ;=== Start processing  ==================================================================================
     ;========================================================================================================
     
+    ; Array of output files
+    output_files_array = hash()
     
     starttime = Systime(/seconds)
     Print
@@ -2856,6 +2890,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Hillshading
     IF in_hls EQ 1 THEN BEGIN
       out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
+      output_files_array += hash('Analytical hillshading', out_file_hls)     
       Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
         heights, resolution, $                ;relief
         in_hls_sun_a, in_hls_sun_h, $                   ;solar position
@@ -2877,6 +2912,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Multiple hillshading
     IF in_mhls EQ 1 THEN BEGIN
       out_file_mhls = in_file + '_MULTI-HS_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
+      output_files_array += hash('Hillshading from multiple directions', out_file_mhls)
       Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
         heights, resolution, $                ;relief
         in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
@@ -2891,6 +2927,7 @@ pro topo_advanced_vis, re_run=re_run
     ;PCA hillshading
     IF in_mhls_pca EQ 1 THEN BEGIN
       out_file_mhls_pca = in_file + '_PCA_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
+      output_files_array += hash('PCA of hillshading', out_file_mhls_pca)
       Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
           heights, resolution, $     ;relief
           in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
@@ -2904,6 +2941,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Slope
     IF in_slp EQ 1 THEN BEGIN
       out_file_slp = in_file + '_SLOPE' + str_ve
+      output_files_array += hash('Slope gradient', out_file_slp)
       topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
         heights, resolution, $                    ;relief
         sc_slp_ev, $
@@ -2916,6 +2954,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Local releif
     IF in_slrm EQ 1 THEN BEGIN
       out_file_slrm = in_file + '_SLRM_R' + Strtrim(Long(in_slrm_r_max), 2) + str_ve
+      output_files_array += hash('Simple local relief model', out_file_slrm)
       topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
         heights, resolution, $                    ;relief
         in_slrm_r_max, sc_slrm_ev, $
@@ -2940,6 +2979,9 @@ pro topo_advanced_vis, re_run=re_run
       out_file_svf = [in_file + '_SVF_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve, $
                       in_file + '_SVF-A_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + '_A' + Strtrim(round(in_asvf_dir), 2) + str_aniso + str_noise + str_ve, $
                       in_file + '_OPEN-POS_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
+      if in_svf NE 0 then output_files_array += hash('Sky-View Factor', out_file_svf[0])
+      if in_asvf NE 0 then output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1])
+      if in_open NE 0 then output_files_array += hash('Openness - Positive', out_file_svf[2])
       Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
         heights, resolution, $                    ;elevation
         in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
@@ -2949,7 +2991,7 @@ pro topo_advanced_vis, re_run=re_run
         overwrite=overwrite
       ; ... display progress
       progress_bar -> Update, progress_curr
-      progress_curr += progress_step*(in_svf+in_open+in_asvf)
+      progress_curr += progress_step*(in_svf+in_open+in_asvf) 
     ENDIF
     
     ;Negative openess
@@ -2966,6 +3008,7 @@ pro topo_advanced_vis, re_run=re_run
       ENDCASE 
       heights = heights * (-1.)
       out_file_no = ['', '', in_file + '_OPEN-NEG_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
+      output_files_array += hash('Openness - Negative', out_file_no[2])
       Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
           heights, resolution, $                    ;elevation
           in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
@@ -2987,6 +3030,8 @@ pro topo_advanced_vis, re_run=re_run
       in_skyilm_shadow_dist = strtrim(ulong(in_skyilm_shadow_dist),2)
       if in_skyilm_shadow_dist eq 'unlimited' then out_file_skyilm += '_'+in_skyilm_shadow_dist+'_px' $
       else out_file_skyilm += '_'+in_skyilm_shadow_dist+'px'
+      
+      output_files_array += hash('Sky illumination', out_file_skyilm)
       if in_skyilm_shadow then begin
         Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
               heights, resolution, $
@@ -3008,6 +3053,7 @@ pro topo_advanced_vis, re_run=re_run
     ;Local dominance
     IF in_locald EQ 1 THEN BEGIN
       out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
+      output_files_array += hash('Local dominance', out_file_ld)
       topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
                                          heights, sc_ld_ev, $
                                          min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
@@ -3016,7 +3062,9 @@ pro topo_advanced_vis, re_run=re_run
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
     ENDIF
-   
+    
+    ; Save output files hashmap
+    wdgt_state.output_files_array = output_files_array
    
     ; End processing 
     endtime = Systime(/seconds)

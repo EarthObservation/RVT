@@ -26,6 +26,8 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade'
 resolve_routine, 'topo_advanced_vis_localrelief'
+;resolve_routine, 'topo_advanced_vis_mixer_blend_modes'
+resolve_routine, 'topo_advanced_vis_mixer'
 resolve_routine, 'topo_advanced_vis_multihillshade'
 resolve_routine, 'topo_advanced_vis_pcahillshade'
 resolve_routine, 'topo_advanced_vis_skyillumination'
@@ -36,6 +38,7 @@ resolve_routine, 'topo_morph_shade', /is_function
 resolve_routine, 'topo_advanced_vis'
 resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
+resolve_routine, 'image_access'
 resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
