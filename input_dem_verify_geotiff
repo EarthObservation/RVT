@@ -1,0 +1,82 @@
+;  =========================================================================================================
+;  === Select input DEM and verify geotiff information =====================================================
+;  =========================================================================================================
+;
+;  in_filter = ['*.tif;*.tiff']
+;  ;in_fname = 'e:\2projekti\IDL_SkyView\DEM\barje.tif'
+;;  in_fname = 'e:\2projekti\IDL_SkyView\DEM\dem_k_conv.tif'
+;  ;in_fname = 'D:\_arhiv\ZRC\2007\Sky\Kobarid\dmr4.tif'
+;  ;in_fname = 'e:\2projekti\IDL_AlesPolinom\input_ikonos_orto3.tif'
+;  in_path = 'd:\'
+;  dialog_title = 'Relief Visualization Toolbox, ver. ' + rvt_version + ' - Select input DEM (*.TIF): '
+;  in_fname = dialog_pickfile(title=dialog_title, filter=in_filter, path=in_path)
+;  print, '# Metadata of the input file'
+;  print, '     Input filename:    ', in_fname
+;  if in_fname eq '' then return
+;
+;  ; Open the file and read data
+;  in_orientation = 1
+;  in_rotation = 7
+;  heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
+;
+;  ; Define number of bands
+;  in_file_dims = size(heights, /dimensions)
+;  in_nb = n_elements(in_file_dims) > 2 ? in_file_dims[2] : 1
+;  if (in_nb ne 1) then begin
+;    print
+;    print, 'Processing stopped! Only one band is allowed for DEM files.'
+;    errMsg = dialog_message('Processing stopped! Only one band is allowed for DEM files.', /error, title='Error')
+;    return
+;  endif
+;
+;  ; Extract raster parameters
+;  heights_min = min(heights)
+;  heights_max = max(heights)
+;
+;  in_file_dims = size(heights, /dimensions)  ; due to rotation calculate again
+;  nrows = in_file_dims[1]
+;  ncols = in_file_dims[0]
+;
+;  in_geotiff_elements = n_elements(in_geotiff)
+;  if (in_geotiff_elements gt 0) then begin  ; in_geotiff defined
+;    in_geotiff_tags = strlowcase(tag_names(in_geotiff))
+;    tag_exists = where(in_geotiff_tags eq strlowcase('ModelPixelScaleTag'))
+;    if (tag_exists[0] eq -1) then begin  ; tif without tag ModelPixelScaleTag
+;      in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
+;      in_crs = 1
+;    endif else begin
+;      in_pixel_size = in_geotiff.ModelPixelScaleTag
+;    endelse
+;
+;    tag_exists = where(in_geotiff_tags eq strlowcase('GTModelTypeGeoKey'))
+;    if (tag_exists[0] gt -1) then begin ; geotiff with defined tag GTModelTypeGeoKey
+;      ; possible tag values: 1=projected, 2=geographic lat/lon, 3=geocentric (X,Y,Z)
+;      in_crs = in_geotiff.GTModelTypeGeoKey
+;      in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
+;    endif else begin  ; tif file (with tfw), or geotiff without tag GTModelTypeGeoKey
+;      ; distinction based on pixel size
+;      in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
+;    endelse
+;
+;  endif else begin  ; in_geotiff undefined
+;    in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
+;    in_crs = 1
+;  endelse
+;  ve_degrees = (in_crs eq 2) ? 1 : 0  ; units Degrees or Meters
+;
+;  ; Output to IDL console
+;  print, '     Number of columns: ', strtrim(ncols,2)
+;  print, '     Number of rows:    ', strtrim(nrows,2)
+;  print, '     Number of bands:   ', strtrim(in_nb,2)
+;  if (in_crs eq 2) then begin  ; geographic coordinate system
+;    print, format='("     Resolution (x, y): ", f0.6, ", ", f0.6)', $
+;    in_pixel_size[0], in_pixel_size[1]
+;    wtext_resolution = string(format='("     Resolution (x, y):   ", f0.6, ", ", f0.6)', $
+;    in_pixel_size[0], in_pixel_size[1])
+;  endif else begin   ; projected or geocentric coordinate system
+;    print, format='("     Resolution (x, y): ", f0.1, ", ", f0.1)', $
+;    in_pixel_size[0], in_pixel_size[1]
+;    wtext_resolution = string(format='("     Resolution (x, y):   ", f0.1, ", ", f0.1)', $
+;    in_pixel_size[0], in_pixel_size[1])
+;  endelse
+;  resolution = in_pixel_size[1]
