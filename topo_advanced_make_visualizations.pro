@@ -749,7 +749,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
 
     ; Save output files hashmap
     ;wdgt_state.output_files_array = output_files_array
-    (*p_wdgt_state).output_files_array = output_files_array
+    (*p_wdgt_state).output_files_array = hash(in_file, output_files_array)
 
     ; End processing
     endtime = Systime(/seconds)

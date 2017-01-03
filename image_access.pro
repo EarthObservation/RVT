@@ -1,3 +1,57 @@
+;; docformat = 'rst'   ; i.e. format of the documentation
+;
+; NAME:
+;       read_worldfile
+;
+; PURPOSE:
+;+
+;       This function reads the worldfile that corresponds to the image filename,
+;       and as parameters returns all three parameters (pixelsize, UL cocrdinates).
+;       The return value of the function is 1 if processing went ok, or 0 if
+;       worldfile was not found.
+;
+;       It can return also UL coordinates shifted for half pixel (i.e. compliant
+;       with geotiff tags.
+;       Note: TFW carries coordinates of the center of the UL pixel,
+;       while geotiff carries coordinates of the UL corner of the UL pixel.
+;
+;       Procedure gives output also if image file does not exist at all.
+;
+; :Categories:
+;       Utilities
+;
+; :Params:
+;       filename: in, required, type=string
+;           Input string containing full path (folder+filename incl. extension)
+;           of the input raster, or of the input world file.
+;       pixelsize: out, required, type=float
+;           Output float number containing resolution of the input raster.
+;       ul_x: out, required, type=double
+;           Output double number containing X (East) coordinate of UL corner.
+;       ul_y: out, required, type=double
+;           Output double number containing Y (North) coordinate of UL corner.
+;
+; :Keywords:
+;       to_geotiff: in, optional
+;           If this keyword is set, procedure applies half pixel shift the read UL coordinates,
+;           so the returned coordinates are suitable for direct use in geotiff tags.
+;
+; :Examples:
+;       Examples of function calls::
+;
+;           read_worldfile, filename, resolution, mosaic_x_ul, mosaic_y_ul
+;           raad_worldfile, 'e:\test.tif', resolution, ul_x_tag, ul_y_tag, /to_geotiff
+;
+; :Author:
+;       Maja Somrak (ZRC SAZU)
+;
+; :Copyright:
+;       ZRC SAZU (Novi trg 2, 1000 Ljubljana, Slovenia) & Space-SI (Askerceva 12, 1000 Ljubljana, Slovenia)
+;
+; :History:
+;       December 2016
+;-
+
 pro write_image_to_geotiff, overwrite, out_file, image_out
   if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
     print, ' Image already exists ('+out_file+')' $

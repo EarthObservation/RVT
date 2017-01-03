@@ -84,7 +84,7 @@ function render_all_images, layers, images
 
   for i=layers.length-1,0,-1 do begin
     ; if current layer has no visualization applied, skip
-    if (layers[i].vis EQ '<none>') then continue  
+    if (layers[i].vis EQ '<none>') then continue
 
     ; if current layer has visualization applied, but there has been no rendering of images yet,
     ; then current layer will be the initial value of rendered_image
@@ -94,24 +94,57 @@ function render_all_images, layers, images
     endif else begin
       ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
       rendered_image = render_images(images[i], rendered_image, layers[i].opacity)
-    endelse 
+    endelse
   endfor
   
   return, rendered_image
 end
 
-; 
-pro topo_advanced_vis_mixer_blend_modes, layers, images
+; For every input file
+pro mixer_render_layered_images, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
   
+  layers = (*p_wdgt_state).current_combination.layers
+
+  ; Images to blend
+  images = (*p_wdgt_state).mixer_layer_images
+
   ; Apply blending modes
   blended_images = images[*]
   for i=0,nr_layers-1 do begin
     if (visualization EQ '<none>') then continue
-    blended_images[i] = blend_image(layers[i].blend_mode, layers[i].images)
+    blended_images[i] = blend_image(layers[i].blend_mode, images[visualization])
   endfor
-  
+
   ; Rendering in order
   final_image = render_all_images(layers, blended_images)
 
+  ; Save image to file
+  overwrite = (*p_wdgt_state).overwrite
+  widgetID = (*p_wdgt_state).combination_radios[combination_index]
+  widget_control, widgetID, get_value = radio_label
+  radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_')
+
+  out_file = in_file + '_'+ radio_label
+  write_image_to_geotiff, overwrite, out_file, final_image
+end
+
+; 
+pro topo_advanced_vis_mixer_blend_modes, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  in_file_string = (*p_wdgt_state).selection_str
+
+  in_file_list = strsplit(in_file_string, '#', /extract)
+  for nF = 0,in_file_list.length-1 do begin
+    ;Input file
+    in_file = in_file_list[nF]
+    
+    ; Get file names of produced files and open them for layering
+    mixer_input_images_to_layers, event, in_file
+
+    ; Apply blend modes, opacity and render into a composed image
+    mixer_render_layered_images, event
+  endfor
+  
 end
 

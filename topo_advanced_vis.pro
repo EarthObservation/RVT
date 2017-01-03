@@ -894,30 +894,27 @@ function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layer
 end
 
 ; 
-pro mixer_input_files_to_layers, event
+pro mixer_input_images_to_layers, event, source_image_file
   widget_control, event.top, get_uvalue = p_wdgt_state
   
   ; Get paths to input files
-  input_files = (*p_wdgt_state).output_files_array
+  input_files = (*p_wdgt_state).output_files_array[source_image_file]
   format_ending = '.tif'
 
-;  foreach value, input_files do begin
-;    value += format_ending
-;  endforeach
-
   ; Open the files into appropriate layers
-  blend_images = []
+  mixer_layer_images = hash()
   layers = (*p_wdgt_state).current_combination.layers
   
   for i=0,layers.length-1 do begin
     visualization = layers[i].vis
+    (*p_wdgt_state).mixer_layer_images[i] = !NULL
+    
     if (visualization EQ '<none>') then continue
     
-    file_name = input_files[visualization] + format_ending
+    file_name = input_files[i] + format_ending
     image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation) 
-    blend_images += [blend_images, image]
+    mixer_layer_images += hash(visualization, image)
   endfor
-  (*p_wdgt_state).blend_images = blend_images
   
 end
 
@@ -937,21 +934,16 @@ pro user_widget_mixer_ok, event
   ; Only save state after checkboxes on 'Visualizations' tab are changed, too
   user_widget_save_state, event
 
-  
   ; Make visualizations
   topo_advanced_make_visualizations, p_wdgt_state, $
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
                                      (*p_wdgt_state).rvt_version, $
                                      (*p_wdgt_state).rvt_issue_year
-  
-  ; Get file names of produced files and open them for layering
-  mixer_input_files_to_layers, event
-  
-  ; Apply blend modes, opacity and render into a composed image
-  topo_advanced_mixer_blend_modes, event
-
-end
+                                     
+  ; Blending visualizations with mixer
+  topo_advanced_vis_mixer_blend_modes, event
+  end
 
 ; Called when user presses Add file(s) button
 pro user_select_files, event
@@ -1334,7 +1326,7 @@ pro user_widget_mixer_set_combination, event, index, combination_name
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
 
   IF (combination_name EQ (*p_wdgt_state).custom_combination_name) THEN BEGIN
-    print, 'Custom mixer combination/configuration  selected'
+    print, 'Custom mixer combination/configuration selected'
       IF ((*p_wdgt_state).combination_index NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
     ;IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
   ENDIF ELSE BEGIN
@@ -2021,6 +2013,7 @@ pro topo_advanced_vis, re_run=re_run
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
   output_files_array = hash()
+  mixer_layer_images = hash()
  
   ; --- Preset visualization combinations ---
   mixer_row_0 = widget_base(base_mixer, /row)
@@ -2160,6 +2153,7 @@ pro topo_advanced_vis, re_run=re_run
   user_cancel = 0   ; user
   
   selection_str = ''; Input files
+
   
   
   ; Create a pointer to annonymous structure, containing state of widgets
@@ -2198,13 +2192,13 @@ pro topo_advanced_vis, re_run=re_run
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         output_files_array:output_files_array, $
+                        mixer_layer_images:mixer_layer_images, $
                         selection_str:selection_str, $  ; selection string
                         in_orientation:1, $             ; tiff reading parameters
 ;                        in_geotiff:0, $
 ;                        pixels_size_temp:0, $
 ;                        ul_x_temp:0, $
 ;                        ul_y_temp:0, $
-                        blend_images:[], $
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
                         vis_droplist:vis_droplist, blend_droplist:blend_droplist, $
                         hash_vis_get_string:hash_vis_get_string, $
