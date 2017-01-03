@@ -44,12 +44,14 @@
 ;
 ; :Author:
 ;       Peter Pehani (ZRC SAZU)
+;       Maja Somrak (ZRC SAZU)
 ;
 ; :Copyright:
 ;       ZRC SAZU (Novi trg 2, 1000 Ljubljana, Slovenia) & Space-SI (Askerceva 12, 1000 Ljubljana, Slovenia)
 ;
 ; :History:
-;       October 2014
+;       October 2014 (Peter Pehani)
+;       December 2016 (updated by Maja Somrak)
 ;-
 function read_worldfile, filename, pixelsize, ul_x, ul_y, to_geotiff=to_geotiff
 

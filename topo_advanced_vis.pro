@@ -540,25 +540,15 @@ function gen_blend_droplist
   return, blend_droplist
 end
 
-function get_hash_strings, droplist
-  indexes = indgen(droplist.LENGTH)
-  dictionary = hash(droplist, indexes)
-  return, dictionary
-end
-
-function get_hash_indexes, droplist
-  indexes = indgen(droplist.LENGTH)
-  dictionary = hash(indexes, droplist)
-  return, dictionary
-end
-
 function gen_hash_strings, droplist
-  hash_map = get_hash_strings(droplist)
+  indexes = indgen(droplist.LENGTH)
+  hash_map = hash(droplist, indexes)
   return, hash_map
 end
 
 function gen_hash_indexes, droplist
-  hash_map = get_hash_indexes(droplist)
+  indexes = indgen(droplist.LENGTH)
+  hash_map = hash(indexes, droplist)
   return, hash_map
 end
 
@@ -566,22 +556,12 @@ function set_vis_max_limit, vis_droplist, max_limit
   limit = replicate(float(max_limit),vis_droplist.LENGTH)
   find_max = hash(vis_droplist, limit)
   return, find_max
-;  
-;  widget_control, event.top, get_uvalue=p_wdgt_state
-;  default_max = replicate(float(1000),(*p_wdgt_state).vis_droplist.LENGTH)
-;  find_max = hash(vis_droplist, default_max)
-;  return, find_max
 end
 
 function set_vis_min_limit, vis_droplist, min_limit
   limit = replicate(float(min_limit),vis_droplist.LENGTH)
   find_min = hash(vis_droplist, limit)
   return, find_min
-;  
-;  widget_control, event.top, get_uvalue=p_wdgt_state
-;  default_min = replicate(float(-1000),(*p_wdgt_state).vis_droplist.LENGTH)
-;  find_min = hash(vis_droplist, default_min)
-;  return, find_min
 end
 
 
@@ -921,21 +901,22 @@ pro mixer_input_files_to_layers, event
   input_files = (*p_wdgt_state).output_files_array
   format_ending = '.tif'
 
-  foreach value, input_files do begin
-    value += format_ending
-  endforeach
+;  foreach value, input_files do begin
+;    value += format_ending
+;  endforeach
 
   ; Open the files into appropriate layers
   blend_images = []
-  foreach layer, (*p_wdgt_state).current_combination.layers do begin
-    visualization = layer.vis
+  layers = (*p_wdgt_state).current_combination.layers
+  
+  for i=0,layers.length-1 do begin
+    visualization = layers[i].vis
+    if (visualization EQ '<none>') then continue
+    
     file_name = input_files[visualization] + format_ending
- 
-    image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation)
-                                    
-    index = hash_vis_get_index[visualization]
-    blend_images[index] = image
-  endforeach
+    image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation) 
+    blend_images += [blend_images, image]
+  endfor
   (*p_wdgt_state).blend_images = blend_images
   
 end
@@ -966,6 +947,9 @@ pro user_widget_mixer_ok, event
   
   ; Get file names of produced files and open them for layering
   mixer_input_files_to_layers, event
+  
+  ; Apply blend modes, opacity and render into a composed image
+  topo_advanced_mixer_blend_modes, event
 
 end
 
@@ -2220,7 +2204,7 @@ pro topo_advanced_vis, re_run=re_run
 ;                        pixels_size_temp:0, $
 ;                        ul_x_temp:0, $
 ;                        ul_y_temp:0, $
-;                        blend_images:[], $
+                        blend_images:[], $
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
                         vis_droplist:vis_droplist, blend_droplist:blend_droplist, $
                         hash_vis_get_string:hash_vis_get_string, $
