@@ -492,14 +492,15 @@ end
 ; For each visualization on layers
 pro mixer_select_checkboxes_visualizations_tab, event
   widget_control, event.top, get_uvalue = p_wdgt_state  ; structure containing widget state
+  
+  ; Select/deselect checkboxes on Visualizations tab according to Mixer's layers' configurations
   hash_unames = hash_visualizations_tab_widget_unames()
   nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
   
   ; go through all visualizations, only use those, who will be used for layers 
   for layer=0,nr_layers-1 do begin
     visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
-    ;visualization = (*p_wdgt_state).current_combination.layers[layer].vis
-    
+
     if (visualization NE '<none>') then begin
       select_used_visualization_mixer, visualization, hash_unames, event
     endif
@@ -743,6 +744,10 @@ pro user_widget_mixer_toggle_combination_radio, event
   ENDIF
 
   user_widget_mixer_validate_visualization_all, p_wdgt_state
+  
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event
+  
 end
 
 ; Compare two combination configurations (only layers' values, not the title!)
@@ -909,14 +914,14 @@ pro mixer_input_images_to_layers, event, source_image_file
   
   for i=0,layers.length-1 do begin
     visualization = layers[i].vis
-    (*p_wdgt_state).mixer_layer_images[i] = !NULL
     
     if (visualization EQ '<none>') then continue
     
-    file_name = input_files[i] + format_ending
-    image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation) 
+    file_name = input_files[visualization] + format_ending
+    image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation)
     mixer_layer_images += hash(visualization, image)
   endfor
+  (*p_wdgt_state).mixer_layer_images = mixer_layer_images
   
 end
 
@@ -926,6 +931,9 @@ pro user_widget_mixer_ok, event
 
   ; Combination index - radio buttons
   user_widget_mixer_save_combination_radio, event
+
+  ; Bottom layer validate
+  user_widget_mixer_bottom_layer_validate, p_wdgt_state
 
   ; Current combination - wiget configuration by layers
   user_widget_mixer_save_current_combination, event
@@ -1162,6 +1170,32 @@ function get_mixer_layer, event
   return, active_layer
 end
 
+; The lowest layer with visualization set (other than '<none>')
+; has max opacity and no blending mode
+pro user_widget_mixer_bottom_layer_validate, p_wdgt_state
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+  
+  no_blend_mode = 'Normal'
+  max_opacity = 100
+
+  for layer=nr_layers-1,0,-1 do begin
+    visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+    if (visualization EQ '<none>') then continue
+    ; set blend_mode to 'Normal'
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[no_blend_mode]
+    ; set opacity to max
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].opacity, set_value = max_opacity
+  
+    ; update in 'current_combination' 
+    (*p_wdgt_state).current_combination.layers[layer].blend_mode = no_blend_mode
+    (*p_wdgt_state).current_combination.layers[layer].opacity = max_opacity
+    
+    ; only set the first layer from the bottom, then exit  
+    return
+  endfor
+  
+end
+
 pro user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, sensitivity
   widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, sensitive = sensitivity
   widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, sensitive = sensitivity
@@ -1215,6 +1249,10 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
   
     ENDELSE
   endfor
+  
+  ; bottom layer: blend mode & opacity
+  user_widget_mixer_bottom_layer_validate, p_wdgt_state
+  
 end
 
 pro mixer_widget_change_vis, event
@@ -1230,6 +1268,10 @@ pro mixer_widget_change_vis, event
   
   user_widget_mixer_check_if_preset_combination, event
   user_widget_mixer_validate_visualization_all, p_wdgt_state
+  
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event
+  
 end
  
 pro mixer_widget_change_blend_mode, event
@@ -1245,15 +1287,6 @@ function get_widget_sibling, event, uname
   endforeach
   return, widget
 end
-
-;function get_widget_parent, event, uname
-;  child_widgets = widget_info(event.top, /all_children)
-;  foreach child, child_widgets do begin
-;    widget = widget_info(child, find_by_uname=uname)
-;    if (widget gt 0) then break
-;  endforeach
-;  return, widget
-;end
 
 function validate_number_limits, number, visualization, p_wdgt_state
  
@@ -1377,7 +1410,7 @@ function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, ble
   layer_blend_mode = widget_combobox(layer_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*], $
     uname=txt_layer+'_blend_mode', uvalue=layer_index)
   ;layer_opacity_text = widget_text(layer_row, event_pro='mixer_change_opacity_txt', value='0', scroll=0, xsize = 5, ysize = 1, /editable)
-  layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=0, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
+  layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=100, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
     uname=txt_layer+'_opacity', uvalue=layer_index) ;/SUPPRESS_VALUE)
     
   layer = create_struct(layer, 'vis', layer_vis)
@@ -2050,16 +2083,13 @@ pro topo_advanced_vis, re_run=re_run
   
   vis_min_default = vis_defaults.min_hash
   vis_max_default = vis_defaults.max_hash
-  
-  ;vis_max_default = get_vis_max_default()
-  ;vis_min_default = get_vis_max_default()
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
   nr_layers = 4 
   layers_tag = ['First layer:', 'Second layer', 'Third layer:', 'Fourth layer:' ]
   
-  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 0)
+  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
   widget_layers = REPLICATE(widget_layer, nr_layers)
 
   mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist)

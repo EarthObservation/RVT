@@ -41,10 +41,10 @@ function blend_multiply, active, background
   return, blended_image
 end
 
-; Blend
-; A combination of multiply and screen.Also the same as Hard Light commuted
+; Overlay
+; - combination of multiply and screen
 function blend_overlay, active, background
-  blended_image = background[*]
+  blended_image = background[*] ; copying layer to get the dimensions of blended_image right
   
   idx_GT = WHERE(background GT 0.5)
   idx_LE = WHERE(background LE 0.5)
@@ -52,33 +52,50 @@ function blend_overlay, active, background
   blended_image[idx_GT] = (1 - (1-2*(background[idx_GT]-0.5)) * (1-active[idx_GT]))
   blended_image[idx_LE] = ((2*background[idx_LE]) * active[idx_LE])
   return, blended_image
-  
-;  blended_image = target[*]
-;
-;  idx_GT = WHERE(target GT 0.5)
-;  idx_LE = WHERE(target LE 0.5)
-;
-;  blended_image[idx_GT] = (1 - (1-2*(target[idx_GT]-0.5)) * (1-blend[idx_GT]))
-;  blended_image[idx_LE] = ((2*target[idx_LE]) * blend[idx_LE])
-;  return, blended_image
 end
 
-; 
+function get_luminosity, image, L_channel_in_HLS
+  n_channels = size(image)
+
+  ; Monochrome (1) image
+  if (n_channels EQ 1) then begin
+    ; Luminosity of monochrome image IS the monochrome image itself
+    return, image
+  endif
+  ; Multichannel, RGB (3) image
+  if (n_channels EQ 3) then begin
+    COLOR_CONVERT, active, HLS_active, /RGB_HLS
+    return, HLS_active[L_channel_in_HLS]
+  endif
+end
+
 ; TO-DO:
 ; - check whih component is L (luminosity)
 ; - HLS structure
 ; 
-; Luminosity mode blends the lightness values while ignoring the color information
+; Luminosity 
+; - blends the lightness values while ignoring the color information
 function blend_luminosity, active, background
-  COLOR_CONVERT, active, HLS_target, /RGB_HLS
-  COLOR_CONVERT, background, HLS_blend, /RGB_HLS
-  L = 1 ;index of lightness
-  
-  HLS_blended_image = HLS_background[*]
-  HLS_blended_image[L] = HLS_active[L]
-  
-  COLOR_CONVERT, HLS_blended_image, blended_image, /HLS_RGB
-  return, blended_image
+   L_channel_in_HLS = 1
+   ;TO-DO - check
+   n_active = size(active)
+   n_background = size(background)
+
+   ; Multichannel, RGB (3) background layer [n_background = 3]
+   if (n_background EQ 3) then begin
+      COLOR_CONVERT, background, HLS_background, /RGB_HLS
+
+      HLS_blended_image = HLS_background[*]
+      HLS_blended_image[L] = get_luminosity(active, L_channel_in_HLS)
+      
+      COLOR_CONVERT, HLS_blended_image, blended_image, /HLS_RGB
+      return, blended_image
+   endif
+   ; Replacing luminosity of single channel, monochrome image
+   ; means replacing the monochrome image completely
+   if (n_background EQ 1) then begin
+      return, get_luminosity(active, L_channel_in_HLS)
+   endif
 end
 
 ; Screen
@@ -114,16 +131,17 @@ function render_all_images, layers, images
 
   for i=layers.length-1,0,-1 do begin
     ; if current layer has no visualization applied, skip
-    if (layers[i].vis EQ '<none>') then continue
+    visualization = layers[i].vis
+    if (visualization EQ '<none>') then continue
 
     ; if current layer has visualization applied, but there has been no rendering of images yet,
     ; then current layer will be the initial value of rendered_image
     if (rendered_image EQ []) then begin
-      rendered_image = images[i]
+      rendered_image = images[visualization]
       continue
     endif else begin
       ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
-      active = images[i]
+      active = images[visualization]
       background = rendered_image
       blend_mode = layers[i].blend_mode
       opacity = layers[i].opacity
@@ -136,36 +154,34 @@ function render_all_images, layers, images
   return, rendered_image
 end
 
-; For every input file
-pro mixer_render_layered_images, event
-  widget_control, event.top, get_uvalue=p_wdgt_state
-  
-  layers = (*p_wdgt_state).current_combination.layers
+; Save rendered image (blended) to file
+pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
 
-  ; Images to blend
-  images = (*p_wdgt_state).mixer_layer_images
-
-  ; Apply blending modes
-  blended_images = images[*]
-  for i=0,nr_layers-1 do begin
-    if (visualization EQ '<none>') then continue
-    blended_images[i] = blend_image(layers[i].blend_mode, images[visualization])
-  endfor
-
-  ; Rendering in order
-  final_image = render_all_images(layers, blended_images)
-
-  ; Save image to file
   overwrite = (*p_wdgt_state).overwrite
-  widgetID = (*p_wdgt_state).combination_radios[combination_index]
+  widgetID = (*p_wdgt_state).combination_radios[(*p_wdgt_state).combination_index]
   widget_control, widgetID, get_value = radio_label
+  
   radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_')
-
-  out_file = in_file + '_'+ radio_label
+  radio_label_tif = '_'+radio_label+'.tif'
+  out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
   write_image_to_geotiff, overwrite, out_file, final_image
 end
 
-; 
+; For every input file
+pro mixer_render_layered_images, event, in_file
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  layers = (*p_wdgt_state).current_combination.layers
+  images = (*p_wdgt_state).mixer_layer_images
+
+  ; Rendering in order
+  final_image = render_all_images(layers, images)
+
+  ; Save image to file
+  write_rendered_image_to_file, p_wdgt_state, in_file, final_image
+end
+
+
 pro topo_advanced_vis_mixer_blend_modes, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   in_file_string = (*p_wdgt_state).selection_str
@@ -180,7 +196,7 @@ pro topo_advanced_vis_mixer_blend_modes, event
     mixer_input_images_to_layers, event, in_file
 
     ; Apply blend modes, opacity and render into a composed image
-    mixer_render_layered_images, event
+    mixer_render_layered_images, event, in_file
   endfor
   
 end

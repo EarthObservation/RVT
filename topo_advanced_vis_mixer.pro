@@ -63,7 +63,7 @@ pro topo_advanced_vis_mixer
 end
 
 function create_new_mixer_layer
-  return, create_struct('vis', '<none>', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 0)
+  return, create_struct('vis', '<none>', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
 end
 
 function extract_parameter_string, parameters, parameter_name

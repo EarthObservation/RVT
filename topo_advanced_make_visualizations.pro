@@ -751,7 +751,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;wdgt_state.output_files_array = output_files_array
     (*p_wdgt_state).output_files_array = hash(in_file, output_files_array)
     ;(*p_wdgt_state).output_files_array = hash(in_fname, output_files_array)
-    print, 'File name, key put in hash:', in_file
+    print, 'File name, key put in hash: ', in_file
 
     ; End processing
     endtime = Systime(/seconds)
