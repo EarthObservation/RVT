@@ -30,46 +30,76 @@
 ;       December 2016
 ;-
 
-function blend_image_multiply, blended_image
+; Normal
+function blend_normal, active, background
+  return, active
+end
 
+; Multiply
+function blend_multiply, active, background
+  blended_image = active * background 
   return, blended_image
 end
 
-function blend_image_overlay, blended_image
+; Blend
+; A combination of multiply and screen.Also the same as Hard Light commuted
+function blend_overlay, active, background
+  blended_image = background[*]
+  
+  idx_GT = WHERE(background GT 0.5)
+  idx_LE = WHERE(background LE 0.5)
+  
+  blended_image[idx_GT] = (1 - (1-2*(background[idx_GT]-0.5)) * (1-active[idx_GT]))
+  blended_image[idx_LE] = ((2*background[idx_LE]) * active[idx_LE])
+  return, blended_image
+  
+;  blended_image = target[*]
+;
+;  idx_GT = WHERE(target GT 0.5)
+;  idx_LE = WHERE(target LE 0.5)
+;
+;  blended_image[idx_GT] = (1 - (1-2*(target[idx_GT]-0.5)) * (1-blend[idx_GT]))
+;  blended_image[idx_LE] = ((2*target[idx_LE]) * blend[idx_LE])
+;  return, blended_image
+end
 
+; 
+; TO-DO:
+; - check whih component is L (luminosity)
+; - HLS structure
+; 
+; Luminosity mode blends the lightness values while ignoring the color information
+function blend_luminosity, active, background
+  COLOR_CONVERT, active, HLS_target, /RGB_HLS
+  COLOR_CONVERT, background, HLS_blend, /RGB_HLS
+  L = 1 ;index of lightness
+  
+  HLS_blended_image = HLS_background[*]
+  HLS_blended_image[L] = HLS_active[L]
+  
+  COLOR_CONVERT, HLS_blended_image, blended_image, /HLS_RGB
   return, blended_image
 end
 
-function blend_image_luminosity, blended_image
-
+; Screen
+function blend_screen, active, background
+  blended_image = 1 - (1-active) * (1-background)
   return, blended_image
 end
 
-function blend_image_screen, blended_image
-
-  return, blended_image
-end
-
-function blend_image, blend_mode, old_image
+function blend_images, blend_mode, active, background
   case blend_mode of
-    'Multiply': return, blend_image_multiply(old_image)
-    'Overlay': return, blend_image_overlay(old_image)
-    'Luminosity': return, blend_image_luminosity(old_image)
-    'Screen': return, blend_image_screen(old_image)
-    ELSE: return, old_image
+    'Multiply': return, blend_multiply(active, background)
+    'Overlay': return, blend_overlay(active, background)
+    'Luminosity': return, blend_luminosity(active, background)
+    'Screen': return, blend_screen(active, background)
+    ELSE: return, blend_normal(active, background)
   endcase
 end
 
 ; Rendering images from two layers into one
-; 
-;  :Params:
-;       A_image - Active layer image (top)
-;       B_image - Background layer image (bottom)
-;       opacity - opacity of Active layer image
-; Output:
-;       rendered_image
-function render_images, A_image, B_image, opacity
-  rendered_image = A_image * opacity + B_image * (1 - opacity)
+function render_images, active, background, opacity
+  rendered_image = active * opacity + background * (1 - opacity)
   return, rendered_image
 end
 
@@ -93,7 +123,13 @@ function render_all_images, layers, images
       continue
     endif else begin
       ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
-      rendered_image = render_images(images[i], rendered_image, layers[i].opacity)
+      active = images[i]
+      background = rendered_image
+      blend_mode = layers[i].blend_mode
+      opacity = layers[i].opacity
+      
+      top = blend_images(blend_mode, active, background)
+      rendered_image = render_images(top, background, opacity)
     endelse
   endfor
   
@@ -138,6 +174,7 @@ pro topo_advanced_vis_mixer_blend_modes, event
   for nF = 0,in_file_list.length-1 do begin
     ;Input file
     in_file = in_file_list[nF]
+    print, 'File name:', in_file
     
     ; Get file names of produced files and open them for layering
     mixer_input_images_to_layers, event, in_file

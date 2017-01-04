@@ -898,7 +898,9 @@ pro mixer_input_images_to_layers, event, source_image_file
   widget_control, event.top, get_uvalue = p_wdgt_state
   
   ; Get paths to input files
-  input_files = (*p_wdgt_state).output_files_array[source_image_file]
+  in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
+  in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
+  input_files = (*p_wdgt_state).output_files_array[in_file]
   format_ending = '.tif'
 
   ; Open the files into appropriate layers
