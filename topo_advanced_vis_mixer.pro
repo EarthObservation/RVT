@@ -63,7 +63,37 @@ pro topo_advanced_vis_mixer
 end
 
 function create_new_mixer_layer
-  return, create_struct('vis', '<none>', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+  return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+end
+
+function limit_combinations, all_combinations, nr_combinations
+  if (nr_combinations LT all_combinations.length) then begin
+    ; TO-DO: What if there are too many combinations? Now it just cuts them off after fourth
+    all_combinations = all_combinations[0:nr_combinations-1]
+  endif
+  return, all_combinations
+end
+
+function combination_bottom_layer_validate, combination
+  no_blend_mode = 'Normal'
+  max_opacity = 100
+
+  for layer=combination.layers.length-1,0,-1 do begin
+    visualization = combination.layers[layer].vis
+    if (visualization EQ '<none>') then continue
+    combination.layers[layer].blend_mode = no_blend_mode  ; set blend_mode to 'Normal'
+    combination.layers[layer].opacity = max_opacity       ; set opacity to max
+    break
+  endfor
+
+  return, combination
+end
+
+function all_combinations_bottom_layer_validate, all_combinations
+  for i=0,all_combinations.length-1 do begin
+    all_combinations[i] = combination_bottom_layer_validate(all_combinations[i])
+  endfor
+  return, all_combinations
 end
 
 function extract_parameter_string, parameters, parameter_name
@@ -74,14 +104,15 @@ function extract_parameter_string, parameters, parameter_name
   value = 1
 
   ; indexes in array of line splits for parameters
-  keys = ['layer', 'vis', 'min', 'max', 'blend_mode', 'opacity']
-  indexes = [0,1,2,3,4,5]
+  keys = ['layer', 'vis', 'norm', 'min', 'max', 'blend_mode', 'opacity']
+  indexes = [0,1,2,3,4,5,6]
   idx = HASH(keys, indexes)
   
   pair = strsplit(parameters[idx[parameter_name]], ':', /EXTRACT)
-  foreach str, pair do begin
-    str = strtrim(str, 2)
-  endforeach
+; unnecessary
+;  foreach str, pair do begin
+;    str = strtrim(str, 2)
+;  endforeach
   
   if (strtrim(pair[parameter],2) EQ parameter_name AND (pair.length GT 1)) then return, strtrim(pair[value],2)
   print, 'There is no value given for a selected parameter!'
@@ -96,6 +127,8 @@ function parse_layer, parameters
   combination_layer.vis = extract_parameter_string(parameters, 'vis')
 
   if (combination_layer.vis NE '<none>') then begin
+    combination_layer.normalization = extract_parameter_string(parameters, 'norm')
+    if (combination_layer.normalization EQ '') then combination_layer.normalization = 'Lin'
     combination_layer.min = float(extract_parameter_string(parameters, 'min'))
     combination_layer.max = float(extract_parameter_string(parameters, 'max'))
     combination_layer.blend_mode = extract_parameter_string(parameters, 'blend_mode')
@@ -217,6 +250,8 @@ function parse_combinations_from_lines, lines
       endif
   endif
   
+  all_combinations = all_combinations_bottom_layer_validate(all_combinations)
+  
   return, all_combinations
 end
 
@@ -250,15 +285,6 @@ function read_default_min_max_from_file, file_path
     endif
   endif
   return, 0
-end
-
-
-function limit_combinations, all_combinations, nr_combinations  
-  if (nr_combinations LT all_combinations.length) then begin
-   ; TO-DO: What if there are too many combinations? Now it just cuts them off after fourth
-    all_combinations = all_combinations[0:nr_combinations-1]
-  endif
-  return, all_combinations
 end
 
 

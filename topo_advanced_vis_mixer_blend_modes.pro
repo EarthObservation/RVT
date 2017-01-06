@@ -194,6 +194,9 @@ pro topo_advanced_vis_mixer_blend_modes, event
     
     ; Get file names of produced files and open them for layering
     mixer_input_images_to_layers, event, in_file
+    
+    ; Normalize images on all layers
+    mixer_normalize_images_on_layers, event
 
     ; Apply blend modes, opacity and render into a composed image
     mixer_render_layered_images, event, in_file

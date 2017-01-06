@@ -41,7 +41,7 @@
 
 function calculate_hillshade, geotiff, $
                     dem, resolution, $                    ;relief
-                    in_hls_sun_a0, in_hls_sun_h0, $                 ;solar position
+                    in_hls_sun_a0, in_hls_sun_h0, $       ;solar position
                     sc_hls_ev, $
                     suppress_output = suppress_output, $ ;
                     cosi = cosi  ;result of hillsh

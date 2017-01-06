@@ -1,0 +1,15 @@
+
+===============================================================================================
+Relief Visualization Toolbox (version 1.3); (c) ZRC SAZU, 2016
+===============================================================================================
+
+
+
+Processing info about conversion of input image
+===============================================================================================
+
+# Conversion metadata
+     Input filename:     C:\Code\GitHub\RVT-IDL\settings\temp_settings.sav
+     Output filename:    C:\Code\GitHub\RVT-IDL\settings\temp_settings.tif
+     Selected format:    GeoTIFF
+
