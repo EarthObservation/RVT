@@ -98,7 +98,6 @@ pro user_widget_toggle_mhls_pca_checkbox, event
 end
 
 
-
 ; When user un/checks SVF (prerequisite also for Anisotropic SVF, Openness and Negative openness)
 pro user_widget_toggle_svf_checkbox, event
   ; get status the SVF checkbox itself, and id of its parameters
@@ -121,7 +120,6 @@ pro user_widget_toggle_svf_checkbox, event
     endif
   endelse  
 end
-
 
 
 ; When user un/checks Anisotropic SVF (dependent on SVF)
@@ -175,7 +173,6 @@ pro user_widget_toggle_open_checkbox, event
     endif
   endelse  
 end
-
 
 
 ; When user un/checks Negative openness (dependent on SVF)
@@ -909,10 +906,32 @@ pro mixer_input_images_to_layers, event, source_image_file
     
     file_name = input_files[visualization] + format_ending
     image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation)
+    dim = size(image, /N_DIMENSIONS)
+    
+    
+    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
+    ; btw, grayscale has dim = 2, but has only 1 channel
+    if (dim EQ 3) then begin
+      idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
+      if (~(count GT 0 AND max(image) GT 1 AND max(image) < 256)) then continue
+      (*p_wdgt_state).is_blend_image_rbg = boolean(1)
+      
+      ; Extract the channels (as images) from the RGB image.
+      redChannel = REFORM(image[0, *, *])
+      greenChannel = REFORM(image[1, *, *])
+      blueChannel = REFORM(image[2, *, *])
+      
+      rf_image = [[redChannel], [greenChannel], [blueChannel]]
+      
+      grayscaleImage = BYTE(0.299*FLOAT(redChannel) + 0.587*FLOAT(redChannel) + 0.114*FLOAT(blueChannel))
+      
+      image = rf_image
+      ;image = RGB_to_float(rf_image)
+    endif
+    
     mixer_layer_images += hash(visualization, image)
   endfor
   (*p_wdgt_state).mixer_layer_images = mixer_layer_images
-  
 end
 
 pro user_widget_mixer_ok, event
@@ -2045,6 +2064,8 @@ pro topo_advanced_vis, re_run=re_run
   
   output_files_array = hash()
   mixer_layer_images = hash()
+  mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
+  is_blend_image_rbg = boolean(0)
  
   ; --- Preset visualization combinations ---
   mixer_row_0 = widget_base(base_mixer, /row)
@@ -2085,7 +2106,7 @@ pro topo_advanced_vis, re_run=re_run
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
   nr_layers = 4 
-  layers_tag = ['First:', 'Second:', 'Third:', 'Fourth:' ]
+  layers_tag = ['First:', 'Second:', 'Third:', 'Fourth:']
   
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
   widget_layers = REPLICATE(widget_layer, nr_layers)
@@ -2223,6 +2244,7 @@ pro topo_advanced_vis, re_run=re_run
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         output_files_array:output_files_array, $
                         mixer_layer_images:mixer_layer_images, $
+                        mixer_layers_rgb:mixer_layers_rgb, $
                         selection_str:selection_str, $  ; selection string
                         in_orientation:1, $             ; tiff reading parameters
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
@@ -2244,6 +2266,7 @@ pro topo_advanced_vis, re_run=re_run
                         mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $
                         all_combinations:all_combinations, combination_index:combination_index, $
+                        is_blend_image_rbg:is_blend_image_rbg, $
                         temp_sav:temp_sav, rvt_version:rvt_version, rvt_issue_year:rvt_issue_year}, $
                         /no_copy)  ; data stored in heap only
 

@@ -30,21 +30,52 @@
 ;       January 2017
 ;-
 
-function topo_advanced_normalization, image, min, max, normalization
-   if (normalization EQ 'abs') then begin
-      idx_min = WHERE(image LT min)
-      idx_max = WHERE(image GT max)
-      image[idx_min] = min
-      image[idx_max] = max
-   endif 
-   if (normalization EQ 'rel') then begin
-      offset = min(image) - min
-      image_span = float(max(image) - min(image))
-      final_span = float(max - min)
-      image = (image - offset) * (final_span / image_span)
-   endif
+function normalize_lin, image, min, max
+    ; Linear cut off
+    idx_min = WHERE(image LT min)
+    idx_max = WHERE(image GT max)
+    image[idx_min] = min
+    image[idx_max] = max
+    
+    ; Stretch to 0.0-1.0 interval
+    image = float(image - min) / (float(max-min))
 
-   return, image
+    return, image
+end
+
+function normalize_perc, image, perc
+    distribution = cgPercentiles(data, Percentiles=[perc, 1.0-perc])
+    min = distribution[0]
+    max = distribution[1]
+    
+    return, normalize_lin(image, min, max)
+end
+
+function topo_advanced_normalization, image, min, max, normalization 
+    
+    if (normalization EQ 'Lin') then begin
+      equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
+      equ_image_2 =  normalize_lin(image, min, max)
+    endif
+    if (normalization EQ 'Perc') then begin
+      equ_image = HIST_EQUAL(image, PERCENT=max, TOP=1.0)
+      equ_image_2 =  normalize_perc(image, max)
+    endif
+    
+;   if (normalization EQ 'abs') then begin
+;      idx_min = WHERE(image LT min)
+;      idx_max = WHERE(image GT max)
+;      image[idx_min] = min
+;      image[idx_max] = max
+;   endif 
+;   if (normalization EQ 'rel') then begin
+;      offset = min(image) - min
+;      image_span = float(max(image) - min(image))
+;      final_span = float(max - min)
+;      image = (image - offset) * (final_span / image_span)
+;   endif
+
+   return, equ_image_2
 end
 
 ; Iterate through images on layers in widget_state
@@ -55,15 +86,28 @@ pro mixer_normalize_images_on_layers, event
     layers = (*p_wdgt_state).current_combination.layers
     images = (*p_wdgt_state).mixer_layer_images
  
+    idx = WHERE(layers.vis NE '<none>', count)
     nr_layers = layers.length
-    if (images.length NE nr_layers) then print, 'Error: Number of layers does not match number of images!'
+    if (images.length NE count) then print, 'Error: Number of layers does not match number of images!'
     
     for i=0,nr_layers-1 do begin
-      image = images[i]
-      min = layers[i].min
-      max = layers[i].min
+      visualization = layers[i].vis
+      if (visualization EQ '<none>') then continue
+      image = images[visualization]
+      min = float(layers[i].min)
+      max = float(layers[i].max)
       normalization = layers[i].normalization
-      image = topo_advanced_normalization(image, min, max, normalization) ; is result the same as with line below? 
-      ;(*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min, max, normalization)
+
+      (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min, max, normalization)
     endfor
 end
+
+;function RGB_to_float, rgb
+;    float_value = float(rgb) / 255.0
+;    return, float_value
+;end
+;
+;function float_to_RGB, float_value
+;    rgb = fix(float_value * 255)
+;    return, rgb
+;end

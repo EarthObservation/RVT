@@ -129,10 +129,25 @@ function parse_layer, parameters
   if (combination_layer.vis NE '<none>') then begin
     combination_layer.normalization = extract_parameter_string(parameters, 'norm')
     if (combination_layer.normalization EQ '') then combination_layer.normalization = 'Lin'
+    
+;    min_str = extract_parameter_string(parameters, 'min')
+;    if (min_str NE '') then begin
+;      combination_layer.min = float(min_str)
+;     endif else begin
+;        combination_layer.min = get_min_default(combination_layer.vis, )
+;     endelse
+;    max_str = extract_parameter_string(parameters, 'max')
+;     if (max_str NE '') then begin
+;       combination_layer.max = float(min_str)
+;     endif else begin
+;       combination_layer.max = get_max_default(combination_layer.vis, )
+;     endelse
+
     combination_layer.min = float(extract_parameter_string(parameters, 'min'))
     combination_layer.max = float(extract_parameter_string(parameters, 'max'))
+    
     combination_layer.blend_mode = extract_parameter_string(parameters, 'blend_mode')
-    if (combination_layer.blend_mode EQ '') then combination_layer.blend_mode = 'Normal' 
+    if (combination_layer.blend_mode EQ '') then combination_layer.blend_mode = 'Normal'
     combination_layer.opacity = fix(extract_parameter_string(parameters, 'opacity'))
   endif
   

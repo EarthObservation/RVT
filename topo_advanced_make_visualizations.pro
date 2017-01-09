@@ -596,7 +596,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Multiple hillshading
     IF in_mhls EQ 1 THEN BEGIN
       out_file_mhls = in_file + '_MULTI-HS_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
-      output_files_array += hash('Hillshading from multiple directions', out_file_mhls)
+      output_files_array += hash('Hillshading from multiple directions', out_file_mhls + '_RGB')
       Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
         heights, resolution, $                ;relief
         in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
@@ -611,7 +611,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;PCA hillshading
     IF in_mhls_pca EQ 1 THEN BEGIN
       out_file_mhls_pca = in_file + '_PCA_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
-      output_files_array += hash('PCA of hillshading', out_file_mhls_pca)
+      output_files_array += hash('PCA of hillshading', out_file_mhls_pca + '_RGB')
       Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
         heights, resolution, $     ;relief
         in_mhls_n_dir, in_mhls_sun_h, $  ;solar position

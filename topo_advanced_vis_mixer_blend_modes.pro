@@ -35,9 +35,15 @@ function blend_normal, active, background
   return, active
 end
 
+; Screen
+function blend_screen, active, background
+  blended_image = 1 - (1-active) * (1-background)
+  return, blended_image
+end
+
 ; Multiply
 function blend_multiply, active, background
-  blended_image = active * background 
+  blended_image = active * background
   return, blended_image
 end
 
@@ -45,12 +51,52 @@ end
 ; - combination of multiply and screen
 function blend_overlay, active, background
   blended_image = background[*] ; copying layer to get the dimensions of blended_image right
-  
+
   idx_GT = WHERE(background GT 0.5)
   idx_LE = WHERE(background LE 0.5)
-  
+
   blended_image[idx_GT] = (1 - (1-2*(background[idx_GT]-0.5)) * (1-active[idx_GT]))
   blended_image[idx_LE] = ((2*background[idx_LE]) * active[idx_LE])
+
+  return, blended_image
+end
+
+function equation_blend, blend_mode, active, background 
+    case blend_mode of
+      'Screen': return, blend_screen(active, background)
+      'Multiply': return, blend_multiply(active, background)
+      'Overlay': return, blend_overlay(active, background)
+    endcase
+end
+
+; For images that could be either grayscale or RGB
+function blend_multi_dim_images, blend_mode, active, background
+  a_rgb = boolean(size(active, /N_DIMENSIONS) EQ 3)
+  b_rgb = boolean(size(background, /N_DIMENSIONS) EQ 3)
+
+  blended_image = background[*]
+  if (a_rgb) then begin
+    if (b_rgb) then begin
+      for i=0,2 do begin
+        blended_image[i] = equation_blend(blend_mode, active[i], background[i])
+      endfor
+    endif
+    if (~b_rgb) then begin
+      blended_image = active[*]
+      for i=0,2 do begin
+        blended_image[i] = equation_blend(blend_mode, active[i], background)
+      endfor
+    endif
+  endif
+  if (b_rgb) then begin
+    for i=0,2 do begin
+      blended_image[i] = equation_blend(blend_mode, active, background[i])
+    endfor
+  endif
+  if (~a_rgb AND ~b_rgb) then begin
+    blended_image = equation_blend(blend_mode, active, background)
+  endif
+  
   return, blended_image
 end
 
@@ -98,18 +144,15 @@ function blend_luminosity, active, background
    endif
 end
 
-; Screen
-function blend_screen, active, background
-  blended_image = 1 - (1-active) * (1-background)
-  return, blended_image
-end
-
 function blend_images, blend_mode, active, background
   case blend_mode of
-    'Multiply': return, blend_multiply(active, background)
-    'Overlay': return, blend_overlay(active, background)
+    'Multiply': return, blend_multi_dim_images(blend_mode, active, background) 
+    'Overlay': return, blend_multi_dim_images(blend_mode, active, background) 
+    'Screen': return, blend_multi_dim_images(blend_mode, active, background) 
+;    'Multiply': return, blend_multiply(active, background)
+;    'Overlay': return, blend_overlay(active, background)
+;    'Screen': return, blend_screen(active, background)
     'Luminosity': return, blend_luminosity(active, background)
-    'Screen': return, blend_screen(active, background)
     ELSE: return, blend_normal(active, background)
   endcase
 end
@@ -167,6 +210,15 @@ pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   write_image_to_geotiff, overwrite, out_file, final_image
 end
 
+function merge_channels, image
+  red = image[0]
+  green = image[1]
+  blue = image[2]
+  merged_image = [3, [red, green, blue]]
+  
+  return, merged_image
+end
+
 ; For every input file
 pro mixer_render_layered_images, event, in_file
   widget_control, event.top, get_uvalue=p_wdgt_state
@@ -176,6 +228,11 @@ pro mixer_render_layered_images, event, in_file
 
   ; Rendering in order
   final_image = render_all_images(layers, images)
+  
+  ; If RBG, put all channels into one image
+  if (size(final_image, /N_DIMENSIONS) EQ 3) then begin
+    merged_image = merge_channels(final_image)
+  endif
 
   ; Save image to file
   write_rendered_image_to_file, p_wdgt_state, in_file, final_image
