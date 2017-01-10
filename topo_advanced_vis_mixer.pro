@@ -62,13 +62,20 @@ pro topo_advanced_vis_mixer
 
 end
 
-function create_new_mixer_layer
+function create_new_mixer_layer, VISUALIZATION = visualization, BLEND_MODE = blend_mode, OPACITY = opacity, p_wdgt_state = p_wdgt_state
+  if (KEYWORD_SET(VISUALIZATION)) then begin
+    if (~KEYWORD_SET(BLEND_MODE)) then blend_mode = 'Normal'
+    if (~KEYWORD_SET(OPACITY)) then opacity = 100
+    min = get_min_default(visualization, p_wdgt_state)
+    max = get_max_default(visualization, p_wdgt_state)
+    normalization =  get_norm_default(visualization, p_wdgt_state)
+    return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
+  endif
   return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
 end
 
 function limit_combinations, all_combinations, nr_combinations
   if (nr_combinations LT all_combinations.length) then begin
-    ; TO-DO: What if there are too many combinations? Now it just cuts them off after fourth
     all_combinations = all_combinations[0:nr_combinations-1]
   endif
   return, all_combinations
@@ -127,24 +134,29 @@ function parse_layer, parameters
   combination_layer.vis = extract_parameter_string(parameters, 'vis')
 
   if (combination_layer.vis NE '<none>') then begin
-    combination_layer.normalization = extract_parameter_string(parameters, 'norm')
-    if (combination_layer.normalization EQ '') then combination_layer.normalization = 'Lin'
     
-;    min_str = extract_parameter_string(parameters, 'min')
-;    if (min_str NE '') then begin
-;      combination_layer.min = float(min_str)
-;     endif else begin
-;        combination_layer.min = get_min_default(combination_layer.vis, )
-;     endelse
-;    max_str = extract_parameter_string(parameters, 'max')
-;     if (max_str NE '') then begin
-;       combination_layer.max = float(min_str)
-;     endif else begin
-;       combination_layer.max = get_max_default(combination_layer.vis, )
-;     endelse
+    combination_layer.normalization = extract_parameter_string(parameters, 'norm')
+    if (combination_layer.normalization EQ '') then combination_layer.normalization = get_norm_default(combination_layer.vis, p_wdgt_state)
 
     combination_layer.min = float(extract_parameter_string(parameters, 'min'))
+    if (combination_layer.min EQ '') then combination_layer.min = get_min_default(combination_layer.vis, p_wdgt_state)
+    
     combination_layer.max = float(extract_parameter_string(parameters, 'max'))
+    if (combination_layer.max EQ '') then combination_layer.max = get_max_default(combination_layer.vis, p_wdgt_state)
+    
+    
+    ;    min_str = extract_parameter_string(parameters, 'min')
+    ;    if (min_str NE '') then begin
+    ;      combination_layer.min = float(min_str)
+    ;     endif else begin
+    ;        combination_layer.min = get_min_default(combination_layer.vis, )
+    ;     endelse
+    ;    max_str = extract_parameter_string(parameters, 'max')
+    ;     if (max_str NE '') then begin
+    ;       combination_layer.max = float(min_str)
+    ;     endif else begin
+    ;       combination_layer.max = get_max_default(combination_layer.vis, )
+    ;     endelse
     
     combination_layer.blend_mode = extract_parameter_string(parameters, 'blend_mode')
     if (combination_layer.blend_mode EQ '') then combination_layer.blend_mode = 'Normal'

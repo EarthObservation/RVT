@@ -589,6 +589,16 @@ function set_vis_min_limit, vis_droplist, min_limit
   return, find_min
 end
 
+pro get_input_files, event
+   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+   
+   id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
+   widget_control, id_selection_panel, get_value=panel_text
+   in_delimiter = ';'
+   panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
+   panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
+   (*p_wdgt_state).selection_str = panel_text_string
+end
 
 ;=====================================================================================
 ; When user presses OK button ========================================================
@@ -596,12 +606,13 @@ pro user_widget_save_state, event
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
   
   ; Input files, folders, lists ----------------
-  id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
-  widget_control, id_selection_panel, get_value=panel_text
-  in_delimiter = ';'
-  panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
-  panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
-  (*p_wdgt_state).selection_str = panel_text_string
+  get_input_files, event
+;  id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
+;  widget_control, id_selection_panel, get_value=panel_text
+;  in_delimiter = ';'
+;  panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
+;  panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
+;  (*p_wdgt_state).selection_str = panel_text_string
   
   ; Overwrite ---
   do_overwrite = widget_info((*p_wdgt_state).overwrite_checkbox, /button_set) 
@@ -931,7 +942,7 @@ pro mixer_input_images_to_layers, event, source_image_file
     ; btw, grayscale has dim = 2, but has only 1 channel
     if (dim EQ 3) then begin
       idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
-      if (~(count GT 0 AND max(image) GT 1 AND max(image) < 256)) then continue
+      if (~(count GT 0 AND max(image) GT 1 AND max(image) LT 256)) then continue
       (*p_wdgt_state).is_blend_image_rbg = boolean(1)
 
        image = RGB_to_float(image)
@@ -940,6 +951,23 @@ pro mixer_input_images_to_layers, event, source_image_file
     mixer_layer_images += hash(visualization, image)
   endfor
   (*p_wdgt_state).mixer_layer_images = mixer_layer_images
+end
+
+pro user_widget_mixer_unit_test, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  wdgt_state = *p_wdgt_state
+
+  get_input_files, event
+  in_file_string = (*p_wdgt_state).selection_str
+
+  in_file_list = strsplit(in_file_string, '#', /extract)
+  for nF = 0,in_file_list.length-1 do begin
+    ;Input file
+    in_file = in_file_list[nF]
+    
+    unit_test_mixer, event, in_file
+  endfor
+
 end
 
 pro user_widget_mixer_ok, event
@@ -966,7 +994,8 @@ pro user_widget_mixer_ok, event
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
                                      (*p_wdgt_state).rvt_version, $
-                                     (*p_wdgt_state).rvt_issue_year                                                                      
+                                     (*p_wdgt_state).rvt_issue_year, $
+                                     /INVOKED_BY_MIXER                                                                
                                      
   ; Blending visualizations with mixer
   topo_advanced_vis_mixer_blend_modes, event
@@ -1190,7 +1219,7 @@ function get_mixer_layer, event
 end
 
 ; It's the opposite of  user_widget_mixer_state_to_combination
-pro combination_to_mixer_widgets, p_wdgt_state, combination
+pro combination_to_mixer_widgets, p_wdgt_state, combination, SET_TITLE = set_title
   widgetIDs = (*p_wdgt_state).mixer_widgetIDs
   nr_layers = widgetIDs.layers.length
 
@@ -1202,6 +1231,10 @@ pro combination_to_mixer_widgets, p_wdgt_state, combination
     widget_control, widgetIDs.layers[i].opacity, set_value = strtrim(combination.layers[i].opacity, 1)
     widget_control, widgetIDs.layers[i].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[combination.layers[i].normalization]
   endfor
+  
+  if (KEYWORD_SET(SET_TITLE)) then begin
+    (*p_wdgt_state).current_combination.title = combination.title
+  endif
 end
 
 ; The lowest mixer layer with visualization set (other than '<none>')
@@ -1239,6 +1272,7 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
     visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
     IF (visualization EQ '<none>') THEN BEGIN
       ; disable other fields: min, max, blend_mode, opacity
+      ; TO-DO automatic input of empty layer to widgets
       empty_layer = create_new_mixer_layer()
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = empty_layer.min
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = empty_layer.max
@@ -1284,7 +1318,8 @@ pro mixer_widget_change_vis, event
   ; TO-DO: ? If previous vis selection was the same, don't alter min and max values?
   visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
   IF (visualization NE '<none>') THEN BEGIN
-    default_norm = (*p_wdgt_state).hash_vis_norm_default[visualization]
+    ;default_norm = (*p_wdgt_state).hash_vis_norm_default[visualization]
+    default_norm = get_norm_default(visualization, p_wdgt_state)
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[default_norm]
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
@@ -1370,6 +1405,10 @@ end
 function get_max_limit, visualization, p_wdgt_state
   find_max = (*p_wdgt_state).vis_max_limit
   return, find_max[visualization]
+end
+
+function get_norm_default, visualization, p_wdgt_state
+  return, (*p_wdgt_state).hash_vis_norm_default[visualization]
 end
 
 function get_min_default, visualization, p_wdgt_state
@@ -2129,6 +2168,7 @@ pro topo_advanced_vis, re_run=re_run
   custom_combination_name = 'Custom combination'
   current_combination = user_widget_mixer_state_to_combination(mixer_widgetIDs, custom_combination_name) 
  
+  ; TO-DO hash tables of defaults: norm, min, max
   all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
   
   ; TO-DO: If more preset visualizations are needed, rethink the placement of radio buttons
@@ -2152,6 +2192,7 @@ pro topo_advanced_vis, re_run=re_run
   ; --- Mixer Tab: Buttons to Mix selected
   mixer_row_finish = widget_base(base_mixer, /align_left)
   bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
+  bt_mixer_test = widget_button(mixer_row_finish, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
 
   ; --- Preset visualizations ---
 
@@ -2275,7 +2316,7 @@ pro topo_advanced_vis, re_run=re_run
                         custom_combination_name:custom_combination_name, $
                         nr_combinations:nr_combinations, $
                         combination_radios:combination_radios, $
-                        mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, $
+                        mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, bt_mixer_test:bt_mixer_test, $
                         mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $
                         all_combinations:all_combinations, combination_index:combination_index, $
@@ -2322,7 +2363,7 @@ pro topo_advanced_vis, re_run=re_run
   ;=========================================================================================================
 
   ;topo_advanced_make_visualizations, wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
-  topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year, /INVOKED_BY_MIXER
+  topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
   
   ; Free pointer
   ptr_free, p_wdgt_state
