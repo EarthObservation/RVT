@@ -1,5 +1,5 @@
 ;pro topo_advanced_make_visualizations, wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year
-pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year
+pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year, INVOKED_BY_MIXER = invoked_by_mixer
   wdgt_state = *p_wdgt_state
 
   ;=========================================================================================================
@@ -141,6 +141,10 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Input file
     in_fname = in_file_list[nF]
     in_file = in_fname
+    
+    ;========================================================================================================
+    ;Check if config is from Mixer and if outputs already exist
+    ;========================================================================================================
 
     ;========================================================================================================
     ;Start processing metadata TXT file
@@ -574,20 +578,23 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Hillshading
     IF in_hls EQ 1 THEN BEGIN
       out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
+      
       output_files_array += hash('Analytical hillshading', out_file_hls)
-      Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
-        heights, resolution, $                ;relief
-        in_hls_sun_a, in_hls_sun_h, $                   ;solar position
-        sc_hls_ev, $
-        overwrite=overwrite
-      ; ... display progress
-      out_file_shadow_only = in_file + '_shadow_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
-      if shadow_use then begin
-        Topo_advanced_vis_skyillumination, out_file_shadow_only, in_geotiff,$
-          heights, resolution, $
-          '', '', '', '', $
-          in_hls_sun_a, in_hls_sun_h, /shadow_only, $
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_hls+'.tif')) then begin
+        Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
+          heights, resolution, $                ;relief
+          in_hls_sun_a, in_hls_sun_h, $                   ;solar position
+          sc_hls_ev, $
           overwrite=overwrite
+        ; ... display progress
+        out_file_shadow_only = in_file + '_shadow_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
+        if shadow_use then begin
+          Topo_advanced_vis_skyillumination, out_file_shadow_only, in_geotiff,$
+            heights, resolution, $
+            '', '', '', '', $
+            in_hls_sun_a, in_hls_sun_h, /shadow_only, $
+            overwrite=overwrite
+        endif
       endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step < 100
@@ -597,12 +604,14 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_mhls EQ 1 THEN BEGIN
       out_file_mhls = in_file + '_MULTI-HS_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
       output_files_array += hash('Hillshading from multiple directions', out_file_mhls + '_RGB')
-      Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
-        heights, resolution, $                ;relief
-        in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
-        sc_mhls_a_rgb, sc_hls_ev , $       ;directions for RGB outputRGB
-        overwrite=overwrite
-      ; ... display progress
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_mhls + '_RGB.tif')) then begin
+        Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
+          heights, resolution, $                ;relief
+          in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
+          sc_mhls_a_rgb, sc_hls_ev , $       ;directions for RGB outputRGB
+          overwrite=overwrite
+        ; ... display progress
+      endif
       progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
         nocancel=1, /start, percent = fix(progress_curr<100))
       progress_curr += progress_step
@@ -612,12 +621,14 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_mhls_pca EQ 1 THEN BEGIN
       out_file_mhls_pca = in_file + '_PCA_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
       output_files_array += hash('PCA of hillshading', out_file_mhls_pca + '_RGB')
-      Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
-        heights, resolution, $     ;relief
-        in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
-        in_mhls_n_psc, sc_hls_ev, $     ;number of PCs to save
-        overwrite=overwrite
-      ; ... display progress
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_mhls_pca + '_RGB.tif')) then begin
+        Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
+          heights, resolution, $     ;relief
+          in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
+          in_mhls_n_psc, sc_hls_ev, $     ;number of PCs to save
+          overwrite=overwrite
+        ; ... display progress
+      endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
     ENDIF
@@ -626,11 +637,13 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_slp EQ 1 THEN BEGIN
       out_file_slp = in_file + '_SLOPE' + str_ve
       output_files_array += hash('Slope gradient', out_file_slp)
-      topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
-        heights, resolution, $                    ;relief
-        sc_slp_ev, $
-        overwrite=overwrite
-      ; ... display progress
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_slp + '.tif')) then begin
+        topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
+          heights, resolution, $                    ;relief
+          sc_slp_ev, $
+          overwrite=overwrite
+        ; ... display progress
+      endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
     ENDIF
@@ -639,11 +652,13 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_slrm EQ 1 THEN BEGIN
       out_file_slrm = in_file + '_SLRM_R' + Strtrim(Long(in_slrm_r_max), 2) + str_ve
       output_files_array += hash('Simple local relief model', out_file_slrm)
-      topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
-        heights, resolution, $                    ;relief
-        in_slrm_r_max, sc_slrm_ev, $
-        overwrite=overwrite
-      ; ... display progress
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_slrm + '.tif')) then begin
+        topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
+          heights, resolution, $                    ;relief
+          in_slrm_r_max, sc_slrm_ev, $
+          overwrite=overwrite
+        ; ... display progress
+      endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step
     ENDIF
@@ -663,16 +678,31 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       out_file_svf = [in_file + '_SVF_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve, $
         in_file + '_SVF-A_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + '_A' + Strtrim(round(in_asvf_dir), 2) + str_aniso + str_noise + str_ve, $
         in_file + '_OPEN-POS_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
-      if in_svf NE 0 then output_files_array += hash('Sky-View Factor', out_file_svf[0])
-      if in_asvf NE 0 then output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1])
-      if in_open NE 0 then output_files_array += hash('Openness - Positive', out_file_svf[2])
-      Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
-        heights, resolution, $                    ;elevation
-        in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
-        in_svf_noise, sc_svf_r_min, $                       ;noise
-        sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-        in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
-        overwrite=overwrite
+      
+      f_svf = 0
+      f_asvf = 0
+      f_open = 0
+      
+      if in_svf NE 0 then begin
+        output_files_array += hash('Sky-View Factor', out_file_svf[0])
+        if file_test(out_file_svf[0] + '.tif') then f_svf = 1
+      endif
+      if in_asvf NE 0 then begin
+        output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1])
+        if file_test(out_file_svf[1] + '.tif') then f_asvf = 1
+      if in_open NE 0 then begin
+        output_files_array += hash('Openness - Positive', out_file_svf[2])
+        if file_test(out_file_svf[2] + '.tif') then f_open = 1
+      endif
+      if (~KEYWORD_SET(invoked_by_mixer) OR (in_svf+in_open+in_asvf GT f_svf+f_open+f_asvf)) then begin
+        Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
+          heights, resolution, $                    ;elevation
+          in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
+          in_svf_noise, sc_svf_r_min, $                       ;noise
+          sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
+          in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
+          overwrite=overwrite
+      endif
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_svf+in_open+in_asvf)
@@ -693,13 +723,15 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       heights = heights * (-1.)
       out_file_no = ['', '', in_file + '_OPEN-NEG_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
       output_files_array += hash('Openness - Negative', out_file_no[2])
-      Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
-        heights, resolution, $                    ;elevation
-        in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
-        in_svf_noise, sc_svf_r_min, $                       ;noise
-        sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-        in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
-        overwrite=overwrite
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_no[2] + '.tif')) then begin
+        Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
+          heights, resolution, $                    ;elevation
+          in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
+          in_svf_noise, sc_svf_r_min, $                       ;noise
+          sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
+          in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
+          overwrite=overwrite
+      endif
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_svf+in_open+in_asvf)
@@ -716,20 +748,22 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       else out_file_skyilm += '_'+in_skyilm_shadow_dist+'px'
 
       output_files_array += hash('Sky illumination', out_file_skyilm)
-      if in_skyilm_shadow then begin
-        Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
-          heights, resolution, $
-          in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
-          sc_skyilu_ev, $
-          in_skyilm_az, in_skyilm_el, $
-          overwrite=overwrite
-      endif else begin
-        Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
-          heights, resolution, $
-          in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
-          sc_skyilu_ev, $
-          overwrite=overwrite
-      endelse
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_skyilm + '.tif')) then begin
+        if in_skyilm_shadow then begin
+          Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
+            heights, resolution, $
+            in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
+            sc_skyilu_ev, $
+            in_skyilm_az, in_skyilm_el, $
+            overwrite=overwrite
+        endif else begin
+          Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
+            heights, resolution, $
+            in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
+            sc_skyilu_ev, $
+            overwrite=overwrite
+        endelse
+      endif
       progress_bar -> Update, progress_curr
       progress_curr += progress_step*(in_skyilm)
     ENDIF
@@ -738,10 +772,12 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_locald EQ 1 THEN BEGIN
       out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
       output_files_array += hash('Local dominance', out_file_ld)
-      topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
-        heights, sc_ld_ev, $
-        min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
-        overwrite=overwrite
+      if (~KEYWORD_SET(invoked_by_mixer) OR ~file_test(out_file_ld + '.tif')) then begin
+        topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
+          heights, sc_ld_ev, $
+          min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
+          overwrite=overwrite
+      endif
       ; ... display progress
       progress_bar -> Update, progress_curr
       progress_curr += progress_step

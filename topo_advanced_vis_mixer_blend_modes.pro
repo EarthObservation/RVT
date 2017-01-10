@@ -101,15 +101,16 @@ function blend_multi_dim_images, blend_mode, active, background
 end
 
 function get_luminosity, image, L_channel_in_HLS
-  n_channels = size(image)
+  n_channels = size(image, /N_DIMENSIONS)
 
   ; Monochrome (1) image
-  if (n_channels EQ 1) then begin
+  if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
     return, image
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
+    active = float_to_RGB(active)
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
     return, HLS_active[L_channel_in_HLS]
   endif
@@ -124,22 +125,33 @@ end
 function blend_luminosity, active, background
    L_channel_in_HLS = 1
    ;TO-DO - check
-   n_active = size(active)
-   n_background = size(background)
+   n_active = size(active, /N_DIMENSIONS)
+   n_background = size(background, /N_DIMENSIONS)
 
    ; Multichannel, RGB (3) background layer [n_background = 3]
    if (n_background EQ 3) then begin
+      background = float_to_RGB(background)
+      
       COLOR_CONVERT, background, HLS_background, /RGB_HLS
 
-      HLS_blended_image = HLS_background[*]
-      HLS_blended_image[L] = get_luminosity(active, L_channel_in_HLS)
+;      luminosity = get_luminosity(active, L_channel_in_HLS)
+;      dimensions = size(HLS_background[L_channel_in_HLS, *, *], /DIMENSIONS)
+;      HLS_background[L_channel_in_HLS, *, *] = rebin(luminosity, dimensions)
       
-      COLOR_CONVERT, HLS_blended_image, blended_image, /HLS_RGB
+      luminosity = get_luminosity(active, L_channel_in_HLS)
+      dimensions = size(HLS_background[L_channel_in_HLS, *, *], /DIMENSIONS)
+      x_size = dimensions[1]
+      y_size = dimensions[2]
+      HLS_background[L_channel_in_HLS, *, *] = reform(luminosity, 1, x_size, y_size)
+      
+      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
+      
+      blended_image = RGB_to_float(blended_image)
       return, blended_image
    endif
    ; Replacing luminosity of single channel, monochrome image
    ; means replacing the monochrome image completely
-   if (n_background EQ 1) then begin
+   if (n_background EQ 2) then begin
       return, get_luminosity(active, L_channel_in_HLS)
    endif
 end

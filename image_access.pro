@@ -94,3 +94,6 @@ function read_image_geotiff, in_file, in_orientation
     return, read_image
   endelse
 end
+
+pro image_access
+end

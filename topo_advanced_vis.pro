@@ -547,6 +547,24 @@ function gen_norm_droplist
   return, norm_droplist
 end
 
+function gen_vis_norm_default
+  ; Preferred normalizations for each visualization
+   vis_norm = hash()
+   vis_norm += hash('Analytical hillshading','Lin')
+   vis_norm += hash('Hillshading from multiple directions','Lin')
+   vis_norm += hash('PCA of hillshading','Perc')
+   vis_norm += hash('Slope gradient','Lin')
+   vis_norm += hash('Simple local relief model','Perc')
+   vis_norm += hash('Sky-View Factor','Lin')
+   vis_norm += hash('Anisotropic Sky-View Factor','Perc')
+   vis_norm += hash('Openness - Positive','Lin')
+   vis_norm += hash('Openness - Negative','Lin')
+   vis_norm += hash('Sky illumination','Perc')
+   vis_norm += hash('Local dominance','Lin')
+
+  return, vis_norm
+end
+
 function gen_hash_strings, droplist
   indexes = indgen(droplist.LENGTH)
   hash_map = hash(droplist, indexes)
@@ -915,18 +933,8 @@ pro mixer_input_images_to_layers, event, source_image_file
       idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
       if (~(count GT 0 AND max(image) GT 1 AND max(image) < 256)) then continue
       (*p_wdgt_state).is_blend_image_rbg = boolean(1)
-      
-      ; Extract the channels (as images) from the RGB image.
-      redChannel = REFORM(image[0, *, *])
-      greenChannel = REFORM(image[1, *, *])
-      blueChannel = REFORM(image[2, *, *])
-      
-      rf_image = [[redChannel], [greenChannel], [blueChannel]]
-      
-      grayscaleImage = BYTE(0.299*FLOAT(redChannel) + 0.587*FLOAT(redChannel) + 0.114*FLOAT(blueChannel))
-      
-      image = rf_image
-      ;image = RGB_to_float(rf_image)
+
+       image = RGB_to_float(image)
     endif
     
     mixer_layer_images += hash(visualization, image)
@@ -1276,6 +1284,8 @@ pro mixer_widget_change_vis, event
   ; TO-DO: ? If previous vis selection was the same, don't alter min and max values?
   visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
   IF (visualization NE '<none>') THEN BEGIN
+    default_norm = (*p_wdgt_state).hash_vis_norm_default[visualization]
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[default_norm]
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
   ENDIF
@@ -2093,6 +2103,8 @@ pro topo_advanced_vis, re_run=re_run
   hash_vis_get_index = gen_hash_strings(vis_droplist)     ;gen_vis_hash_strings()
   hash_blend_get_index = gen_hash_strings(blend_droplist) ;gen_blend_hash_strings()
   hash_norm_get_index = gen_hash_strings(norm_droplist)   ;gen_norm_hash_strings() 
+  
+  hash_vis_norm_default = gen_vis_norm_default()
  
   file_settings_combinations = programrootdir()+'settings\default_settings_combinations_extended.txt'
   vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
@@ -2251,6 +2263,7 @@ pro topo_advanced_vis, re_run=re_run
                         vis_droplist:vis_droplist, $
                         blend_droplist:blend_droplist, $
                         norm_droplist:norm_droplist, $
+                        hash_vis_norm_default:hash_vis_norm_default, $
                         hash_vis_get_index:hash_vis_get_index, $
                         hash_norm_get_index:hash_norm_get_index, $
                         hash_blend_get_index:hash_blend_get_index, $
@@ -2309,7 +2322,7 @@ pro topo_advanced_vis, re_run=re_run
   ;=========================================================================================================
 
   ;topo_advanced_make_visualizations, wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
-  topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
+  topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year, /INVOKED_BY_MIXER
   
   ; Free pointer
   ptr_free, p_wdgt_state

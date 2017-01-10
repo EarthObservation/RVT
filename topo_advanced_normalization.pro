@@ -44,7 +44,8 @@ function normalize_lin, image, min, max
 end
 
 function normalize_perc, image, perc
-    distribution = cgPercentiles(data, Percentiles=[perc, 1.0-perc])
+    if (perc GT 0.5 AND perc LT 100.0001) then perc = perc / 100.0
+    distribution = cgPercentiles(image, Percentiles=[perc, 1.0-perc])
     min = distribution[0]
     max = distribution[1]
     
@@ -52,30 +53,16 @@ function normalize_perc, image, perc
 end
 
 function topo_advanced_normalization, image, min, max, normalization 
-    
-    if (normalization EQ 'Lin') then begin
-      equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
-      equ_image_2 =  normalize_lin(image, min, max)
-    endif
-    if (normalization EQ 'Perc') then begin
-      equ_image = HIST_EQUAL(image, PERCENT=max, TOP=1.0)
-      equ_image_2 =  normalize_perc(image, max)
-    endif
-    
-;   if (normalization EQ 'abs') then begin
-;      idx_min = WHERE(image LT min)
-;      idx_max = WHERE(image GT max)
-;      image[idx_min] = min
-;      image[idx_max] = max
-;   endif 
-;   if (normalization EQ 'rel') then begin
-;      offset = min(image) - min
-;      image_span = float(max(image) - min(image))
-;      final_span = float(max - min)
-;      image = (image - offset) * (final_span / image_span)
-;   endif
 
-   return, equ_image_2
+  if (normalization EQ 'Lin') then begin
+    ;equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
+    image =  normalize_lin(image, min, max)
+  endif
+  if (normalization EQ 'Perc') then begin
+    ;equ_image = HIST_EQUAL(image, PERCENT=max, TOP=1.0)
+    image =  normalize_perc(image, max)
+  endif
+  return, image
 end
 
 ; Iterate through images on layers in widget_state
@@ -102,12 +89,12 @@ pro mixer_normalize_images_on_layers, event
     endfor
 end
 
-;function RGB_to_float, rgb
-;    float_value = float(rgb) / 255.0
-;    return, float_value
-;end
-;
-;function float_to_RGB, float_value
-;    rgb = fix(float_value * 255)
-;    return, rgb
-;end
+function RGB_to_float, rgb
+    float_value = float(rgb) / 255.0
+    return, float_value
+end
+
+function float_to_RGB, float_value
+    rgb = fix(float_value * 255)
+    return, rgb
+end

@@ -35,11 +35,17 @@ resolve_routine, 'topo_advanced_vis_slope'
 resolve_routine, 'topo_advanced_vis_svf'
 resolve_routine, 'topo_advanced_vis_xyz_to_tiff'
 resolve_routine, 'topo_morph_shade', /is_function
-resolve_routine, 'topo_advanced_vis'
+;resolve_routine, 'topo_advanced_vis'
 resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
 resolve_routine, 'topo_advanced_make_visualizations'
 resolve_routine, 'image_access'
+resolve_routine, 'cgscalevector', /is_function
+resolve_routine, 'cgerrormsg', /is_function
+resolve_routine, 'cgpercentiles', /is_function
+resolve_routine, 'topo_advanced_vis'
+
+
 resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
