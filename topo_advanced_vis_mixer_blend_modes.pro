@@ -100,22 +100,24 @@ function blend_multi_dim_images, blend_mode, active, background
   return, blended_image
 end
 
-function get_luminosity, image, L_channel_in_HLS
-  n_channels = size(image, /N_DIMENSIONS)
+function get_luminosity, active, L_channel_in_HLS
+  n_channels = size(active, /N_DIMENSIONS)
 
   ; Monochrome (1) image
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
-    return, image
+    ; Make sure it's correct value scale!
+    return, active
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
     ; Float to RGB (if it's not already)
-    if (max(image) LT 1.1) then $
-      active = float_to_RGB(image)
+    if (max(active) LT 1.1) then begin
+      active = float_to_RGB(active)
+    endif
     
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
-    return, HLS_active[L_channel_in_HLS]
+    return, reform(HLS_active[L_channel_in_HLS, *, *])
   endif
 end
 
