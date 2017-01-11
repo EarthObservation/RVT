@@ -63,13 +63,13 @@ pro topo_advanced_vis_mixer
 end
 
 function create_new_mixer_layer, VISUALIZATION = visualization, BLEND_MODE = blend_mode, OPACITY = opacity, p_wdgt_state = p_wdgt_state
-  if (KEYWORD_SET(VISUALIZATION)) then begin
-    if (~KEYWORD_SET(BLEND_MODE)) then blend_mode = 'Normal'
-    if (~KEYWORD_SET(OPACITY)) then opacity = 100
-    min = get_min_default(visualization, p_wdgt_state)
-    max = get_max_default(visualization, p_wdgt_state)
-    normalization =  get_norm_default(visualization, p_wdgt_state)
-    return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
+  if (KEYWORD_SET(visualization) AND KEYWORD_SET(p_wdgt_state)) then begin
+    if (~KEYWORD_SET(blend_mode) EQ 0) then blend_mode = 'Normal'
+    if (~KEYWORD_SET(opacity) EQ 0) then opacity = 100
+      min = get_min_default(visualization, p_wdgt_state)
+      max = get_max_default(visualization, p_wdgt_state)
+      normalization =  get_norm_default(visualization, p_wdgt_state)
+      return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
   endif
   return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
 end

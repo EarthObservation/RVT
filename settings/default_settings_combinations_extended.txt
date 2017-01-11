@@ -53,11 +53,13 @@
 #
 
 Analytical hillshading, min, 0
-Analytical hillshading, max, 2
+Analytical hillshading, max, 1
+#Analytical hillshading, max, 2
 #linear stretch, % cut off
 
 Hillshading from multiple directions, min, 0
-Hillshading from multiple directions, max, 2
+Hillshading from multiple directions, max, 1
+#Hillshading from multiple directions, max, 2
 #linear stretch, % cut off
 
 PCA of hillshading, min, 2

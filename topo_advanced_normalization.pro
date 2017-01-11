@@ -56,13 +56,16 @@ function topo_advanced_normalization, image, min, max, normalization
 
   if (normalization EQ 'Lin') then begin
     ;equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
-    image =  normalize_lin(image, min, max)
+    equ_image = normalize_lin(image, min, max)
   endif
   if (normalization EQ 'Perc') then begin
     ;equ_image = HIST_EQUAL(image, PERCENT=max, TOP=1.0)
-    image =  normalize_perc(image, max)
+    equ_image = normalize_perc(image, max)
   endif
-  return, image
+  if (normalization EQ '<none>') then begin
+    equ_image = image
+  endif
+  return, equ_image
 end
 
 ; Iterate through images on layers in widget_state

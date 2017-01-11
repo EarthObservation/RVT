@@ -14,7 +14,13 @@ pro compile_rvt
 ; nastavi lokacijo kjer se nakahaj koda in vse ostale stvari (parametri, gdal...)
 gdal_dir = 'C:\Code\GitHub\RVT-IDL\GDAL\' ;'f:\IDLWorkspace\RVT-IDL\GDAL\'
 rvt_dir = 'C:\Code\GitHub\RVT-IDL\' ; 'f:\IDLWorkspace\RVT-IDL\'
+coyote_dir = 'C:\Code\GitHub\coyote'
 param_dir = rvt_dir + 'settings\'
+
+cd, coyote_dir
+resolve_routine, 'cgErrorMsg', /is_function
+resolve_routine, 'cgPercentiles', /is_function
+resolve_routine, 'cgScaleVector', /is_function
 
 cd, rvt_dir
 resolve_routine, 'programrootdir', /is_function
@@ -26,7 +32,9 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade'
 resolve_routine, 'topo_advanced_vis_localrelief'
+resolve_routine, 'topo_advanced_normalization', /is_function
 resolve_routine, 'topo_advanced_vis_mixer_blend_modes'
+resolve_routine, 'topo_advanced_vis_mixer_options_data'
 resolve_routine, 'topo_advanced_vis_mixer'
 resolve_routine, 'topo_advanced_vis_multihillshade'
 resolve_routine, 'topo_advanced_vis_pcahillshade'
@@ -35,15 +43,13 @@ resolve_routine, 'topo_advanced_vis_slope'
 resolve_routine, 'topo_advanced_vis_svf'
 resolve_routine, 'topo_advanced_vis_xyz_to_tiff'
 resolve_routine, 'topo_morph_shade', /is_function
-;resolve_routine, 'topo_advanced_vis'
 resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
 resolve_routine, 'topo_advanced_make_visualizations'
 resolve_routine, 'image_access'
-resolve_routine, 'cgscalevector', /is_function
-resolve_routine, 'cgerrormsg', /is_function
-resolve_routine, 'cgpercentiles', /is_function
 resolve_routine, 'topo_advanced_vis'
+resolve_routine, 'unit_test_mixer'
+resolve_routine, 'create_new_mixer_layer', /is_function
 
 
 resolve_all, /continue_on_error, skip_routines='envi'

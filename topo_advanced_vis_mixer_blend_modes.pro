@@ -110,7 +110,10 @@ function get_luminosity, image, L_channel_in_HLS
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
-    active = float_to_RGB(active)
+    ; Float to RGB (if it's not already)
+    if (max(image) LT 1.1) then $
+      active = float_to_RGB(image)
+    
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
     return, HLS_active[L_channel_in_HLS]
   endif
@@ -130,7 +133,8 @@ function blend_luminosity, active, background
 
    ; Multichannel, RGB (3) background layer [n_background = 3]
    if (n_background EQ 3) then begin
-      background = float_to_RGB(background)
+      ; Float to RGB (if it's not already)
+      if (max(background) LT 1.1) then background = float_to_RGB(background)
       
       COLOR_CONVERT, background, HLS_background, /RGB_HLS
 
@@ -138,14 +142,16 @@ function blend_luminosity, active, background
 ;      dimensions = size(HLS_background[L_channel_in_HLS, *, *], /DIMENSIONS)
 ;      HLS_background[L_channel_in_HLS, *, *] = rebin(luminosity, dimensions)
       
+      ; Replace luminosity channel in background layer with luminosity from active layer
       luminosity = get_luminosity(active, L_channel_in_HLS)
       dimensions = size(HLS_background[L_channel_in_HLS, *, *], /DIMENSIONS)
       x_size = dimensions[1]
       y_size = dimensions[2]
       HLS_background[L_channel_in_HLS, *, *] = reform(luminosity, 1, x_size, y_size)
-      
+ 
+      ; HLS to RGB
       COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
-      
+      ; RGB to Float
       blended_image = RGB_to_float(blended_image)
       return, blended_image
    endif
