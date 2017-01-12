@@ -30,6 +30,7 @@
 ;       January 2017
 ;-
 
+
 function normalize_lin, image, min, max
     ; Linear cut off
     idx_min = WHERE(image LT min)
@@ -101,3 +102,46 @@ function float_to_RGB, float_value
     rgb = fix(float_value * 255)
     return, rgb
 end
+
+function RGB_to_grayscale, rgb
+    r = rgb[0, *, *] 
+    g = rgb[1, *, *] 
+    b = rgb[2, *, *] 
+
+    gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
+    return, gs
+end
+
+; Either float or integer
+function scale_0_to_1, numeric_value
+  min_value = min(numeric_value)
+  max_value = max(numeric_value)
+
+  scaled = float(numeric_value - min_value) / float(max_value - min_value)
+  return, scaled
+end
+
+function grayscale_to_RGB, grayscale
+  scaled = scale_0_to_1(grayscale)
+  gs = float_to_RGB(scaled) 
+  dimensions = size(gs, /DIMENSIONS)
+  x_size = dimensions[0]
+  y_size = dimensions[1]
+  RGB = make_array(3, x_size, y_size)
+  RGB[0, *, *] = reform(gs, 1, x_size, y_size)
+  RGB[1, *, *] = reform(gs, 1, x_size, y_size)
+  RGB[2, *, *] = reform(gs, 1, x_size, y_size)
+
+  return, RGB
+end
+
+
+; Either float or integer
+function numeric_to_luminosity, numeric_value
+  min_value = min(numeric_value)
+  max_value = max(numeric_value)
+
+  luminosity = float(numeric_value - min_value) / float(max_value - min_value)
+  return, luminosity
+end
+
