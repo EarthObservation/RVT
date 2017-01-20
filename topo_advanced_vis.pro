@@ -855,16 +855,17 @@ pro mixer_input_images_to_layers, event, source_image_file
     image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation)
     dim = size(image, /N_DIMENSIONS)
     
+    image = scale_0_to_1(image)
     
-    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
-    ; btw, grayscale has dim = 2, but has only 1 channel
-    if (dim EQ 3) then begin
-      idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
-      if (~(count GT 0 AND max(image) GT 1 AND max(image) LT 256)) then continue
-      (*p_wdgt_state).is_blend_image_rbg = boolean(1)
-
-       image = RGB_to_float(image)
-    endif
+;    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
+;    ; btw, grayscale has dim = 2, but has only 1 channel
+;    if (dim EQ 3) then begin
+;      idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
+;      if (~(count GT 0 AND max(image) GT 1 AND max(image) LT 256)) then continue
+;      (*p_wdgt_state).is_blend_image_rbg = boolean(1)
+;
+;       image = RGB_to_float(image)
+;    endif
     
     mixer_layer_images += hash(visualization, image)
   endfor

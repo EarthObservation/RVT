@@ -109,6 +109,7 @@ function RGB_to_grayscale, rgb
     b = rgb[2, *, *] 
 
     gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
+    ;gs = (R + G + B) / 3 
     return, gs
 end
 
@@ -122,15 +123,56 @@ function scale_0_to_1, numeric_value
 end
 
 function grayscale_to_RGB, grayscale
-  scaled = scale_0_to_1(grayscale)
-  gs = float_to_RGB(scaled) 
-  dimensions = size(gs, /DIMENSIONS)
+  r = grayscale/0.3
+  g = grayscale/0.59
+  b = grayscale/0.11
+  
+  dimensions = size(grayscale, /DIMENSIONS)
   x_size = dimensions[0]
   y_size = dimensions[1]
   RGB = make_array(3, x_size, y_size)
-  RGB[0, *, *] = reform(gs, 1, x_size, y_size)
-  RGB[1, *, *] = reform(gs, 1, x_size, y_size)
-  RGB[2, *, *] = reform(gs, 1, x_size, y_size)
+  RGB[0, *, *] = reform(r, 1, x_size, y_size)
+  RGB[1, *, *] = reform(g, 1, x_size, y_size)
+  RGB[2, *, *] = reform(b, 1, x_size, y_size)
+
+  scaled = scale_0_to_1(RGB)
+  RGB = float_to_RGB(scaled) 
+  
+;  dimensions = size(gs, /DIMENSIONS)
+;  x_size = dimensions[0]
+;  y_size = dimensions[1]
+;  RGB = make_array(3, x_size, y_size)
+;  RGB[0, *, *] = reform(r, 1, x_size, y_size)
+;  RGB[1, *, *] = reform(g, 1, x_size, y_size)
+;  RGB[2, *, *] = reform(b, 1, x_size, y_size)
+
+  
+
+  dimensions = size(grayscale, /DIMENSIONS)
+  x_size = dimensions[0]
+  y_size = dimensions[1]
+  HLS_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 1.0)
+  scaled = scale_0_to_1(grayscale)
+  HLS_RGB[1, *, *] = reform(scaled, 1, x_size, y_size)
+  COLOR_CONVERT, HLS_RGB, RGB, /HLS_RGB  
+
+  return, RGB
+end
+
+function grayscale_to_RGB_2, grayscale
+  r = grayscale*0.3
+  g = grayscale*0.59
+  b = grayscale*0.11
+
+  dimensions = size(grayscale, /DIMENSIONS)
+  x_size = dimensions[0]
+  y_size = dimensions[1]
+  RGB = make_array(3, x_size, y_size)
+  RGB[0, *, *] = reform(r, 1, x_size, y_size)
+  RGB[1, *, *] = reform(g, 1, x_size, y_size)
+  RGB[2, *, *] = reform(b, 1, x_size, y_size)
+
+  RGB = scale_0_to_1(RGB)
 
   return, RGB
 end

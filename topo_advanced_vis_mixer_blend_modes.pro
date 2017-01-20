@@ -32,13 +32,14 @@
 
 ; Normal
 function blend_normal, active, background
-  if (size(active, /N_DIMENSIONS) EQ 2) then active = grayscale_to_RGB(active)
-  return, RGB_to_float(active)
+   ;active = scale_0_to_1(active)
+   return, active
 end
 
 ; Screen
 function blend_screen, active, background
   blended_image = 1 - (1-active) * (1-background)
+  ;blended_image = active + background - active * background
   return, blended_image
 end
 
@@ -53,11 +54,14 @@ end
 function blend_overlay, active, background
   ;blended_image = background[*] ; copying layer to get the dimensions of blended_image right
 
-  idx1 = WHERE_XYZ(background GT 0.5, XIND=x1, YIND=y1, ZIND=z1) 
-  idx2 = WHERE_XYZ(background LE 0.5, XIND=x2, YIND=y2, ZIND=z2) 
+  idx1 = WHERE_XYZ(background GT 0.5, XIND=x1, YIND=y1);, ZIND=z1) 
+  idx2 = WHERE_XYZ(background LE 0.5, XIND=x2, YIND=y2);, ZIND=z2) 
  
-  background[x1,y1,z1] = (1 - (1-2*(background[x1,y1,z1]-0.5)) * (1-active[x1,y1,z1]))
-  background[x2,y2,z2] = ((2*background[x2,y2,z2]) * active[x2,y2,z2])
+  background[x1,y1] = (1 - (1-2*(background[x1,y1]-0.5)) * (1-active[x1,y1]))
+  background[x2,y2] = ((2*background[x2,y2]) * active[x2,y2])
+ 
+;  background[x1,y1,z1] = (1 - (1-2*(background[x1,y1,z1]-0.5)) * (1-active[x1,y1,z1]))
+;  background[x2,y2,z2] = ((2*background[x2,y2,z2]) * active[x2,y2,z2])
 
   return, background
 end
@@ -72,71 +76,88 @@ end
 
 ; For images that could be either grayscale or RGB
 function blend_multi_dim_images, blend_mode, active, background
-  n_active = size(active, /N_DIMENSIONS)
-  n_background = size(background, /N_DIMENSIONS)
+  a_rgb = boolean(size(active, /N_DIMENSIONS) EQ 3)
+  b_rgb = boolean(size(background, /N_DIMENSIONS) EQ 3)
   
-  ; Transform grayscale to rgb
-  if (n_active EQ 2) then active = grayscale_to_RGB(active)
-  if (n_background EQ 2) then background = grayscale_to_RGB(background)
+;  active = scale_0_to_1(active)
+;  background = scale_0_to_1(background)
   
-  ; Float to RGB (if it's not already)
-  if (max(active) GT 1.1) then active = RGB_to_float(active)
-  if (max(background) GT 1.1) then background = RGB_to_float(background)
-  
-  return, equation_blend(blend_mode, active, background)
-  
-;  for i=0,2 do begin
-;    blended_image[i] = equation_blend(blend_mode, active[i], background[i])
-;  endfor
+;  if (min(active) LT 0.0 OR max(active) GT 1.1) then active = RGB_to_float(active)
+;  if (min(background) LT 0.0 OR max(background) GT 1.1) then background = RGB_to_float(background)
 
-;  blended_image = background[*]
-;  if (a_rgb) then begin
-;    if (b_rgb) then begin
-;      for i=0,2 do begin
-;        blended_image[i] = equation_blend(blend_mode, active[i], background[i])
-;      endfor
-;    endif
-;    if (~b_rgb) then begin
-;      blended_image = active[*]
-;      for i=0,2 do begin
-;        blended_image[i] = equation_blend(blend_mode, active[i], background)
-;      endfor
-;    endif
-;  endif
-;  if (b_rgb) then begin
-;    for i=0,2 do begin
-;      blended_image[i] = equation_blend(blend_mode, active, background[i])
-;    endfor
-;  endif
-;  if (~a_rgb AND ~b_rgb) then begin
-;    blended_image = equation_blend(blend_mode, active, background)
-;  endif
+  blended_image = []
+  if (a_rgb) then begin
+    if (b_rgb) then begin
+      dim = size(background, /DIMENSIONS)
+      blended_image = reform(background[*], dim[0], dim[1], dim[2])
+      for i=0,2 do begin
+        blended_image[i, *, *] = equation_blend(blend_mode, reform(active[i, *, *], dim[1], dim[2]), reform(background[i, *, *], dim[1], dim[2]))
+      endfor
+    endif
+    if (~b_rgb) then begin
+      dim = size(active, /DIMENSIONS)
+      blended_image = reform(active[*], dim[0], dim[1], dim[2])
+      for i=0,2 do begin
+        blended_image[i, *, *] = equation_blend(blend_mode, reform(active[i, *, *], dim[1], dim[2]), background)
+      endfor
+    endif
+  endif
+  if (~a_rgb AND b_rgb) then begin
+    dim = size(background, /DIMENSIONS)
+    blended_image = reform(background[*], dim[0], dim[1], dim[2])
+    for i=0,2 do begin
+      blended_image[i, *, *] = equation_blend(blend_mode, active, reform(background[i, *, *], dim[1], dim[2]))
+    endfor
+  endif
+  if (~a_rgb AND ~b_rgb) then begin
+;    dim = size(background, /DIMENSIONS)
+;    blended_image = reform(background[*], dim[0], dim[1])
+    blended_image = equation_blend(blend_mode, active, background)
+  endif
   
   return, blended_image
 end
 
-function get_luminosity, active, L_channel_in_HLS
+function get_luminosity, active, L_channel
   n_channels = size(active, /N_DIMENSIONS)
 
   ; Monochrome (1) image
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
     ; Make sure it's correct value scale!
-    luminosity = numeric_to_luminosity(active)
+   luminosity = active
+   ; luminosity = scale_0_to_1(active)
     return, luminosity
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
     ; Float to RGB (if it's not already)
-    if (max(active) LT 1.1) then begin
-      active = float_to_RGB(active)
-    endif
+    active = float_to_RGB(active)
+;    if (min(active) LT 0.0 OR max(active) LT 5) then begin
+;      active = scale_0_to_1(active)
+;      active = float_to_RGB(active)
+;    endif
     
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
-    luminosity =  reform(HLS_active[L_channel_in_HLS, *, *])
+    luminosity =  reform(HLS_active[L_channel, *, *])
     return, luminosity
   endif
 end
+
+;function get_luminosity, image, L_channel_in_HLS
+;  n_channels = size(image)
+;
+;  ; Monochrome (1) image
+;  if (n_channels EQ 1) then begin
+;    ; Luminosity of monochrome image IS the monochrome image itself
+;    return, image
+;  endif
+;  ; Multichannel, RGB (3) image
+;  if (n_channels EQ 3) then begin
+;    COLOR_CONVERT, active, HLS_active, /RGB_HLS
+;    return, HLS_active[L_channel_in_HLS]
+;  endif
+;end
 
 ; TO-DO:
 ; - check whih component is L (luminosity)
@@ -145,31 +166,32 @@ end
 ; Luminosity 
 ; - blends the lightness values while ignoring the color information
 function blend_luminosity, active, background
-   L_channel_in_HLS = 1
+   L_channel = 1
    ;TO-DO - check
    n_active = size(active, /N_DIMENSIONS)
    n_background = size(background, /N_DIMENSIONS)
-   
-   
-   ; Transform grayscale to rgb
-   if (n_active EQ 2) then active = grayscale_to_RGB(active)
-   if (n_background EQ 2) then background = grayscale_to_RGB(background)
-   
-   ; Float to RGB (if it's not already)
-   if (max(active) LT 1.1) then active = float_to_RGB(active)
-   if (max(background) LT 1.1) then background = float_to_RGB(background)
 
-   COLOR_CONVERT, background, HLS_background, /RGB_HLS  
-   COLOR_CONVERT, active, HLS_active, /RGB_HLS
+   ; Multichannel, RGB (3) background layer [n_background = 3]
+   if (n_background EQ 3) then begin
+     if (min(background) LT 0.0 OR max(background) LT 5) then begin
+       ;background = scale_0_to_1(background)
+       background = float_to_RGB(background)
+     endif
+    
+      COLOR_CONVERT, background, HLS_background, /RGB_HLS
 
-   ; Replace luminosity channel in background layer with luminosity from active layer
-   HLS_background[L_channel_in_HLS, *, *] = HLS_active[L_channel_in_HLS, *, *]
-
-   ; HLS to RGB
-   COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
-   ; RGB to Float
-   blended_image = RGB_to_float(blended_image)
-   return, blended_image
+      HLS_background[L_channel,*, *] = get_luminosity(active, L_channel)
+      
+      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
+      blended_image = RGB_to_float(blended_image)
+      
+      return, blended_image
+   endif
+   ; Replacing luminosity of single channel, monochrome image
+   ; means replacing the monochrome image completely
+   if (n_background EQ 2) then begin
+      return, get_luminosity(active, L_channel)
+   endif
 
    
 
@@ -213,14 +235,50 @@ function blend_images, blend_mode, active, background
   endcase
 end
 
+function apply_opacity, active, background, opacity
+   if (opacity GT 1) then opacity = float(opacity) /100
+   return, active * opacity + background * (1 - opacity)
+end
+
 ; Rendering images from two layers into one
 function render_images, active, background, opacity
+  if (min(active) LT 0.0 OR max(active) GT 1.1) then active = scale_0_to_1(active)
+  if (min(background) LT 0.0 OR max(background) GT 1.1) then background = scale_0_to_1(background)
   
-  if (max(active) GT 1.1) then active = RGB_to_float(active)
-  if (max(background) GT 1.1) then background = RGB_to_float(background)
+  a_rgb = boolean(size(active, /N_DIMENSIONS) EQ 3)
+  b_rgb = boolean(size(background, /N_DIMENSIONS) EQ 3)
   
-  if (opacity GT 1) then opacity = float(opacity) /100
-  rendered_image = active * opacity + background * (1 - opacity)
+  rendered_image = []
+  if (a_rgb) then begin
+    if (b_rgb) then begin
+      dim = size(background, /DIMENSIONS)
+      rendered_image = reform(background[*], dim[0], dim[1], dim[2])
+      for i=0,2 do begin
+        rendered_image[i, *, *] = apply_opacity(reform(active[i, *, *], dim[1], dim[2]), reform(background[i, *, *], dim[1], dim[2]), opacity)
+      endfor
+    endif
+    if (~b_rgb) then begin
+      dim = size(active, /DIMENSIONS)
+      rendered_image = reform(active[*], dim[0], dim[1], dim[2])
+      for i=0,2 do begin
+        rendered_image[i, *, *] = apply_opacity(reform(active[i, *, *], dim[1], dim[2]), background, opacity)
+      endfor
+    endif
+  endif
+  if (~a_rgb AND b_rgb) then begin
+    dim = size(background, /DIMENSIONS)
+    rendered_image = reform(background[*], dim[0], dim[1], dim[2])
+    for i=0,2 do begin
+      rendered_image[i, *, *] = apply_opacity(active, reform(background[i, *, *], dim[1], dim[2]), opacity)
+    endfor
+  endif
+  if (~a_rgb AND ~b_rgb) then begin
+    ;    dim = size(background, /DIMENSIONS)
+    ;    blended_image = reform(background[*], dim[0], dim[1])
+    rendered_image = apply_opacity(active, background, opacity)
+  endif
+  
+;  rendered_image = active * opacity + background * (1 - opacity)
   return, rendered_image
 end
 
