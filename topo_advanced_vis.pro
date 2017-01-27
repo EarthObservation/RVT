@@ -1053,7 +1053,7 @@ pro resize_event, event
   widget_control, tab_all, ysize = new_y_size
   widget_control, tab_mosaic, ysize = new_y_size
   widget_control, tab_converter, ysize = new_y_size
-  widget_control, tab_mixer, y_size = new_y_size
+  widget_control, tab_mixer, ysize = new_y_size
 ;  print, event.x, event.y
 end
 
