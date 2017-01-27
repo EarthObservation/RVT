@@ -127,6 +127,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   endif
   in_file_list = strsplit(in_file_string, '#', /extract)
   n_files = n_elements(in_file_list)
+  (*p_wdgt_state).output_files_array = hash()
 
   ; Initate progress-bar display (withot cancel button), ...
   statText = 'Generating selected visualizations from selected input files.
@@ -558,7 +559,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;=== Start processing  ==================================================================================
     ;========================================================================================================
 
-    ; Array of output files
+    ; Array of output files (for one in_file)
     output_files_array = hash()
 
     starttime = Systime(/seconds)
@@ -625,8 +626,10 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
           overwrite=overwrite
       endif
       ; ... display progress
-      progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
-        nocancel=1, /start, percent = fix(progress_curr<100))
+;     progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
+;     nocancel=1, /start, percent = fix(progress_curr<100))
+      
+      progress_bar -> Update, progress_curr     
       progress_curr += progress_step
     ENDIF
 
@@ -790,9 +793,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ENDIF
 
     ; Save output files hashmap
-    ;wdgt_state.output_files_array = output_files_array
-    (*p_wdgt_state).output_files_array = hash(in_file, output_files_array)
-    ;(*p_wdgt_state).output_files_array = hash(in_fname, output_files_array)
+    (*p_wdgt_state).output_files_array += hash(in_file, output_files_array)
     print, 'File name, key put in hash: ', in_file
 
     ; End processing

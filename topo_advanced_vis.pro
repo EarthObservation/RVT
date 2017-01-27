@@ -917,9 +917,8 @@ pro user_widget_mixer_ok, event
                                      /INVOKED_BY_MIXER                                                                
                                      
   ; Blending visualizations with mixer
-  topo_advanced_vis_mixer_blend_modes, event
-  
-  ;widget_control, event.top, /destroy
+  topo_advanced_vis_mixer_blend_modes, event  
+
 end
 
 ; Called when user presses Add file(s) button
@@ -2230,7 +2229,6 @@ pro topo_advanced_vis, re_run=re_run
   
   ; Get the user values and free the pointer
   wdgt_state = *p_wdgt_state
-  ;ptr_free, p_wdgt_state
   
   ; Continue after event handler: restore user inputs  ==========================
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
@@ -2245,7 +2243,6 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Save settings to temporary .sav file ================================================================
   ;=========================================================================================================
   save_to_sav, wdgt_state, temp_sav
-  ;save_to_sav_combination, wdgt_state, temp_sav
 
   ;=========================================================================================================
   ;=== Setup constnants that cannot be changed by the user =================================================
@@ -2256,7 +2253,6 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Write processing metadata into TXT metafile =========================================================
   ;=========================================================================================================
 
-  ;topo_advanced_make_visualizations, wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
   topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
   
   ; Free pointer

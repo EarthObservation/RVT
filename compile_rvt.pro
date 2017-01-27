@@ -19,6 +19,7 @@ param_dir = rvt_dir + 'settings\'
 
 cd, coyote_dir
 resolve_routine, 'cgErrorMsg', /is_function
+resolve_routine, 'convert_to_type', /is_function
 resolve_routine, 'cgPercentiles', /is_function
 resolve_routine, 'cgScaleVector', /is_function
 
@@ -33,8 +34,8 @@ resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade'
 resolve_routine, 'topo_advanced_vis_localrelief'
 resolve_routine, 'topo_advanced_normalization', /is_function
-resolve_routine, 'topo_advanced_vis_mixer_blend_modes'
 resolve_routine, 'topo_advanced_vis_mixer_options_data'
+resolve_routine, 'topo_advanced_vis_mixer_blend_modes'
 resolve_routine, 'topo_advanced_vis_mixer'
 resolve_routine, 'topo_advanced_vis_multihillshade'
 resolve_routine, 'topo_advanced_vis_pcahillshade'

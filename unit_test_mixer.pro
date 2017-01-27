@@ -25,7 +25,7 @@ function test_combination, event, in_file, visualization, blend_mode, opacity, r
   ; Make visualizations
   topo_advanced_make_visualizations, p_wdgt_state, $
     (*p_wdgt_state).temp_sav, $
-    (*p_wdgt_state).selection_str, $
+    in_file, $                         ;(*p_wdgt_state).selection_str, $
     (*p_wdgt_state).rvt_version, $
     (*p_wdgt_state).rvt_issue_year, $
     /INVOKED_BY_MIXER

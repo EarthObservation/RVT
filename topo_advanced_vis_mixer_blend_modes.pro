@@ -133,31 +133,12 @@ function get_luminosity, active, L_channel
   if (n_channels EQ 3) then begin
     ; Float to RGB (if it's not already)
     active = float_to_RGB(active)
-;    if (min(active) LT 0.0 OR max(active) LT 5) then begin
-;      active = scale_0_to_1(active)
-;      active = float_to_RGB(active)
-;    endif
     
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
     luminosity =  reform(HLS_active[L_channel, *, *])
     return, luminosity
   endif
 end
-
-;function get_luminosity, image, L_channel_in_HLS
-;  n_channels = size(image)
-;
-;  ; Monochrome (1) image
-;  if (n_channels EQ 1) then begin
-;    ; Luminosity of monochrome image IS the monochrome image itself
-;    return, image
-;  endif
-;  ; Multichannel, RGB (3) image
-;  if (n_channels EQ 3) then begin
-;    COLOR_CONVERT, active, HLS_active, /RGB_HLS
-;    return, HLS_active[L_channel_in_HLS]
-;  endif
-;end
 
 ; TO-DO:
 ; - check whih component is L (luminosity)
@@ -193,33 +174,6 @@ function blend_luminosity, active, background
       return, get_luminosity(active, L_channel)
    endif
 
-   
-
-;   ; Multichannel, RGB (3) background layer [n_background = 3]
-;   if (n_background EQ 3) then begin
-;      ; Float to RGB (if it's not already)
-;      if (max(background) LT 1.1) then background = float_to_RGB(background)
-;      
-;      COLOR_CONVERT, background, HLS_background, /RGB_HLS
-;      
-;      ; Replace luminosity channel in background layer with luminosity from active layer
-;      luminosity = get_luminosity(active, L_channel_in_HLS)
-;      dimensions = size(HLS_background[L_channel_in_HLS, *, *], /DIMENSIONS)
-;      x_size = dimensions[1]
-;      y_size = dimensions[2]
-;      HLS_background[L_channel_in_HLS, *, *] = reform(luminosity, 1, x_size, y_size)
-; 
-;      ; HLS to RGB
-;      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
-;      ; RGB to Float
-;      blended_image = RGB_to_float(blended_image)
-;      return, blended_image
-;   endif
-;   ; Replacing luminosity of single channel, monochrome image
-;   ; means replacing the monochrome image completely
-;   if (n_background EQ 2) then begin
-;      return, get_luminosity(active, L_channel_in_HLS)
-;   endif
 end
 
 function blend_images, blend_mode, active, background
@@ -227,9 +181,6 @@ function blend_images, blend_mode, active, background
     'Multiply': return, blend_multi_dim_images(blend_mode, active, background) 
     'Overlay': return, blend_multi_dim_images(blend_mode, active, background) 
     'Screen': return, blend_multi_dim_images(blend_mode, active, background) 
-;    'Multiply': return, blend_multiply(active, background)
-;    'Overlay': return, blend_overlay(active, background)
-;    'Screen': return, blend_screen(active, background)
     'Luminosity': return, blend_luminosity(active, background)
     ELSE: return, blend_normal(active, background)
   endcase
