@@ -62,16 +62,21 @@ pro topo_advanced_vis_mixer
 
 end
 
-function create_new_mixer_layer, VISUALIZATION = visualization, BLEND_MODE = blend_mode, OPACITY = opacity, p_wdgt_state = p_wdgt_state
-  if (KEYWORD_SET(visualization) AND KEYWORD_SET(p_wdgt_state)) then begin
-    if (~KEYWORD_SET(blend_mode) EQ 0) then blend_mode = 'Normal'
-    if (~KEYWORD_SET(opacity) EQ 0) then opacity = 100
-      min = get_min_default(visualization, p_wdgt_state)
-      max = get_max_default(visualization, p_wdgt_state)
-      normalization =  get_norm_default(visualization, p_wdgt_state)
-      return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
-  endif
+function create_empty_mixer_layer
   return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+end
+
+function create_new_mixer_layer, visualization, p_wdgt_state, BLEND_MODE = blend_mode, OPACITY = opacity
+  if (visualization ne !null AND p_wdgt_state ne !null) then begin
+    if (KEYWORD_SET(blend_mode) EQ 0) then blend_mode = 'Normal'
+    if (KEYWORD_SET(opacity) EQ 0) then opacity = 100
+    min = get_min_default(visualization, p_wdgt_state)
+    max = get_max_default(visualization, p_wdgt_state)
+    normalization =  get_norm_default(visualization, p_wdgt_state)
+    return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
+  endif else begin
+    return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+  endelse
 end
 
 function limit_combinations, all_combinations, nr_combinations
@@ -104,7 +109,7 @@ function all_combinations_bottom_layer_validate, all_combinations
 end
 
 function extract_parameter_string, parameters, parameter_name
-  combination_layer = create_new_mixer_layer()
+  combination_layer = create_empty_mixer_layer()
 
   ; indexes of pairs 'parameter:value', split by semicolon
   parameter = 0
@@ -128,7 +133,7 @@ function extract_parameter_string, parameters, parameter_name
 end
 
 function parse_layer, parameters
-  combination_layer = create_new_mixer_layer()
+  combination_layer = create_empty_mixer_layer()
 
   ; visualization
   combination_layer.vis = extract_parameter_string(parameters, 'vis')

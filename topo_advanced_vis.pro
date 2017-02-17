@@ -449,8 +449,9 @@ pro select_used_visualization_mixer, visualization, hash_unames, event
 
   ; check if visualization is already set, otherwise select it
   id_checkbox = widget_info(event.top, find_by_uname=uname+'_checkbox')
-  ;if (widget_info(id_checkbox, /buttonset) EQ 0) then begin
   widget_control, id_checkbox, set_button=1
+  
+  ; enable setting parameters for selected visualization
   id_params = widget_info(event.top, find_by_uname=uname+'_params')
   widget_control, id_params, sensitive=1
   ;endif
@@ -747,7 +748,7 @@ pro user_widget_mixer_save_current_combination, event
 end
 
 function gen_combination, title, nr_layers
-  combination_layer = create_new_mixer_layer()
+  combination_layer = create_empty_mixer_layer()
   combination_layers = REPLICATE(combination_layer, nr_layers)
   combination = create_struct('title', title, 'layers', combination_layers)
   return, combination
@@ -1191,7 +1192,7 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
     IF (visualization EQ '<none>') THEN BEGIN
       ; disable other fields: min, max, blend_mode, opacity
       ; TO-DO automatic input of empty layer to widgets
-      empty_layer = create_new_mixer_layer()
+      empty_layer = create_empty_mixer_layer()
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = empty_layer.min
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = empty_layer.max
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[empty_layer.blend_mode]

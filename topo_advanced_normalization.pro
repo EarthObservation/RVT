@@ -117,18 +117,8 @@ end
 
 ; Either float or integer
 function scale_0_to_1, numeric_value
-  catch, error_status
-  
-;  if error_status ne 0 then begin
-;    PRINT, 'Error index: ', Error_status
-;    PRINT, 'Error message: ', !ERROR_STATE.MSG
-;    
-;    NaN_indices = Where(~Finite(numeric_value), count)
-;    numeric_value[NaN_indices] = min_value ; could be avg value of neighbour pixels
-;  endif
-  
   NaN_indices = Where(~Finite(numeric_value), count)
-  numeric_value[NaN_indices] = 0
+  if (count gt 0) then numeric_value[NaN_indices] = 0
 
   min_value = min(numeric_value)
   max_value = max(numeric_value)

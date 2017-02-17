@@ -301,7 +301,6 @@ pro mixer_render_layered_images, event, in_file
   write_rendered_image_to_file, p_wdgt_state, in_file, final_image
 end
 
-
 pro topo_advanced_vis_mixer_blend_modes, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   in_file_string = (*p_wdgt_state).selection_str

@@ -416,7 +416,7 @@ PRO Topo_advanced_vis_svf, in_file, in_svf, in_opns, in_asvf, geotiff, $
     in_svf_noise, sc_svf_r_min, $                       ;noise
     sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
     in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol,$;anisotropy
-    overwrite=ovverwrite
+    overwrite=overwrite
   
   ;Time
   ttt = Systime(1)  
