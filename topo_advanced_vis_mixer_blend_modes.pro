@@ -118,6 +118,69 @@ function blend_multi_dim_images, blend_mode, active, background
   return, blended_image
 end
 
+function lum, img
+  if max(img) gt 1.0 then img = RGB_to_float(img)
+  n_channels = size(img, /N_DIMENSIONS)
+  ;if (n_channels EQ 3) then lum_img = get_luminosity(img, 1) else lum_img = img
+  if (n_channels EQ 3) then lum_img = RGB_to_grayscale(img) else lum_img = img
+  return, lum_img
+end
+
+function blend_luminosity_equation, active, background
+  lum_active = lum(active)
+  lum_background = lum(background)
+  
+  ; luminosity
+  lum = lum_active - lum_background
+  
+  n_channels = size(background, /N_DIMENSIONS)
+  if (n_channels EQ 3) then begin
+    R = reform(background[0, *, *]) + lum
+    G = reform(background[1, *, *]) + lum
+    B = reform(background[2, *, *]) + lum
+    
+    dimensions = size(background, /DIMENSIONS)
+    x_size = dimensions[1]
+    y_size = dimensions[2]
+    
+    c = make_array(3, x_size, y_size)
+    c[0, *, *] = reform(r, 1, x_size, y_size)
+    c[1, *, *] = reform(g, 1, x_size, y_size)
+    c[2, *, *] = reform(b, 1, x_size, y_size)
+
+    min_c = min([R, G, B])
+    max_c = max([R, G, B])
+  endif else begin
+    
+    c = background + lum
+    min_c = min(c)
+    max_c = max(c)
+  end
+  
+;  if (min_c lt 0.0) or (max_c gt 1.0) then begin
+;    c = float(c - min_c) / (float(max_c - min_c))
+;;    c[0, *, *] = (c[0, *, *] - min_c) / (max_c - min_c)
+;;    c[1, *, *] = (c[1, *, *] - min_c) / (max_c - min_c)
+;;    c[2, *, *] = (c[2, *, *] - min_c) / (max_c - min_c) 
+;  end
+
+  if (min_c lt 0.0) then begin
+     c = lum_active + ((c - lum_active) * lum_active) / (lum_active - min_c)
+    
+;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
+;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
+;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
+  end
+  if (max_c gt 1.0) then begin
+     c = lum_active + (((c - lum_active) * (1.0 - lum_active)) / (max_c - lum_active))
+;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+  end
+  
+  return, c
+end
+
 function get_luminosity, active, L_channel
   n_channels = size(active, /N_DIMENSIONS)
 
@@ -155,16 +218,19 @@ function blend_luminosity, active, background
    ; Multichannel, RGB (3) background layer [n_background = 3]
    if (n_background EQ 3) then begin
      if (min(background) LT 0.0 OR max(background) LT 5) then begin
-       ;background = scale_0_to_1(background)
+;      background = scale_0_to_1(background)
        background = float_to_RGB(background)
      endif
-    
-      COLOR_CONVERT, background, HLS_background, /RGB_HLS
-
-      HLS_background[L_channel,*, *] = get_luminosity(active, L_channel)
+        
+;      ; HLS method: 
+;      COLOR_CONVERT, background, HLS_background, /RGB_HLS
+;      HLS_background[L_channel,*, *] = get_luminosity(active, L_channel)
+;      
+;      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
+;      blended_image = RGB_to_float(blended_image)
       
-      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
-      blended_image = RGB_to_float(blended_image)
+      ; Photoshop method:
+      blended_image = blend_luminosity_equation(active, background)
       
       return, blended_image
    endif
@@ -269,6 +335,7 @@ end
 
 ; Save rendered image (blended) to file
 pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
+  final_image = scale_0_to_1(final_image)
   final_image = float_to_RGB(final_image)
 
   overwrite = (*p_wdgt_state).overwrite
@@ -291,11 +358,6 @@ pro mixer_render_layered_images, event, in_file
 
   ; Rendering in order
   final_image = render_all_images(layers, images)
-  
-  ; If RBG, put all channels into one image
-;  if (size(final_image, /N_DIMENSIONS) EQ 3) then begin
-;    merged_image = merge_channels(final_image)
-;  endif
 
   ; Save image to file
   write_rendered_image_to_file, p_wdgt_state, in_file, final_image
@@ -307,7 +369,7 @@ pro topo_advanced_vis_mixer_blend_modes, event
 
   in_file_list = strsplit(in_file_string, '#', /extract)
   for nF = 0,in_file_list.length-1 do begin
-    ;Input file
+    ; Input file
     in_file = in_file_list[nF]
     print, 'File name:', in_file
     
