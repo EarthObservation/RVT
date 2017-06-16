@@ -119,14 +119,47 @@ function blend_multi_dim_images, blend_mode, active, background
 end
 
 function lum, img
-  if max(img) gt 1.0 then img = RGB_to_float(img)
   n_channels = size(img, /N_DIMENSIONS)
-  ;if (n_channels EQ 3) then lum_img = get_luminosity(img, 1) else lum_img = img
-  if (n_channels EQ 3) then lum_img = RGB_to_grayscale(img) else lum_img = img
+
+  if (n_channels EQ 3) then begin
+    lum_img = RGB_to_grayscale(img)
+    if typename(img) ne 'FLOAT' then lum_img = RGB_to_float(lum_img)
+  endif else begin
+    lum_img = img
+  endelse
+  
   return, lum_img
 end
 
+function clip_color, c
+  lum = lum(c)
+  
+  R = reform(c[0, *, *])
+  G = reform(c[1, *, *])
+  B = reform(c[2, *, *])
+
+  min_c = min([R, G, B])
+  max_c = max([R, G, B])
+  
+  if (min_c lt 0.0) then begin
+       c = lum + ((c - lum) * lum) / (lum - min_c)
+;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
+;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
+;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
+  end
+  if (max_c gt 1.0) then begin
+       c = lum + (((c - lum) * (1.0 - lum)) / (max_c - lum))
+;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+  end
+  
+  return, c
+end
+
 function blend_luminosity_equation, active, background
+  background = RGB_to_float(background)
+
   lum_active = lum(active)
   lum_background = lum(background)
   
@@ -147,60 +180,56 @@ function blend_luminosity_equation, active, background
     c[0, *, *] = reform(r, 1, x_size, y_size)
     c[1, *, *] = reform(g, 1, x_size, y_size)
     c[2, *, *] = reform(b, 1, x_size, y_size)
-
-    min_c = min([R, G, B])
-    max_c = max([R, G, B])
-  endif else begin
-    
-    c = background + lum
-    min_c = min(c)
-    max_c = max(c)
-  end
+  endif
   
-;  if (min_c lt 0.0) or (max_c gt 1.0) then begin
-;    c = float(c - min_c) / (float(max_c - min_c))
-;;    c[0, *, *] = (c[0, *, *] - min_c) / (max_c - min_c)
-;;    c[1, *, *] = (c[1, *, *] - min_c) / (max_c - min_c)
-;;    c[2, *, *] = (c[2, *, *] - min_c) / (max_c - min_c) 
-;  end
-
-  if (min_c lt 0.0) then begin
-     c = lum_active + ((c - lum_active) * lum_active) / (lum_active - min_c)
-    
-;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
-;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
-;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
-  end
-  if (max_c gt 1.0) then begin
-     c = lum_active + (((c - lum_active) * (1.0 - lum_active)) / (max_c - lum_active))
-;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-  end
-  
-  return, c
+  return, clip_color(c)
 end
 
-function get_luminosity, active, L_channel
+function get_lightness, active 
   n_channels = size(active, /N_DIMENSIONS)
 
   ; Monochrome (1) image
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
     ; Make sure it's correct value scale!
-   luminosity = active
-   ; luminosity = scale_0_to_1(active)
-    return, luminosity
+    lightness = active
+    return, lightness
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
     ; Float to RGB (if it's not already)
-    active = float_to_RGB(active)
-    
+    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
+
+    L_channel = 1
     COLOR_CONVERT, active, HLS_active, /RGB_HLS
-    luminosity =  reform(HLS_active[L_channel, *, *])
-    return, luminosity
+    lightness = reform(HLS_active[L_channel, *, *])
+
+    return, lightness
   endif
+end
+
+function get_luminance, active
+  n_channels = size(active, /N_DIMENSIONS)
+
+  ; Monochrome (1) image
+  if (n_channels EQ 2) then begin
+    ; Luminosity of monochrome image IS the monochrome image itself
+    active = grayscale_to_RGB_1(active)
+    
+;    luminance = active
+;    return, luminance
+  endif
+  ; Multichannel, RGB (3) image
+;  if (n_channels EQ 3) then begin
+    ; Float to RGB (if it's not already)
+    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
+
+    L_channel = 0
+    COLOR_CONVERT, active, YUV_active, /RGB_YUV
+    luminance = reform(YUV_active[L_channel, *, *])
+    
+    return, luminance
+;  endif
 end
 
 ; TO-DO:
@@ -210,7 +239,7 @@ end
 ; Luminosity 
 ; - blends the lightness values while ignoring the color information
 function blend_luminosity, active, background
-   L_channel = 1
+
    ;TO-DO - check
    n_active = size(active, /N_DIMENSIONS)
    n_background = size(background, /N_DIMENSIONS)
@@ -221,23 +250,32 @@ function blend_luminosity, active, background
 ;      background = scale_0_to_1(background)
        background = float_to_RGB(background)
      endif
-        
-;      ; HLS method: 
+
+;     A. HLS method with lightness:
+;      L_channel = 1
 ;      COLOR_CONVERT, background, HLS_background, /RGB_HLS
-;      HLS_background[L_channel,*, *] = get_luminosity(active, L_channel)
-;      
+;      HLS_background[L_channel,*, *] = get_lightness(active)
+;       
 ;      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
 ;      blended_image = RGB_to_float(blended_image)
       
-      ; Photoshop method:
-      blended_image = blend_luminosity_equation(active, background)
+;      B. YUV method with luminance:
+      L_channel = 0
+      COLOR_CONVERT, background, YUV_background, /RGB_YUV
+      YUV_background[L_channel,*, *] = get_luminance(active)
+
+      COLOR_CONVERT, YUV_background, blended_image, /YUV_RGB
+      blended_image = RGB_to_float(blended_image)
+      
+;      C. Adobe equation
+;      blended_image = blend_luminosity_equation(active, background)
       
       return, blended_image
    endif
    ; Replacing luminosity of single channel, monochrome image
    ; means replacing the monochrome image completely
    if (n_background EQ 2) then begin
-      return, get_luminosity(active, L_channel)
+      return, get_luminance(active)
    endif
 
 end
@@ -347,7 +385,6 @@ pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
   write_image_to_geotiff, overwrite, out_file, final_image
 end
-
 
 ; For every input file
 pro mixer_render_layered_images, event, in_file

@@ -105,18 +105,31 @@ function float_to_RGB, float_value
     return, rgb
 end
 
+; grayscale, luminance
 function RGB_to_grayscale, rgb
-    r = rgb[0, *, *] 
-    g = rgb[1, *, *] 
-    b = rgb[2, *, *] 
+    r = reform(rgb[0, *, *])
+    g = reform(rgb[1, *, *])
+    b = reform(rgb[2, *, *])
 
     gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
-    ;gs = (R + G + B) / 3 
+    
     return, gs
 end
 
+;function RGB_to_lightness, rgb
+;  r = reform(rgb[0, *, *])
+;  g = reform(rgb[1, *, *])
+;  b = reform(rgb[2, *, *])
+;
+;  ls = (min(R,G,B) + max([R,G,B])) / 2
+;  return, ls
+;end
+
 ; Either float or integer
 function scale_0_to_1, numeric_value
+  if min(numeric_value) eq 0.0 and max(numeric_value) eq 1.0 then $
+    return, numeric_value
+
   NaN_indices = Where(~Finite(numeric_value), count)
   if (count gt 0) then numeric_value[NaN_indices] = 0
 
@@ -151,20 +164,56 @@ function grayscale_to_RGB, grayscale
 ;  RGB[1, *, *] = reform(g, 1, x_size, y_size)
 ;  RGB[2, *, *] = reform(b, 1, x_size, y_size)
 
-  
+;  - - - - B:
 
-  dimensions = size(grayscale, /DIMENSIONS)
-  x_size = dimensions[0]
-  y_size = dimensions[1]
-  HLS_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 1.0)
-  scaled = scale_0_to_1(grayscale)
-  HLS_RGB[1, *, *] = reform(scaled, 1, x_size, y_size)
-  COLOR_CONVERT, HLS_RGB, RGB, /HLS_RGB  
+;  dimensions = size(grayscale, /DIMENSIONS)
+;  x_size = dimensions[0]
+;  y_size = dimensions[1]
+  
+;  YUV_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 1.0)
+;  scaled = scale_0_to_1(grayscale)
+;  YUV_RGB[1, *, *] = reform(scaled, 1, x_size, y_size)
+;  COLOR_CONVERT, YUV_RGB, RGB, /YUV_RGB
 
   return, RGB
 end
 
+function grayscale_to_RGB_1, grayscale
+  dimensions = size(grayscale, /DIMENSIONS)
+  x_size = dimensions[0]
+  y_size = dimensions[1]
+
+  YUV_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
+;  grayscale = scale_0_to_1(grayscale)
+  YUV_RGB[1, *, *] = reform(grayscale, 1, x_size, y_size)
+  COLOR_CONVERT, YUV_RGB, RGB, /YUV_RGB
+    
+;  YIQ_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
+;  ;  grayscale = scale_0_to_1(grayscale)
+;  YIQ_RGB[1, *, *] = reform(grayscale, 1, x_size, y_size)
+;  COLOR_CONVERT, YIQ_RGB, RGB, /YIQ_RGB
+
+    return, RGB
+end
+
+
 function grayscale_to_RGB_2, grayscale
+  grayscale = scale_0_to_1(grayscale)
+
+  dimensions = size(grayscale, /DIMENSIONS)
+  x_size = dimensions[0]
+  y_size = dimensions[1]
+  RGB = make_array(3, x_size, y_size)
+  RGB[0, *, *] = reform(grayscale/3, 1, x_size, y_size)
+  RGB[1, *, *] = reform(grayscale/3, 1, x_size, y_size)
+  RGB[2, *, *] = reform(grayscale/3, 1, x_size, y_size)
+ 
+  RGB = float_to_RGB(RGB) 
+
+  return, RGB
+end
+
+function grayscale_to_RGB_3, grayscale
   r = grayscale*0.3
   g = grayscale*0.59
   b = grayscale*0.11
@@ -182,7 +231,6 @@ function grayscale_to_RGB_2, grayscale
   return, RGB
 end
 
-
 ; Either float or integer
 function numeric_to_luminosity, numeric_value
   min_value = min(numeric_value)
@@ -190,5 +238,13 @@ function numeric_to_luminosity, numeric_value
 
   luminosity = float(numeric_value - min_value) / float(max_value - min_value)
   return, luminosity
+end
+
+function HSL_to_RGB, h, s, l
+
+end
+
+function RGB_to_HSL, r, g, b
+
 end
 
