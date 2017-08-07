@@ -126,6 +126,7 @@ end
 ;end
 
 ; Either float or integer
+; TODO: should only be used right before writing to file (not during 'processing')
 function scale_0_to_1, numeric_value
   if min(numeric_value) eq 0.0 and max(numeric_value) eq 1.0 then $
     return, numeric_value
@@ -185,7 +186,9 @@ function grayscale_to_RGB_1, grayscale
 
   YUV_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
 ;  grayscale = scale_0_to_1(grayscale)
-  YUV_RGB[1, *, *] = reform(grayscale, 1, x_size, y_size)
+  YUV_RGB[0, *, *] = reform(grayscale, 1, x_size, y_size)
+;  YUV_RGB[1, *, *] = make_array(x_size, y_size, /FLOAT, VALUE = 0.436)
+;  YUV_RGB[2, *, *] = make_array(x_size, y_size, /FLOAT, VALUE = 0.615)
   COLOR_CONVERT, YUV_RGB, RGB, /YUV_RGB
     
 ;  YIQ_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
@@ -197,26 +200,44 @@ function grayscale_to_RGB_1, grayscale
 end
 
 
-function grayscale_to_RGB_2, grayscale
-  grayscale = scale_0_to_1(grayscale)
+;function grayscale_to_RGB_2, grayscale
+;  grayscale = scale_0_to_1(grayscale)
+;
+;  dimensions = size(grayscale, /DIMENSIONS)
+;  x_size = dimensions[0]
+;  y_size = dimensions[1]
+;  RGB = make_array(3, x_size, y_size)
+;  RGB[0, *, *] = reform(grayscale/3, 1, x_size, y_size)
+;  RGB[1, *, *] = reform(grayscale/3, 1, x_size, y_size)
+;  RGB[2, *, *] = reform(grayscale/3, 1, x_size, y_size)
+; 
+;  RGB = float_to_RGB(RGB) 
+;
+;  return, RGB
+;end
 
-  dimensions = size(grayscale, /DIMENSIONS)
-  x_size = dimensions[0]
-  y_size = dimensions[1]
-  RGB = make_array(3, x_size, y_size)
-  RGB[0, *, *] = reform(grayscale/3, 1, x_size, y_size)
-  RGB[1, *, *] = reform(grayscale/3, 1, x_size, y_size)
-  RGB[2, *, *] = reform(grayscale/3, 1, x_size, y_size)
- 
-  RGB = float_to_RGB(RGB) 
+;function grayscale_to_RGB_3, grayscale
+;  r = grayscale*0.3
+;  g = grayscale*0.59
+;  b = grayscale*0.11
+;
+;  dimensions = size(grayscale, /DIMENSIONS)
+;  x_size = dimensions[0]
+;  y_size = dimensions[1]
+;  RGB = make_array(3, x_size, y_size)
+;  RGB[0, *, *] = reform(r, 1, x_size, y_size)
+;  RGB[1, *, *] = reform(g, 1, x_size, y_size)
+;  RGB[2, *, *] = reform(b, 1, x_size, y_size)
+;
+;  RGB = scale_0_to_1(RGB)
+;
+;  return, RGB
+;end
 
-  return, RGB
-end
-
-function grayscale_to_RGB_3, grayscale
-  r = grayscale*0.3
-  g = grayscale*0.59
-  b = grayscale*0.11
+function grayscale_to_RGB_4, grayscale
+  r = grayscale
+  g = grayscale
+  b = grayscale
 
   dimensions = size(grayscale, /DIMENSIONS)
   x_size = dimensions[0]
@@ -238,13 +259,5 @@ function numeric_to_luminosity, numeric_value
 
   luminosity = float(numeric_value - min_value) / float(max_value - min_value)
   return, luminosity
-end
-
-function HSL_to_RGB, h, s, l
-
-end
-
-function RGB_to_HSL, r, g, b
-
 end
 

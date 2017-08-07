@@ -141,18 +141,24 @@ function clip_color, c
   min_c = min([R, G, B])
   max_c = max([R, G, B])
   
-  if (min_c lt 0.0) then begin
-       c = lum + ((c - lum) * lum) / (lum - min_c)
+  min_value = min_c
+  max_value = max_c
+  if (min_c lt 0.0) or (max_c gt 1.0) then begin
+        c[0, *, *] = float(c[0, *, *] - min_value) / float(max_value - min_value)
+        c[1, *, *] = float(c[1, *, *] - min_value) / float(max_value - min_value)
+        c[2, *, *] = float(c[2, *, *] - min_value) / float(max_value - min_value)
+  endif
+  
+;  if (min_c lt 0.0) then begin
 ;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
 ;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
 ;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
-  end
-  if (max_c gt 1.0) then begin
-       c = lum + (((c - lum) * (1.0 - lum)) / (max_c - lum))
+;  end
+;  if (max_c gt 1.0) then begin
 ;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
 ;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
 ;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-  end
+;  end
   
   return, c
 end
@@ -182,7 +188,22 @@ function blend_luminosity_equation, active, background
     c[2, *, *] = reform(b, 1, x_size, y_size)
   endif
   
-  return, clip_color(c)
+  clipped_image = clip_color(c)
+  
+;  ; TMP:
+;  S_channel = 2
+;  background = float_to_RGB(background)
+;  clipped_image = float_to_RGB(clipped_image)
+;  COLOR_CONVERT, background, HLS_background, /RGB_HLS
+;  COLOR_CONVERT, clipped_image, HLS_clipped_image, /RGB_HLS
+;  HLS_clipped_image[S_channel,*, *] = HLS_background[S_channel,*, *]
+;  
+;  COLOR_CONVERT, HLS_clipped_image, blended_image, /HLS_RGB
+;  blended_image = RGB_to_float(blended_image)
+;
+;  return, blended_image 
+
+   return, clipped_image
 end
 
 function get_lightness, active 
@@ -214,8 +235,9 @@ function get_luminance, active
   ; Monochrome (1) image
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
-    active = grayscale_to_RGB_1(active)
     
+     active = grayscale_to_RGB_1(active)
+  
 ;    luminance = active
 ;    return, luminance
   endif
@@ -260,15 +282,15 @@ function blend_luminosity, active, background
 ;      blended_image = RGB_to_float(blended_image)
       
 ;      B. YUV method with luminance:
-      L_channel = 0
-      COLOR_CONVERT, background, YUV_background, /RGB_YUV
-      YUV_background[L_channel,*, *] = get_luminance(active)
-
-      COLOR_CONVERT, YUV_background, blended_image, /YUV_RGB
-      blended_image = RGB_to_float(blended_image)
+;      L_channel = 0
+;      COLOR_CONVERT, background, YUV_background, /RGB_YUV
+;      YUV_background[L_channel,*, *] = get_luminance(active)
+;
+;      COLOR_CONVERT, YUV_background, blended_image, /YUV_RGB
+;      blended_image = RGB_to_float(blended_image)
       
 ;      C. Adobe equation
-;      blended_image = blend_luminosity_equation(active, background)
+      blended_image = blend_luminosity_equation(active, background)
       
       return, blended_image
    endif
