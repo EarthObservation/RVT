@@ -131,22 +131,20 @@ function lum, img
   return, lum_img
 end
 
-function clip_color, c
+function clip_color, c, min_c=min_c, max_c=max_c
   lum = lum(c)
   
   R = reform(c[0, *, *])
   G = reform(c[1, *, *])
   B = reform(c[2, *, *])
 
-  min_c = min([R, G, B])
-  max_c = max([R, G, B])
+  if not keyword_set(min_c) then min_c = min([R, G, B]) 
+  if not keyword_set(max_c) then max_c = max([R, G, B])
   
-  min_value = min_c
-  max_value = max_c
   if (min_c lt 0.0) or (max_c gt 1.0) then begin
-        c[0, *, *] = float(c[0, *, *] - min_value) / float(max_value - min_value)
-        c[1, *, *] = float(c[1, *, *] - min_value) / float(max_value - min_value)
-        c[2, *, *] = float(c[2, *, *] - min_value) / float(max_value - min_value)
+        c[0, *, *] = float(c[0, *, *] - min_c) / float(max_c - min_c)
+        c[1, *, *] = float(c[1, *, *] - min_c) / float(max_c - min_c)
+        c[2, *, *] = float(c[2, *, *] - min_c) / float(max_c - min_c)
   endif
   
 ;  if (min_c lt 0.0) then begin
@@ -163,7 +161,7 @@ function clip_color, c
   return, c
 end
 
-function blend_luminosity_equation, active, background
+function blend_luminosity_equation, active, background, min_c=min_c, max_c=max_c
   background = RGB_to_float(background)
 
   lum_active = lum(active)
@@ -188,7 +186,8 @@ function blend_luminosity_equation, active, background
     c[2, *, *] = reform(b, 1, x_size, y_size)
   endif
   
-  clipped_image = clip_color(c)
+  if keyword_set(min_c) and keyword_set(max_c) then clipped_image = clip_color(c, min_c=min_c, max_c=max_c) $
+  else clipped_image = clip_color(c)
   
 ;  ; TMP:
 ;  S_channel = 2
@@ -260,7 +259,7 @@ end
 ; 
 ; Luminosity 
 ; - blends the lightness values while ignoring the color information
-function blend_luminosity, active, background
+function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 
    ;TO-DO - check
    n_active = size(active, /N_DIMENSIONS)
@@ -290,7 +289,7 @@ function blend_luminosity, active, background
 ;      blended_image = RGB_to_float(blended_image)
       
 ;      C. Adobe equation
-      blended_image = blend_luminosity_equation(active, background)
+      blended_image = blend_luminosity_equation(active, background, min_c=min_c, max_c=max_c)
       
       return, blended_image
    endif
@@ -302,12 +301,12 @@ function blend_luminosity, active, background
 
 end
 
-function blend_images, blend_mode, active, background
+function blend_images, blend_mode, active, background, min_c=min_c, max_c=max_c
   case blend_mode of
     'Multiply': return, blend_multi_dim_images(blend_mode, active, background) 
     'Overlay': return, blend_multi_dim_images(blend_mode, active, background) 
     'Screen': return, blend_multi_dim_images(blend_mode, active, background) 
-    'Luminosity': return, blend_luminosity(active, background)
+    'Luminosity': return, blend_luminosity(active, background, min_c=min_c, max_c=max_c)
     ELSE: return, blend_normal(active, background)
   endcase
 end
@@ -367,6 +366,8 @@ end
 ;
 function render_all_images, layers, images
   rendered_image = []
+  
+  ;TO-DO: apply tiling
 
   for i=layers.length-1,0,-1 do begin
     ; if current layer has no visualization applied, skip
@@ -385,7 +386,7 @@ function render_all_images, layers, images
       blend_mode = layers[i].blend_mode
       opacity = layers[i].opacity
       
-      top = blend_images(blend_mode, active, background)
+      top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
       rendered_image = render_images(top, background, opacity)
     endelse
   endfor

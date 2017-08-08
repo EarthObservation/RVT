@@ -1,6 +1,6 @@
 ; Here is the typical workflow when using tile iterators:
 
-pro get_min_max_luminosity, iterator_background, iterator_active, min_c=min_c, max_c=max_c
+pro get_min_max_luminosity_tiled, iterator_active, iterator_background, min_c=min_c, max_c=max_c
   FOR count=1, iterator_background.NTILES DO BEGIN
     ; next tile
     background = iterator_background.Next()
@@ -40,7 +40,7 @@ pro get_min_max_luminosity, iterator_background, iterator_active, min_c=min_c, m
   endfor
 end
 
-PRO blend_tile_iterator, file1, file2, blend_mode, opacity
+FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, opacity
   COMPILE_OPT IDL2
 
   ; Start the application
@@ -50,12 +50,12 @@ PRO blend_tile_iterator, file1, file2, blend_mode, opacity
   ; file = FILEPATH('qb_boulder_pan', ROOT_DIR=e.ROOT_DIR, SUBDIRECTORY = ['data'])
 
   ; 1. Create an ENVIRaster object from the source image.
-  background = e.OpenRaster(file1)
-  active = e.OpenRaster(file2)
+  background = e.OpenRaster(path_background)
+  active = e.OpenRaster(path_active)
   
   if (background.NROWS ne active.NROWS) or (background.NCOLUMNS ne active.NCOLUMNS) then begin
     print, 'Error! The images have different dimensions!'
-    return
+    return, !null
   endif
 
   ; 2. Create an empty ENVIRaster object with the same number of rows and columns as the source raster.
@@ -72,11 +72,11 @@ PRO blend_tile_iterator, file1, file2, blend_mode, opacity
   
   if (iterator_background.NTILES ne iterator_active.NTILES) then begin
     print, 'Error! The images have different number of tiles!'
-    return
+    return, !null
   endif
    
   if (blend_mode eq 'Luminosity') then begin
-    get_min_max_luminosity, iterator_background, iterator_active, min_c=min_c, max_c=max_c
+    get_min_max_luminosity, iterator_active, iterator_background, min_c=min_c, max_c=max_c
   endif
 
   ; 4. Use the tile iterator to get tiles of data from the source raster.
@@ -89,8 +89,6 @@ PRO blend_tile_iterator, file1, file2, blend_mode, opacity
     PRINT, count
 
     ; 5. Perform image-processing tasks on the data.
-
-        
     top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
     rendered_tile = render_images(top, background, opacity)
     currentSubRect = tileIterator.CURRENT_SUBRECT
@@ -104,10 +102,54 @@ PRO blend_tile_iterator, file1, file2, blend_mode, opacity
 
   ; Display new raster
   View = e.GetView()
-
-  Layer = View.CreateLayer(EdgeDogRaster)
+  Layer = View.CreateLayer(blended_image)
+  
+  return, blended_image
+  
 END
 
+
+; TODO: paths_images (dictionary), try to use mixer_get_paths_to_input_files(event, source_image_file)
+function render_all_images_tiled, layers, paths_images
+
+     for i=layers.length-1,0,-1 do begin
+      ; if current layer has no visualization applied, skip
+      visualization = layers[i].vis
+      if (visualization EQ '<none>') then continue
+
+      ; if current layer has visualization applied, but there has been no rendering of images yet,
+      ; then current layer will be the initial value of rendered_image
+      if (path_rendered_image EQ []) then begin
+        path_rendered_image = paths_images[visualization] ; TO-DO: to path
+        continue
+      endif else begin
+        ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
+        path_active = paths_images[visualization] ; TO-DO: to image_path
+        path_background = path_rendered_image ; this will be image path when returned from 
+        blend_mode = layers[i].blend_mode
+        opacity = layers[i].opacity
+        
+        path_rendered_image = blend_render_tile_iterator(path_background, path_active, blend_mode, opacity)
+      endelse
+      
+      return, path_rendered_image
+end
+
+
+; For every input file
+pro mixer_render_layered_images_tiled, event, in_file
+  widget_control, event.top, get_uvalue=p_wdgt_state
+
+  layers = (*p_wdgt_state).current_combination.layers
+  paths_images = (*p_wdgt_state).mixer_layer_filepaths[i] ; (*p_wdgt_state).mixer_layer_images
+
+  ; Rendering in order
+  path_final_image = render_all_images_tiled(layers, paths_images)
+
+  ; ; Save image to file
+  ; write_rendered_image_to_file, p_wdgt_state, in_file, final_image
+  ; TODO: Above replace with Rename path_final_image to in_file
+end
 
 ;pro topo_advanced_tiling
 ;

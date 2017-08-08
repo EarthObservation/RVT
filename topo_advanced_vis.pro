@@ -833,15 +833,34 @@ function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layer
   return, create_struct('layers', widget_layers)
 end
 
+function mixer_get_paths_to_input_files, event, source_image_file
+    widget_control, event.top, get_uvalue = p_wdgt_state
+    layers = (*p_wdgt_state).current_combination.layers
+    
+    ; Get paths to input files
+    in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
+    in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
+    input_files = (*p_wdgt_state).output_files_array[in_file]
+    format_ending = '.tif'
+    
+    file_names = MAKE_ARRAY(layers.length-1, /STRING)
+    for i=0,layers.length-1 do begin
+      file_names = input_files[visualization] + format_ending
+    endfor
+    
+    return, file_names
+end
+
 ; 
 pro mixer_input_images_to_layers, event, source_image_file
   widget_control, event.top, get_uvalue = p_wdgt_state
   
   ; Get paths to input files
-  in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
-  in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
-  input_files = (*p_wdgt_state).output_files_array[in_file]
-  format_ending = '.tif'
+;  in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
+;  in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
+;  input_files = (*p_wdgt_state).output_files_array[in_file]
+;  format_ending = '.tif'
+  file_names = mixer_get_paths_to_input_files(event, source_image_file)
 
   ; Open the files into appropriate layers
   mixer_layer_images = hash()
@@ -852,8 +871,9 @@ pro mixer_input_images_to_layers, event, source_image_file
     
     if (visualization EQ '<none>') then continue
     
-    file_name = input_files[visualization] + format_ending
-    image = read_image_geotiff(file_name, (*p_wdgt_state).in_orientation)
+    ;file_name = input_files[visualization] + format_ending
+
+    image = read_image_geotiff(file_names[i], (*p_wdgt_state).in_orientation)
     dim = size(image, /N_DIMENSIONS)
     
     image = scale_0_to_1(image)
@@ -869,8 +889,10 @@ pro mixer_input_images_to_layers, event, source_image_file
 ;    endif
     
     mixer_layer_images += hash(visualization, image)
+
   endfor
   (*p_wdgt_state).mixer_layer_images = mixer_layer_images
+  (*p_wdgt_state).mixer_layer_filepaths = file_names
 end
 
 pro user_widget_mixer_unit_test, event
@@ -2052,6 +2074,7 @@ pro topo_advanced_vis, re_run=re_run
   ; Dinamically generated layer rows with widgets 
   nr_layers = 4 
   layers_tag = ['First:', 'Second:', 'Third:', 'Fourth:']
+  mixer_layer_filepaths = make_array(nr_layers, /string)
   
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
   widget_layers = REPLICATE(widget_layer, nr_layers)
@@ -2190,6 +2213,7 @@ pro topo_advanced_vis, re_run=re_run
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         output_files_array:output_files_array, $
+                        mixer_layer_filepaths:mixer_layer_filepaths, $
                         mixer_layer_images:mixer_layer_images, $
                         mixer_layers_rgb:mixer_layers_rgb, $
                         selection_str:selection_str, $  ; selection string
