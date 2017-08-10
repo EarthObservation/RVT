@@ -40,7 +40,50 @@ pro get_min_max_luminosity_tiled, iterator_active, iterator_background, min_c=mi
   endfor
 end
 
-FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, opacity
+function normalize_image_tiled, image_name, image, iterator_image, normalization, 
+                                norm_min=norm_min, norm_max=norm_max, min=min, max=max
+  
+  ; PARAMETERS:
+  ; for percentual normalization
+  if (normalization EQ 'Perc') then begin
+    if(perc GT 0.5 AND perc LT 100.0001) then perc = perc / 100.0
+    
+    min_values = []
+    max_values = []
+    
+    ; find min, max for linear normalization
+    FOR count=1, iterator_image.NTILES DO BEGIN
+      image_tile = iterator_image.Next()
+      distribution = cgPercentiles(image_tile, Percentiles=[perc, 1.0-perc])
+      min_values = [ min_values, distribution[0] ]
+      max_values = [ max_values, distribution[1] ]
+    endfor
+    
+    norm_min[image_name] = mean(min_values, /nan)
+    norm_max[image_name] = mean(max_values, /nan)
+    
+  endif else begin
+  ; for linear normalization
+    norm_min[image_name] = min
+    norm_max[image_name] = max    
+  endelse
+
+  ; NORMALIZE
+  FOR count=1, iterator_image.NTILES DO BEGIN
+    ; next tile
+    image_tile = iterator_image.Next()
+
+    equ_image_tile = normalize_lin(image, norm_min[image_name], norm_max[image_name])
+    
+    
+  endfor
+
+  return, normalized_image
+end
+
+FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, opacity, 
+                                     normalization, min=min, max=max, 
+                                     norm_min=norm_min, norm_max=norm_max, normalize_background=normalize_background
   COMPILE_OPT IDL2
 
   ; Start the application
@@ -50,8 +93,8 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
   ; file = FILEPATH('qb_boulder_pan', ROOT_DIR=e.ROOT_DIR, SUBDIRECTORY = ['data'])
 
   ; 1. Create an ENVIRaster object from the source image.
-  background = e.OpenRaster(path_background)
-  active = e.OpenRaster(path_active)
+  background_or = e.OpenRaster(path_background)
+  active_or = e.OpenRaster(path_active)
   
   if (background.NROWS ne active.NROWS) or (background.NCOLUMNS ne active.NCOLUMNS) then begin
     print, 'Error! The images have different dimensions!'
@@ -67,12 +110,19 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
     DATA_TYPE=background.DATA_TYPE)
 
   ; 3. Use ENVIRaster::CreateTileIterator to create a tile iterator object.
-  iterator_background = background.CreateTileIterator()
-  iterator_active = active.CreateTileIterator()
+  iterator_background = background_or.CreateTileIterator()
+  iterator_active = active_or.CreateTileIterator()
   
   if (iterator_background.NTILES ne iterator_active.NTILES) then begin
     print, 'Error! The images have different number of tiles!'
     return, !null
+  endif
+  
+  ; Normalize
+  normalization_cutoffs_tiled_image(path_active, active, iterator_active, norm_min=norm_min, norm_max=norm_max)
+  ; Background normalizing only when the background is bottom layer image, not previous rendered image
+  if keyword_set(normalize_background) then begin
+    normalization_cutoffs_tiled_image(path_background, background, iterator_background, norm_min=norm_min, norm_max=norm_max)
   endif
    
   if (blend_mode eq 'Luminosity') then begin
@@ -89,6 +139,9 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
     PRINT, count
 
     ; 5. Perform image-processing tasks on the data.
+    active = normalize_lin(active, norm_min[path_active], norm_max[path_active])
+    if keyword_set(normalize_background) then background = normalize_lin(background, norm_min[path_background], norm_max[path_background])
+    
     top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
     rendered_tile = render_images(top, background, opacity)
     currentSubRect = tileIterator.CURRENT_SUBRECT
@@ -110,9 +163,12 @@ END
 
 
 ; TODO: paths_images (dictionary), try to use mixer_get_paths_to_input_files(event, source_image_file)
-function render_all_images_tiled, layers, paths_images
+function render_all_images_tiled, layers, paths_images, normalization, min=min, max=max
 
-     for i=layers.length-1,0,-1 do begin
+    norm_min = hash()
+    norm_max = hash()
+
+    for i=layers.length-1,0,-1 do begin
       ; if current layer has no visualization applied, skip
       visualization = layers[i].vis
       if (visualization EQ '<none>') then continue
@@ -126,10 +182,13 @@ function render_all_images_tiled, layers, paths_images
         ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
         path_active = paths_images[visualization] ; TO-DO: to image_path
         path_background = path_rendered_image ; this will be image path when returned from 
+        normalize_background = path_background eq paths_images[visualization]
         blend_mode = layers[i].blend_mode
-        opacity = layers[i].opacity
+        opacity = layers[i].opacity  
         
-        path_rendered_image = blend_render_tile_iterator(path_background, path_active, blend_mode, opacity)
+        path_rendered_image = blend_render_tile_iterator(path_background, path_active, blend_mode, opacity, 
+                                                         normalization, min=min, max=max,
+                                                         norm_min=norm_min, norm_max=norm_max, normalize_background=normalize_background)
       endelse
       
       return, path_rendered_image
@@ -142,13 +201,35 @@ pro mixer_render_layered_images_tiled, event, in_file
 
   layers = (*p_wdgt_state).current_combination.layers
   paths_images = (*p_wdgt_state).mixer_layer_filepaths[i] ; (*p_wdgt_state).mixer_layer_images
+  
+  normalization = layers[i].normalization
+  min = float(layers[i].min)
+  max = float(layers[i].max)
 
   ; Rendering in order
-  path_final_image = render_all_images_tiled(layers, paths_images)
+  path_final_image = render_all_images_tiled(layers, paths_images, normalization, min=min, max=max)
 
   ; ; Save image to file
   ; write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   ; TODO: Above replace with Rename path_final_image to in_file
+end
+
+
+
+pro topo_advanced_vis_mixer_blend_modes_tiled, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  in_file_string = (*p_wdgt_state).selection_str
+
+  in_file_list = strsplit(in_file_string, '#', /extract)
+  for nF = 0,in_file_list.length-1 do begin
+    ; Input file
+    in_file = in_file_list[nF]
+    print, 'File name:', in_file
+
+    ; process with tiling
+    mixer_render_layered_images_tiled, event, in_file
+    
+  endfor
 end
 
 ;pro topo_advanced_tiling
