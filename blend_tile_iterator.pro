@@ -40,12 +40,24 @@ pro get_min_max_luminosity_tiled, iterator_active, iterator_background, min_c=mi
   endfor
 end
 
-function normalize_image_tiled, image_name, image, iterator_image, normalization, 
-                                norm_min=norm_min, norm_max=norm_max, min=min, max=max
+function normalize_image_tiled, image_path, visualization, normalization, norm_min=norm_min, norm_max=norm_max, min=min, max=max
+  
+  raster_image = e.OpenRaster(image_path)
+  iterator_image = raster_image.CreateTileIterator()
+  
+  ; Create a new raster
+  newFile = e.GetTemporaryFilename()
+  normalized_image_name = ENVIRaster(URI=newFile, $
+    NROWS=OrigRaster.NROWS, $
+    NCOLUMNS=OrigRaster.NCOLUMNS, $
+    NBANDS=OrigRaster.NBANDS, $
+    DATA_TYPE=OrigRaster.DATA_TYPE)
+  
   
   ; PARAMETERS:
   ; for percentual normalization
   if (normalization EQ 'Perc') then begin
+    perc = max
     if(perc GT 0.5 AND perc LT 100.0001) then perc = perc / 100.0
     
     min_values = []
@@ -59,30 +71,37 @@ function normalize_image_tiled, image_name, image, iterator_image, normalization
       max_values = [ max_values, distribution[1] ]
     endfor
     
-    norm_min[image_name] = mean(min_values, /nan)
-    norm_max[image_name] = mean(max_values, /nan)
+    norm_min[visualization] = mean(min_values, /nan)
+    norm_max[visualization] = mean(max_values, /nan)
     
   endif else begin
   ; for linear normalization
-    norm_min[image_name] = min
-    norm_max[image_name] = max    
+    norm_min[visualization] = min
+    norm_max[visualization] = max    
   endelse
 
   ; NORMALIZE
   FOR count=1, iterator_image.NTILES DO BEGIN
     ; next tile
     image_tile = iterator_image.Next()
-
-    equ_image_tile = normalize_lin(image, norm_min[image_name], norm_max[image_name])
-    
-    
+    ; process
+    normalized_tile = normalize_lin(image, norm_min[visualization], norm_max[visualization])    
+    ; 
+    currentSubRect = tileIterator.CURRENT_SUBRECT
+    normalized_image_name.SetData, normalized_tile, SUB_RECT=currentSubRect
   endfor
+  
+  normalized_image_name.Save
 
-  return, normalized_image
+  ; Display new raster
+  View = e.GetView()
+  Layer = View.CreateLayer(normalized_image_name)
+
+  return, normalized_image_name
 end
 
-FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, opacity, 
-                                     normalization, min=min, max=max, 
+FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, opacity, $
+                                     normalization, min=min, max=max, $
                                      norm_min=norm_min, norm_max=norm_max, normalize_background=normalize_background
   COMPILE_OPT IDL2
 
@@ -92,10 +111,6 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
   ; Select input data
   ; file = FILEPATH('qb_boulder_pan', ROOT_DIR=e.ROOT_DIR, SUBDIRECTORY = ['data'])
 
-  ; 1. Create an ENVIRaster object from the source image.
-  background_or = e.OpenRaster(path_background)
-  active_or = e.OpenRaster(path_active)
-  
   if (background.NROWS ne active.NROWS) or (background.NCOLUMNS ne active.NCOLUMNS) then begin
     print, 'Error! The images have different dimensions!'
     return, !null
@@ -108,6 +123,17 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
     NCOLUMNS=background.NCOLUMNS, $
     NBANDS=max(background.NBANDS, active.NBANDS), $
     DATA_TYPE=background.DATA_TYPE)
+    
+  ; Normalize image on active layer
+  path_active_normalized = normalize_image_tiled(path_active, norm_min=norm_min, norm_max=norm_max)
+  
+  ; Background normalizing only when the background is bottom layer image, not previous rendered image
+  if keyword_set(normalize_background) then path_background_normalized = normalize_image_tiled(path_background, norm_min=norm_min, norm_max=norm_max)
+  
+  ; 1. Create an ENVIRaster object from the source image.  
+  active = e.OpenRaster(path_active_normalized)
+  if keyword_set(normalize_background) then background = e.OpenRaster(path_background_normalized) $
+  else background = e.OpenRaster(path_background)
 
   ; 3. Use ENVIRaster::CreateTileIterator to create a tile iterator object.
   iterator_background = background_or.CreateTileIterator()
@@ -116,13 +142,6 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
   if (iterator_background.NTILES ne iterator_active.NTILES) then begin
     print, 'Error! The images have different number of tiles!'
     return, !null
-  endif
-  
-  ; Normalize
-  normalization_cutoffs_tiled_image(path_active, active, iterator_active, norm_min=norm_min, norm_max=norm_max)
-  ; Background normalizing only when the background is bottom layer image, not previous rendered image
-  if keyword_set(normalize_background) then begin
-    normalization_cutoffs_tiled_image(path_background, background, iterator_background, norm_min=norm_min, norm_max=norm_max)
   endif
    
   if (blend_mode eq 'Luminosity') then begin
@@ -144,7 +163,7 @@ FUNCTION blend_render_tile_iterator, path_background, path_active, blend_mode, o
     
     top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
     rendered_tile = render_images(top, background, opacity)
-    currentSubRect = tileIterator.CURRENT_SUBRECT
+    currentSubRect = iterator_background.CURRENT_SUBRECT
 
     ; 6. Use the ENVIRaster::SetData method to populate the empty raster with the processed tiles of data.
     blended_image.SetData, rendered_tile, SUB_RECT=currentSubRect
@@ -186,12 +205,13 @@ function render_all_images_tiled, layers, paths_images, normalization, min=min, 
         blend_mode = layers[i].blend_mode
         opacity = layers[i].opacity  
         
-        path_rendered_image = blend_render_tile_iterator(path_background, path_active, blend_mode, opacity, 
-                                                         normalization, min=min, max=max,
+        path_rendered_image = blend_render_tile_iterator(path_background, path_active, blend_mode, opacity, $ 
+                                                         normalization, min=min, max=max, $
                                                          norm_min=norm_min, norm_max=norm_max, normalize_background=normalize_background)
       endelse
+    endfor
       
-      return, path_rendered_image
+    return, path_rendered_image
 end
 
 
@@ -201,7 +221,7 @@ pro mixer_render_layered_images_tiled, event, in_file
 
   layers = (*p_wdgt_state).current_combination.layers
   paths_images = (*p_wdgt_state).mixer_layer_filepaths[i] ; (*p_wdgt_state).mixer_layer_images
-  
+
   normalization = layers[i].normalization
   min = float(layers[i].min)
   max = float(layers[i].max)
@@ -213,8 +233,6 @@ pro mixer_render_layered_images_tiled, event, in_file
   ; write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   ; TODO: Above replace with Rename path_final_image to in_file
 end
-
-
 
 pro topo_advanced_vis_mixer_blend_modes_tiled, event
   widget_control, event.top, get_uvalue=p_wdgt_state
@@ -228,7 +246,7 @@ pro topo_advanced_vis_mixer_blend_modes_tiled, event
 
     ; process with tiling
     mixer_render_layered_images_tiled, event, in_file
-    
+
   endfor
 end
 
@@ -345,3 +363,4 @@ end
 ;
 ;end
 ;
+

@@ -843,9 +843,12 @@ function mixer_get_paths_to_input_files, event, source_image_file
     input_files = (*p_wdgt_state).output_files_array[in_file]
     format_ending = '.tif'
     
-    file_names = MAKE_ARRAY(layers.length-1, /STRING)
+    file_names = MAKE_ARRAY(layers.length, /STRING)
     for i=0,layers.length-1 do begin
-      file_names = input_files[visualization] + format_ending
+      visualization = layers[i].vis
+      if (visualization eq '<none>') then continue
+        
+      file_names[i] = input_files[visualization] + format_ending
     endfor
     
     return, file_names
@@ -856,10 +859,6 @@ pro mixer_input_images_to_layers, event, source_image_file
   widget_control, event.top, get_uvalue = p_wdgt_state
   
   ; Get paths to input files
-;  in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
-;  in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
-;  input_files = (*p_wdgt_state).output_files_array[in_file]
-;  format_ending = '.tif'
   file_names = mixer_get_paths_to_input_files(event, source_image_file)
 
   ; Open the files into appropriate layers
@@ -870,8 +869,6 @@ pro mixer_input_images_to_layers, event, source_image_file
     visualization = layers[i].vis
     
     if (visualization EQ '<none>') then continue
-    
-    ;file_name = input_files[visualization] + format_ending
 
     image = read_image_geotiff(file_names[i], (*p_wdgt_state).in_orientation)
     dim = size(image, /N_DIMENSIONS)
