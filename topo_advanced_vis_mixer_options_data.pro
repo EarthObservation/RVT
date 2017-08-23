@@ -17,6 +17,7 @@ function gen_vis_droplist
   vis_droplist[9] = 'Sky illumination'
   vis_droplist[10] = 'Local dominance'
   vis_droplist[11] = '<none>'
+  vis_droplist[12] = '<input custom file>'
 
   return, vis_droplist
 end

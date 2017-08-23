@@ -22,6 +22,7 @@ resolve_routine, 'cgErrorMsg', /is_function
 resolve_routine, 'convert_to_type', /is_function
 resolve_routine, 'cgPercentiles', /is_function
 resolve_routine, 'cgScaleVector', /is_function
+resolve_routine, 'fpufix', /is_function
 
 cd, rvt_dir
 resolve_routine, 'programrootdir', /is_function
@@ -33,6 +34,7 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_localrelief'
+resolve_routine, 'blend_tile_iterator', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_normalization', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_options_data', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_blend_modes', /COMPILE_FULL_FILE

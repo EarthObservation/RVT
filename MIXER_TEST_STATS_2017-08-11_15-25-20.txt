@@ -1,0 +1,240 @@
+
+
+
+;-------------------------------------------------------------------------
+;-------------------------------------------------------------------------
+
+ FILE: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena.tif
+
+;-------------------------------------------------------------------------
+;-------------------------------------------------------------------------
+;------ Blend mode: Normal --------------------
+;-------------------------------------------------------------------------
+
+Visualization:  Analytical hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Normal_40.tif
+Visualization:  Analytical hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Normal_75.tif
+Visualization:  Analytical hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Normal_100.tif
+
+Visualization:  Hillshading from multiple directions      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Normal_40.tif
+Visualization:  Hillshading from multiple directions      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Normal_75.tif
+Visualization:  Hillshading from multiple directions      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Normal_100.tif
+
+Visualization:  PCA of hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Normal_40.tif
+Visualization:  PCA of hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Normal_75.tif
+Visualization:  PCA of hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Normal_100.tif
+
+Visualization:  Slope gradient      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Normal_40.tif
+Visualization:  Slope gradient      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Normal_75.tif
+Visualization:  Slope gradient      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Normal_100.tif
+
+Visualization:  Simple local relief model      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Normal_40.tif
+Visualization:  Simple local relief model      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Normal_75.tif
+Visualization:  Simple local relief model      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Normal_100.tif
+
+Visualization:  Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Normal_40.tif
+Visualization:  Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Normal_75.tif
+Visualization:  Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Normal_100.tif
+
+Visualization:  Anisotropic Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Normal_40.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Normal_75.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Normal_100.tif
+
+Visualization:  Openness - Positive      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Normal_40.tif
+Visualization:  Openness - Positive      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Normal_75.tif
+Visualization:  Openness - Positive      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Normal_100.tif
+
+Visualization:  Openness - Negative      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Normal_40.tif
+Visualization:  Openness - Negative      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Normal_75.tif
+Visualization:  Openness - Negative      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Normal_100.tif
+
+Visualization:  Sky illumination      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Normal_40.tif
+Visualization:  Sky illumination      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Normal_75.tif
+Visualization:  Sky illumination      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Normal_100.tif
+
+Visualization:  Local dominance      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Normal_40.tif
+Visualization:  Local dominance      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Normal_75.tif
+Visualization:  Local dominance      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Normal_100.tif
+;------ Blend mode: Multiply --------------------
+;-------------------------------------------------------------------------
+
+Visualization:  Analytical hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Multiply_40.tif
+Visualization:  Analytical hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Multiply_75.tif
+Visualization:  Analytical hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Multiply_100.tif
+
+Visualization:  Hillshading from multiple directions      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Multiply_40.tif
+Visualization:  Hillshading from multiple directions      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Multiply_75.tif
+Visualization:  Hillshading from multiple directions      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Multiply_100.tif
+
+Visualization:  PCA of hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Multiply_40.tif
+Visualization:  PCA of hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Multiply_75.tif
+Visualization:  PCA of hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Multiply_100.tif
+
+Visualization:  Slope gradient      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Multiply_40.tif
+Visualization:  Slope gradient      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Multiply_75.tif
+Visualization:  Slope gradient      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Multiply_100.tif
+
+Visualization:  Simple local relief model      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Multiply_40.tif
+Visualization:  Simple local relief model      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Multiply_75.tif
+Visualization:  Simple local relief model      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Multiply_100.tif
+
+Visualization:  Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Multiply_40.tif
+Visualization:  Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Multiply_75.tif
+Visualization:  Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Multiply_100.tif
+
+Visualization:  Anisotropic Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Multiply_40.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Multiply_75.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Multiply_100.tif
+
+Visualization:  Openness - Positive      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Multiply_40.tif
+Visualization:  Openness - Positive      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Multiply_75.tif
+Visualization:  Openness - Positive      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Multiply_100.tif
+
+Visualization:  Openness - Negative      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Multiply_40.tif
+Visualization:  Openness - Negative      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Multiply_75.tif
+Visualization:  Openness - Negative      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Multiply_100.tif
+
+Visualization:  Sky illumination      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Multiply_40.tif
+Visualization:  Sky illumination      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Multiply_75.tif
+Visualization:  Sky illumination      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Multiply_100.tif
+
+Visualization:  Local dominance      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Multiply_40.tif
+Visualization:  Local dominance      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Multiply_75.tif
+Visualization:  Local dominance      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Multiply_100.tif
+;------ Blend mode: Overlay --------------------
+;-------------------------------------------------------------------------
+
+Visualization:  Analytical hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Overlay_40.tif
+Visualization:  Analytical hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Overlay_75.tif
+Visualization:  Analytical hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Overlay_100.tif
+
+Visualization:  Hillshading from multiple directions      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Overlay_40.tif
+Visualization:  Hillshading from multiple directions      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Overlay_75.tif
+Visualization:  Hillshading from multiple directions      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Overlay_100.tif
+
+Visualization:  PCA of hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Overlay_40.tif
+Visualization:  PCA of hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Overlay_75.tif
+Visualization:  PCA of hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Overlay_100.tif
+
+Visualization:  Slope gradient      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Overlay_40.tif
+Visualization:  Slope gradient      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Overlay_75.tif
+Visualization:  Slope gradient      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Overlay_100.tif
+
+Visualization:  Simple local relief model      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Overlay_40.tif
+Visualization:  Simple local relief model      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Overlay_75.tif
+Visualization:  Simple local relief model      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Overlay_100.tif
+
+Visualization:  Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Overlay_40.tif
+Visualization:  Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Overlay_75.tif
+Visualization:  Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Overlay_100.tif
+
+Visualization:  Anisotropic Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Overlay_40.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Overlay_75.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Overlay_100.tif
+
+Visualization:  Openness - Positive      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Overlay_40.tif
+Visualization:  Openness - Positive      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Overlay_75.tif
+Visualization:  Openness - Positive      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Overlay_100.tif
+
+Visualization:  Openness - Negative      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Overlay_40.tif
+Visualization:  Openness - Negative      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Overlay_75.tif
+Visualization:  Openness - Negative      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Overlay_100.tif
+
+Visualization:  Sky illumination      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Overlay_40.tif
+Visualization:  Sky illumination      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Overlay_75.tif
+Visualization:  Sky illumination      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Overlay_100.tif
+
+Visualization:  Local dominance      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Overlay_40.tif
+Visualization:  Local dominance      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Overlay_75.tif
+Visualization:  Local dominance      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Overlay_100.tif
+;------ Blend mode: Luminosity --------------------
+;-------------------------------------------------------------------------
+
+Visualization:  Analytical hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Luminosity_40.tif
+Visualization:  Analytical hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Luminosity_75.tif
+Visualization:  Analytical hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Luminosity_100.tif
+
+Visualization:  Hillshading from multiple directions      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Luminosity_40.tif
+Visualization:  Hillshading from multiple directions      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Luminosity_75.tif
+Visualization:  Hillshading from multiple directions      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Luminosity_100.tif
+
+Visualization:  PCA of hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Luminosity_40.tif
+Visualization:  PCA of hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Luminosity_75.tif
+Visualization:  PCA of hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Luminosity_100.tif
+
+Visualization:  Slope gradient      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Luminosity_40.tif
+Visualization:  Slope gradient      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Luminosity_75.tif
+Visualization:  Slope gradient      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Luminosity_100.tif
+
+Visualization:  Simple local relief model      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Luminosity_40.tif
+Visualization:  Simple local relief model      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Luminosity_75.tif
+Visualization:  Simple local relief model      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Luminosity_100.tif
+
+Visualization:  Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Luminosity_40.tif
+Visualization:  Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Luminosity_75.tif
+Visualization:  Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Luminosity_100.tif
+
+Visualization:  Anisotropic Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Luminosity_40.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Luminosity_75.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Luminosity_100.tif
+
+Visualization:  Openness - Positive      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Luminosity_40.tif
+Visualization:  Openness - Positive      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Luminosity_75.tif
+Visualization:  Openness - Positive      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Luminosity_100.tif
+
+Visualization:  Openness - Negative      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Luminosity_40.tif
+Visualization:  Openness - Negative      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Luminosity_75.tif
+Visualization:  Openness - Negative      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Luminosity_100.tif
+
+Visualization:  Sky illumination      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Luminosity_40.tif
+Visualization:  Sky illumination      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Luminosity_75.tif
+Visualization:  Sky illumination      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Luminosity_100.tif
+
+Visualization:  Local dominance      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Luminosity_40.tif
+Visualization:  Local dominance      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Luminosity_75.tif
+Visualization:  Local dominance      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Luminosity_100.tif
+;------ Blend mode: Screen --------------------
+;-------------------------------------------------------------------------
+
+Visualization:  Analytical hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Screen_40.tif
+Visualization:  Analytical hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Screen_75.tif
+Visualization:  Analytical hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Analytical_hillshading_Screen_100.tif
+
+Visualization:  Hillshading from multiple directions      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Screen_40.tif
+Visualization:  Hillshading from multiple directions      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Screen_75.tif
+Visualization:  Hillshading from multiple directions      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Hillshading_from_multiple_directions_Screen_100.tif
+
+Visualization:  PCA of hillshading      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Screen_40.tif
+Visualization:  PCA of hillshading      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Screen_75.tif
+Visualization:  PCA of hillshading      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_PCA_of_hillshading_Screen_100.tif
+
+Visualization:  Slope gradient      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Screen_40.tif
+Visualization:  Slope gradient      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Screen_75.tif
+Visualization:  Slope gradient      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Slope_gradient_Screen_100.tif
+
+Visualization:  Simple local relief model      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Screen_40.tif
+Visualization:  Simple local relief model      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Screen_75.tif
+Visualization:  Simple local relief model      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Simple_local_relief_model_Screen_100.tif
+
+Visualization:  Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Screen_40.tif
+Visualization:  Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Screen_75.tif
+Visualization:  Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky-View_Factor_Screen_100.tif
+
+Visualization:  Anisotropic Sky-View Factor      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Screen_40.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Screen_75.tif
+Visualization:  Anisotropic Sky-View Factor      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Anisotropic_Sky-View_Factor_Screen_100.tif
+
+Visualization:  Openness - Positive      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Screen_40.tif
+Visualization:  Openness - Positive      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Screen_75.tif
+Visualization:  Openness - Positive      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Positive_Screen_100.tif
+
+Visualization:  Openness - Negative      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Screen_40.tif
+Visualization:  Openness - Negative      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Screen_75.tif
+Visualization:  Openness - Negative      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Openness_-_Negative_Screen_100.tif
+
+Visualization:  Sky illumination      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Screen_40.tif
+Visualization:  Sky illumination      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Screen_75.tif
+Visualization:  Sky illumination      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Sky_illumination_Screen_100.tif
+
+Visualization:  Local dominance      Opacity: 40      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Screen_40.tif
+Visualization:  Local dominance      Opacity: 75      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Screen_75.tif
+Visualization:  Local dominance      Opacity: 100      Output file: C:\Users\MSomrak\Downloads\unit_test_mixer_results\dem_05m_sv_helena_Local_dominance_Screen_100.tif
