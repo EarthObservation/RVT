@@ -34,7 +34,8 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_localrelief'
-resolve_routine, 'blend_tile_iterator', /COMPILE_FULL_FILE
+;resolve_routine, 'blend_tile_iterator', /COMPILE_FULL_FILE
+;resolve_routine, 'RGB_to_sRGB', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_normalization', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_options_data', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_blend_modes', /COMPILE_FULL_FILE

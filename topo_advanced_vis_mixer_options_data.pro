@@ -1,7 +1,3 @@
-pro topo_advanced_vis_mixer_options_data
-;topo_advanced_vis_mixer_options_data
-end
-
 function gen_vis_droplist
   ; Visualization methods
   vis_droplist = strarr(12)
@@ -17,7 +13,6 @@ function gen_vis_droplist
   vis_droplist[9] = 'Sky illumination'
   vis_droplist[10] = 'Local dominance'
   vis_droplist[11] = '<none>'
-  vis_droplist[12] = '<input custom file>'
 
   return, vis_droplist
 end
@@ -124,4 +119,8 @@ end
 function get_max_limit, visualization, p_wdgt_state
   find_max = (*p_wdgt_state).vis_max_limit
   return, find_max[visualization]
+end
+
+pro topo_advanced_vis_mixer_options_data
+  ;topo_advanced_vis_mixer_options_data
 end

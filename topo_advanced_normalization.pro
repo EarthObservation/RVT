@@ -29,10 +29,6 @@
 ; :History:
 ;       January 2017
 ;-
-pro topo_advanced_normalization
-
-end
-
 function normalize_lin, image, min, max
     ; Linear cut off
     idx_min = WHERE(image LT min)
@@ -55,7 +51,7 @@ function normalize_perc, image, perc
     return, normalize_lin(image, min, max)
 end
 
-function topo_advanced_normalization, image, min, max, normalization 
+function topo_advanced_normalization, image, min, max, normalization
 
   if (normalization EQ 'Lin') then begin
     ;equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
@@ -86,7 +82,7 @@ pro mixer_normalize_images_on_layers, event
     for i=0,nr_layers-1 do begin
       visualization = layers[i].vis
       if (visualization EQ '<none>') then continue
-      image = images[visualization]
+      image = images[i]
       min = float(layers[i].min)
       max = float(layers[i].max)
       normalization = layers[i].normalization
@@ -106,14 +102,25 @@ function float_to_RGB, float_value
 end
 
 ; grayscale, luminance
-function RGB_to_grayscale, rgb
-    r = reform(rgb[0, *, *])
-    g = reform(rgb[1, *, *])
-    b = reform(rgb[2, *, *])
+;function RGB_to_grayscale, rgb
+;    r = reform(rgb[0, *, *])
+;    g = reform(rgb[1, *, *])
+;    b = reform(rgb[2, *, *])
+;
+;    gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
+;    
+;    return, gs
+;end
 
-    gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
-    
-    return, gs
+function RGB_to_luminance, rgb
+  r = reform(rgb[0, *, *])
+  g = reform(rgb[1, *, *])
+  b = reform(rgb[2, *, *])
+
+  gs = (0.3 * R) + (0.59 * G) + (0.11 * B)
+  ;gs = SQRT((0.299 * R * R) + (0.587 * G * G) + (0.114 * B * B))
+
+  return, gs
 end
 
 ;function RGB_to_lightness, rgb
@@ -127,7 +134,7 @@ end
 
 ; Either float or integer
 ; TODO: should only be used right before writing to file (not during 'processing')
-function scale_0_to_1, numeric_value
+function scale_strict_0_to_1, numeric_value
   if min(numeric_value) eq 0.0 and max(numeric_value) eq 1.0 then $
     return, numeric_value
 
@@ -139,6 +146,24 @@ function scale_0_to_1, numeric_value
 
   scaled = float(numeric_value - min_value) / float(max_value - min_value)
   return, scaled
+end
+
+function scale_within_0_and_1, numeric_value
+  if min(numeric_value) ge 0.0 and max(numeric_value) le 1.0 then $
+    return, numeric_value
+
+  NaN_indices = Where(~Finite(numeric_value), count)
+  if (count gt 0) then numeric_value[NaN_indices] = 0
+
+  min_value = min(0.0, min(numeric_value))
+  max_value = max(1.0, max(numeric_value))
+
+  scaled = float(numeric_value - min_value) / float(max_value - min_value)
+  return, scaled
+end
+
+function scale_0_to_1, numeric_value
+    return, scale_strict_0_to_1(numeric_value)
 end
 
 function grayscale_to_RGB, grayscale
@@ -248,6 +273,10 @@ function grayscale_to_RGB_4, grayscale
   RGB[2, *, *] = reform(b, 1, x_size, y_size)
 
   RGB = scale_0_to_1(RGB)
+  
+  ;scaled = scale_0_to_1(RGB)
+  ;RGB = float_to_RGB(scaled)
+
 
   return, RGB
 end

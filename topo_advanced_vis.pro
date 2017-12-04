@@ -681,6 +681,52 @@ pro user_widget_ok, event
   widget_control, event.top, /destroy
 end
 
+pro user_widget_mixer_add_layer, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length()
+  nr_layers++
+  
+  layers_tag = (*p_wdgt_state).layers_tag
+  if (layers_tag.length LT nr_layers) then begin
+    print, 'Maximum number of layers already reached!'
+    return
+  endif
+  
+;  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
+;  widget_layers = REPLICATE(widget_layer, nr_layers)
+;  
+;  for i=0, nr_layers-2 do begin
+;    cp = (*p_wdgt_state).mixer_widgetIDs.layers[i]
+;    
+;    ; foreach tag, TAG_NAMES(widget_layers[i]) do     
+;    widget_layers[i].base = cp.base
+;    widget_layers[i].params = cp.params
+;    widget_layers[i].row = cp.row
+;    widget_layers[i].text = cp.text
+;    widget_layers[i].vis = cp.vis    
+;    widget_layers[i].normalization = cp.normalization
+;    widget_layers[i].min = cp.min
+;    widget_layers[i].max = cp.max
+;    widget_layers[i].blend_mode = cp.blend_mode
+;    widget_layers[i].opacity = cp.opacity
+;  endfor
+;  
+;  nl = new_mixer_layer((*p_wdgt_state).base_mixer_layers, LONG(nr_layers), (*p_wdgt_state).layers_tag[nr_layers], (*p_wdgt_state).vis_droplist, (*p_wdgt_state).blend_droplist, (*p_wdgt_state).norm_droplist)
+;  widget_layers[nr_layers-1].base = nl.base
+;  widget_layers[nr_layers-1].params = nl.params
+;  widget_layers[nr_layers-1].row = nl.row
+;  widget_layers[nr_layers-1].text = nl.text
+;  widget_layers[nr_layers-1].vis = nl.vis
+;  widget_layers[nr_layers-1].normalization = nl.normalization
+;  widget_layers[nr_layers-1].min = nl.min
+;  widget_layers[nr_layers-1].max = nl.max
+;  widget_layers[nr_layers-1].blend_mode = nl.blend_mode
+;  widget_layers[nr_layers-1].opacity = nl.opacity
+
+  (*p_wdgt_state).mixer_widgetIDs = create_struct('layers', widget_layers)
+end
+
 ; combination_selected => index of selected combination (on radio buttons)
 ; when inputing parameters of the combination simply choose combination in an array
 pro user_widget_mixer_toggle_combination_radio, event
@@ -836,7 +882,7 @@ end
 function mixer_get_paths_to_input_files, event, source_image_file
     widget_control, event.top, get_uvalue = p_wdgt_state
     layers = (*p_wdgt_state).current_combination.layers
-    
+        
     ; Get paths to input files
     in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
     in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
@@ -847,9 +893,11 @@ function mixer_get_paths_to_input_files, event, source_image_file
     for i=0,layers.length-1 do begin
       visualization = layers[i].vis
       if (visualization eq '<none>') then continue
-        
-      file_names[i] = input_files[visualization] + format_ending
+
+        file_names[i] = input_files[visualization] + format_ending
     endfor
+    
+    (*p_wdgt_state).current_combination_file_names = file_names
     
     return, file_names
 end
@@ -862,7 +910,7 @@ pro mixer_input_images_to_layers, event, source_image_file
   file_names = mixer_get_paths_to_input_files(event, source_image_file)
 
   ; Open the files into appropriate layers
-  mixer_layer_images = hash()
+  mixer_layer_images = orderedhash()
   layers = (*p_wdgt_state).current_combination.layers
   
   for i=0,layers.length-1 do begin
@@ -875,6 +923,11 @@ pro mixer_input_images_to_layers, event, source_image_file
     
     image = scale_0_to_1(image)
     
+    ; image negative for slope
+    if (visualization EQ 'Slope gradient' and strpos(file_names[i], '_8bit.tif') LT 0) then begin
+       image = image * (-1) + 1
+    endif
+    
 ;    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
 ;    ; btw, grayscale has dim = 2, but has only 1 channel
 ;    if (dim EQ 3) then begin
@@ -885,7 +938,8 @@ pro mixer_input_images_to_layers, event, source_image_file
 ;       image = RGB_to_float(image)
 ;    endif
     
-    mixer_layer_images += hash(visualization, image)
+    mixer_layer_images += hash(i, image)
+    ;mixer_layer_images[i] = image
 
   endfor
   (*p_wdgt_state).mixer_layer_images = mixer_layer_images
@@ -929,6 +983,7 @@ pro user_widget_mixer_ok, event
   user_widget_save_state, event
 
   ; Make visualizations
+  ;TODO: uncomment below! change function topo_advanced_make_visualizations to actually make correct visualizations
   topo_advanced_make_visualizations, p_wdgt_state, $
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
@@ -936,7 +991,11 @@ pro user_widget_mixer_ok, event
                                      (*p_wdgt_state).rvt_issue_year, $
                                      /INVOKED_BY_MIXER                                                                
                                      
+  ;TODO: Use TILED blending
   ; Blending visualizations with mixer
+  ;topo_advanced_vis_mixer_blend_modes_tiled, event  
+    
+  ; Blending, non-tiled
   topo_advanced_vis_mixer_blend_modes, event  
 
 end
@@ -1203,11 +1262,33 @@ pro user_widget_mixer_enable_layer, p_wdgt_state, layer
   user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 1
 end
 
+pro user_widget_mixer_show_input_custom_file, p_wdgt_state, layer
+  ;TODO: hide other elements
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, xsize = 0
+  ;TODO: show path to input file where Lin/Perc, min, max, and Visualization elements are shown
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].input_custom_file, xsize = 160
+end
+
+pro user_widget_mixer_hide_input_custom_file, p_wdgt_state, layer
+
+  ;TODO: hide other elements
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 5
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, xsize = 5
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, xsize = 100
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, xsize = 50
+  ;TODO: show path to input file where Lin/Perc, min, max, and Visualization elements are shown
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].input_custom_file, xsize = 0
+end
+
 pro user_widget_mixer_validate_visualization_all, p_wdgt_state
   nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
 
   for layer=0,nr_layers-1 do begin
     visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+    
     IF (visualization EQ '<none>') THEN BEGIN
       ; disable other fields: min, max, blend_mode, opacity
       ; TO-DO automatic input of empty layer to widgets
@@ -1218,28 +1299,28 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].opacity, set_value = empty_layer.opacity
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[empty_layer.normalization]
       user_widget_mixer_disable_layer, p_wdgt_state, layer
-    
+      
     ENDIF ELSE BEGIN
-      ; make sure other elements are enabled(min, max, blend_mode, opacity)
-      user_widget_mixer_enable_layer, p_wdgt_state, layer
+        ; make sure other elements are enabled(min, max, blend_mode, opacity)
+        user_widget_mixer_enable_layer, p_wdgt_state, layer
+        
+        ;set default min and max values if the field was empty before
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, get_value = min_str
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, get_value = max_str
       
-      ;set default min and max values if the field was empty before
-      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, get_value = min_str
-      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, get_value = max_str
-    
-      if (min_str EQ '') then begin
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
-      endif else begin
-        number = validate_number_limits(float(min_str), visualization, p_wdgt_state)
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
-      endelse
-      
-      if (max_str EQ '') then begin
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
-      endif else begin
-        number = validate_number_limits(float(max_str), visualization, p_wdgt_state)
-        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
-      endelse
+        if (min_str EQ '') then begin
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
+        endif else begin
+          number = validate_number_limits(float(min_str), visualization, p_wdgt_state)
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
+        endelse
+        
+        if (max_str EQ '') then begin
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
+        endif else begin
+          number = validate_number_limits(float(max_str), visualization, p_wdgt_state)
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
+        endelse
   
     ENDELSE
   endfor
@@ -1260,7 +1341,7 @@ pro mixer_widget_change_vis, event
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[default_norm]
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
     widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
-  ENDIF
+  ENDIF 
   
   user_widget_mixer_check_if_preset_combination, event
   user_widget_mixer_validate_visualization_all, p_wdgt_state
@@ -1397,6 +1478,10 @@ function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, ble
   layer = create_struct(layer, 'opacity', layer_opacity_slider)
     
   return, layer  
+end
+
+function new_struct_layer
+  return, create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
 end
 
 
@@ -1569,8 +1654,8 @@ pro topo_advanced_vis, re_run=re_run
         readf, txt_proc, files_to_process
         free_lun, txt_proc
         skip_gui = 1
-      endif
-    endif    
+      endif else if keyword_set(re_run) then skip_gui = 1
+    endif else if keyword_set(re_run) then skip_gui = 1   
   endelse  
   
   ;=========================================================================================================
@@ -1650,7 +1735,6 @@ pro topo_advanced_vis, re_run=re_run
 ;    string(format='("Data range (min, max):   ", f0.2, ", ", f0.2)', $
 ;    heights_min, heights_max)]
 
-
   ;about_row = widget_base(base_main, /row, /align_right)
   ;bt_about = widget_button(about_row, event_pro='user_widget_about', value='About', xoffset=330, yoffset=20, scr_xsize=65)
   
@@ -1669,8 +1753,7 @@ pro topo_advanced_vis, re_run=re_run
   overwrite_namebox = widget_base(main_row_1, /nonexclusive)
   overwrite_checkbox = widget_button(overwrite_namebox, event_pro='user_widget_do_nothing', $
     value='Overwrite existing output files', uname='u_overwrite_checkbox')
-  widget_control, overwrite_checkbox, set_button=overwrite
-  
+  widget_control, overwrite_checkbox, set_button=overwrite  
   
   empty_text_row = widget_label(base_main, value='  ', scr_ysize=10)
   base_tab = WIDGET_TAB(base_main, event_pro='disable_last_row', uname = 'base_tab_window')
@@ -2025,7 +2108,7 @@ pro topo_advanced_vis, re_run=re_run
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
   output_files_array = hash()
-  mixer_layer_images = hash()
+  mixer_layer_images = orderedhash()
   mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
   is_blend_image_rbg = boolean(0)
  
@@ -2069,14 +2152,16 @@ pro topo_advanced_vis, re_run=re_run
  
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
-  nr_layers = 4 
-  layers_tag = ['First:', 'Second:', 'Third:', 'Fourth:']
+  nr_layers = 5 
+  layers_tag = ['1st:', '2nd:', '3rd:', '4th:', '5th', '6th', '7th', '8th']
+  base_mixer_layers = widget_base(base_mixer, row=8)
   mixer_layer_filepaths = make_array(nr_layers, /string)
+  file_names = MAKE_ARRAY(nr_layers, /STRING, VALUE = '')
   
   widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
   widget_layers = REPLICATE(widget_layer, nr_layers)
 
-  mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist, norm_droplist)
+  mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer_layers, nr_layers, layers_tag, vis_droplist, blend_droplist, norm_droplist)
   
   ; Custom combination
   custom_combination_name = 'Custom combination'
@@ -2106,7 +2191,12 @@ pro topo_advanced_vis, re_run=re_run
   ; --- Mixer Tab: Buttons to Mix selected
   mixer_row_finish = widget_base(base_mixer, /align_left)
   bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
-  bt_mixer_test = widget_button(mixer_row_finish, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
+  
+  mixer_row_finish_test = widget_base(mixer_row_finish, /align_left)
+  bt_mixer_test = widget_button(mixer_row_finish_test, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
+  WIDGET_CONTROL, mixer_row_finish_test, MAP=0 ; hide test button
+  
+  bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
 
   ; --- Preset visualizations ---
 
@@ -2210,6 +2300,7 @@ pro topo_advanced_vis, re_run=re_run
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         output_files_array:output_files_array, $
+                        base_mixer_layers:base_mixer_layers, $
                         mixer_layer_filepaths:mixer_layer_filepaths, $
                         mixer_layer_images:mixer_layer_images, $
                         mixer_layers_rgb:mixer_layers_rgb, $
@@ -2224,6 +2315,7 @@ pro topo_advanced_vis, re_run=re_run
                         hash_norm_get_index:hash_norm_get_index, $
                         hash_blend_get_index:hash_blend_get_index, $
 ;                        nr_layers:nr_layers, $
+                        layers_tag:layers_tag, $
                         vis_max_limit:vis_max_limit, $
                         vis_min_limit:vis_min_limit, $
                         vis_max_default:vis_max_default, $
@@ -2234,6 +2326,7 @@ pro topo_advanced_vis, re_run=re_run
                         mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, bt_mixer_test:bt_mixer_test, $
                         mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $
+                        current_combination_file_names:file_names, $
                         all_combinations:all_combinations, combination_index:combination_index, $
                         is_blend_image_rbg:is_blend_image_rbg, $
                         temp_sav:temp_sav, rvt_version:rvt_version, rvt_issue_year:rvt_issue_year}, $
@@ -2256,7 +2349,7 @@ pro topo_advanced_vis, re_run=re_run
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
 ;  file_delete, 'skyview_tmp.sav', /allow_nonexistent
   if wdgt_state.user_cancel eq 3 then topo_advanced_vis  ;user_cancel state from converter
-  if wdgt_state.user_cancel then begin    
+  if wdgt_state.user_cancel then begin
     file_delete, temp_sav, /allow_nonexistent, /quiet
     return
   endif

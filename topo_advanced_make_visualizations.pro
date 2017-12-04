@@ -52,6 +52,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   sc_svf_ev = [0.6375, 1.00]
   sc_opns_ev = [60, 95.]
   sc_slp_ev = [0., 51.]
+  ;sc_slp_ev = [0., 51.]
   sc_slrm_ev = [-2., 2.]
   sc_skyilu_ev = [0.25, 0.]   ;percent
   sc_ld_ev = [0.5, 1.8]
@@ -592,8 +593,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_hls EQ 1 THEN BEGIN
       out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
       
-      output_files_array += hash('Analytical hillshading', out_file_hls)
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_hls+'.tif') EQ 0) then begin
+      output_files_array += hash('Analytical hillshading', out_file_hls + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_hls+'_8bit.tif') EQ 0) ) then begin
         Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
           heights, resolution, $                ;relief
           in_hls_sun_a, in_hls_sun_h, $                   ;solar position
@@ -618,7 +619,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_mhls EQ 1 THEN BEGIN
       out_file_mhls = in_file + '_MULTI-HS_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
       output_files_array += hash('Hillshading from multiple directions', out_file_mhls + '_RGB')
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_mhls + '_RGB.tif') EQ 0) then begin
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_mhls + '_RGB.tif') EQ 0)) then begin
         Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
           heights, resolution, $                ;relief
           in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
@@ -637,7 +638,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     IF in_mhls_pca EQ 1 THEN BEGIN
       out_file_mhls_pca = in_file + '_PCA_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
       output_files_array += hash('PCA of hillshading', out_file_mhls_pca + '_RGB')
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_mhls_pca + '_RGB.tif') EQ 0) then begin
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_mhls_pca + '_RGB.tif') EQ 0)) then begin
         Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
           heights, resolution, $     ;relief
           in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
@@ -652,8 +653,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Slope
     IF in_slp EQ 1 THEN BEGIN
       out_file_slp = in_file + '_SLOPE' + str_ve
-      output_files_array += hash('Slope gradient', out_file_slp)
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_slp + '.tif') EQ 0) then begin
+      output_files_array += hash('Slope gradient', out_file_slp + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_slp + '_8bit.tif') EQ 0)) then begin
         topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
           heights, resolution, $                    ;relief
           sc_slp_ev, $
@@ -667,8 +668,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Local releif
     IF in_slrm EQ 1 THEN BEGIN
       out_file_slrm = in_file + '_SLRM_R' + Strtrim(Long(in_slrm_r_max), 2) + str_ve
-      output_files_array += hash('Simple local relief model', out_file_slrm)
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_slrm + '.tif') EQ 0) then begin
+      output_files_array += hash('Simple local relief model', out_file_slrm + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_slrm + '_8bit.tif') EQ 0)) then begin
         topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
           heights, resolution, $                    ;relief
           in_slrm_r_max, sc_slrm_ev, $
@@ -695,13 +696,13 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
         in_file + '_SVF-A_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + '_A' + Strtrim(round(in_asvf_dir), 2) + str_aniso + str_noise + str_ve, $
         in_file + '_OPEN-POS_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
       
-      f_svf = file_test(out_file_svf[0] + '.tif')
-      f_asvf = file_test(out_file_svf[1] + '.tif')
-      f_open = file_test(out_file_svf[2] + '.tif')
+      f_svf = file_test(out_file_svf[0] + '_8bit.tif')
+      f_asvf = file_test(out_file_svf[1] + '_8bit.tif')
+      f_open = file_test(out_file_svf[2] + '_8bit.tif')
       
-      if in_svf NE 0 then output_files_array += hash('Sky-View Factor', out_file_svf[0])
-      if in_asvf NE 0 then output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1])
-      if in_open NE 0 then output_files_array += hash('Openness - Positive', out_file_svf[2])
+      if in_svf NE 0 then output_files_array += hash('Sky-View Factor', out_file_svf[0] + '_8bit')
+      if in_asvf NE 0 then output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1] + '_8bit')
+      if in_open NE 0 then output_files_array += hash('Openness - Positive', out_file_svf[2] + '_8bit')
    
       if (~KEYWORD_SET(invoked_by_mixer) OR (in_svf+in_open+in_asvf GT f_svf+f_open+f_asvf)) then begin
         Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
@@ -731,8 +732,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       ENDCASE
       heights = heights * (-1.)
       out_file_no = ['', '', in_file + '_OPEN-NEG_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
-      output_files_array += hash('Openness - Negative', out_file_no[2])
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_no[2] + '.tif') EQ 0) then begin
+      output_files_array += hash('Openness - Negative', out_file_no[2] + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_no[2] + '_8bit.tif') EQ 0)) then begin
         Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
           heights, resolution, $                    ;elevation
           in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
@@ -756,8 +757,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       if in_skyilm_shadow_dist eq 'unlimited' then out_file_skyilm += '_'+in_skyilm_shadow_dist+'_px' $
       else out_file_skyilm += '_'+in_skyilm_shadow_dist+'px'
 
-      output_files_array += hash('Sky illumination', out_file_skyilm)
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_skyilm + '.tif') EQ 0) then begin
+      output_files_array += hash('Sky illumination', out_file_skyilm + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_skyilm + '_8bit.tif') EQ 0)) then begin
         if in_skyilm_shadow then begin
           Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
             heights, resolution, $
@@ -780,8 +781,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     ;Local dominance
     IF in_locald EQ 1 THEN BEGIN
       out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
-      output_files_array += hash('Local dominance', out_file_ld)
-      if (~KEYWORD_SET(invoked_by_mixer) OR file_test(out_file_ld + '.tif') EQ 0) then begin
+      output_files_array += hash('Local dominance', out_file_ld + '_8bit')
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_ld + '_8bit.tif') EQ 0)) then begin
         topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
           heights, sc_ld_ev, $
           min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters

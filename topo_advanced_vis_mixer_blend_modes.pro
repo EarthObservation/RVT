@@ -30,6 +30,50 @@
 ;       December 2016
 ;-
 
+
+function image_join_channels, R, G, B
+  dimensions = size(R, /DIMENSIONS)
+  x_size = dim[0]
+  y_size = dim[1]
+  rgb = make_array(3, x_size, y_size)
+
+  rgb[0, *, *] = reform(R, 1, x_size, y_size)
+  rgb[1, *, *] = reform(G, 1, x_size, y_size)
+  rgb[2, *, *] = reform(B, 1, x_size, y_size)
+
+  return, rgb
+end
+
+; Gama correction, decoding
+function sRGB_to_RGB, sRGB
+
+  R = reform(sRGB[0, *, *])
+  G = reform(sRGB[1, *, *])
+  B = reform(sRGB[2, *, *])
+
+  R = R^2.2
+  G = G^2.2
+  B = B^2.2
+
+  return, image_join_channels(R, G, B)
+
+end
+
+; Gamma correction, encoding
+function RGB_to_sRGB, linRGB
+
+  R = reform(linRGB[0, *, *])
+  G = reform(linRGB[1, *, *])
+  B = reform(linRGB[2, *, *])
+
+  R = R^(1.0/2.2)
+  G = G^(1.0/2.2)
+  B = B^(1.0/2.2)
+
+  return, image_join_channels(R, G, B)
+
+end
+
 ; Normal
 function blend_normal, active, background
    ;active = scale_0_to_1(active)
@@ -74,16 +118,29 @@ function equation_blend, blend_mode, active, background
     endcase
 end
 
+function to_lin_RGB_in_float, img
+  if isa(img, /INT) then img = RGB_to_float(img)
+  
+  if (min(img) LT 0.0 OR max(img) GT 1.1) then img = scale_0_to_1(img)
+  img = sRGB_to_RGB(img)
+  return, img
+end
+
+function to_sRGB_in_float, img  
+  if isa(img, /INT) then img = RGB_to_float(img)
+  
+  if (min(img) LT 0.0 OR max(img) GT 1.1) then img = scale_0_to_1(img)
+  img = RGB_to_sRGB(img)
+  return, img
+end
+
 ; For images that could be either grayscale or RGB
 function blend_multi_dim_images, blend_mode, active, background
   a_rgb = boolean(size(active, /N_DIMENSIONS) EQ 3)
   b_rgb = boolean(size(background, /N_DIMENSIONS) EQ 3)
-  
-;  active = scale_0_to_1(active)
-;  background = scale_0_to_1(background)
-  
-;  if (min(active) LT 0.0 OR max(active) GT 1.1) then active = RGB_to_float(active)
-;  if (min(background) LT 0.0 OR max(background) GT 1.1) then background = RGB_to_float(background)
+
+  active = to_lin_RGB_in_float(active)
+  background = to_lin_RGB_in_float(background)
 
   blended_image = []
   if (a_rgb) then begin
@@ -115,15 +172,21 @@ function blend_multi_dim_images, blend_mode, active, background
     blended_image = equation_blend(blend_mode, active, background)
   endif
   
+  active = to_sRGB_in_float(active)
+  background = to_sRGB_in_float(background)
+  
   return, blended_image
 end
 
 function lum, img
   n_channels = size(img, /N_DIMENSIONS)
+  
+  if typename(img) ne 'FLOAT' then begin
+    lum_img = RGB_to_float(lum_img)
+  endif
 
   if (n_channels EQ 3) then begin
-    lum_img = RGB_to_grayscale(img)
-    if typename(img) ne 'FLOAT' then lum_img = RGB_to_float(lum_img)
+    lum_img = RGB_to_luminance(img)
   endif else begin
     lum_img = img
   endelse
@@ -141,28 +204,28 @@ function clip_color, c, min_c=min_c, max_c=max_c
   if not keyword_set(min_c) then min_c = min([R, G, B]) 
   if not keyword_set(max_c) then max_c = max([R, G, B])
   
-  if (min_c lt 0.0) or (max_c gt 1.0) then begin
-        c[0, *, *] = float(c[0, *, *] - min_c) / float(max_c - min_c)
-        c[1, *, *] = float(c[1, *, *] - min_c) / float(max_c - min_c)
-        c[2, *, *] = float(c[2, *, *] - min_c) / float(max_c - min_c)
-  endif
+;  if (min_c lt 0.0) or (max_c gt 1.0) then begin
+;        c[0, *, *] = float(c[0, *, *] - min_c) / float(max_c - min_c)
+;        c[1, *, *] = float(c[1, *, *] - min_c) / float(max_c - min_c)
+;        c[2, *, *] = float(c[2, *, *] - min_c) / float(max_c - min_c)
+;  endif
   
-;  if (min_c lt 0.0) then begin
-;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
-;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
-;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
-;  end
-;  if (max_c gt 1.0) then begin
-;    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-;    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-;    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
-;  end
+  if (min_c lt 0.0) then begin
+    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
+    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * lum) / (lum - min_c))
+    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * lum) / (lum - min_c))
+  end
+  if (max_c gt 1.0) then begin
+    c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+    c[1, *, *] = lum + (((reform(c[1, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+    c[2, *, *] = lum + (((reform(c[2, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+  end
   
   return, c
 end
 
 function blend_luminosity_equation, active, background, min_c=min_c, max_c=max_c
-  background = RGB_to_float(background)
+  ;background = RGB_to_float(background)
 
   lum_active = lum(active)
   lum_background = lum(background)
@@ -205,52 +268,59 @@ function blend_luminosity_equation, active, background, min_c=min_c, max_c=max_c
    return, clipped_image
 end
 
-function get_lightness, active 
-  n_channels = size(active, /N_DIMENSIONS)
-
-  ; Monochrome (1) image
-  if (n_channels EQ 2) then begin
-    ; Luminosity of monochrome image IS the monochrome image itself
-    ; Make sure it's correct value scale!
-    lightness = active
-    return, lightness
-  endif
-  ; Multichannel, RGB (3) image
-  if (n_channels EQ 3) then begin
-    ; Float to RGB (if it's not already)
-    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
-
-    L_channel = 1
-    COLOR_CONVERT, active, HLS_active, /RGB_HLS
-    lightness = reform(HLS_active[L_channel, *, *])
-
-    return, lightness
-  endif
-end
+;function get_lightness, active 
+;  n_channels = size(active, /N_DIMENSIONS)
+;
+;  ; Monochrome (1) image
+;  if (n_channels EQ 2) then begin
+;    ; Luminosity of monochrome image IS the monochrome image itself
+;    ; Make sure it's correct value scale!
+;    lightness = active
+;    return, lightness
+;  endif
+;  ; Multichannel, RGB (3) image
+;  if (n_channels EQ 3) then begin
+;    ; Float to RGB (if it's not already)
+;    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
+;
+;    L_channel = 1
+;    COLOR_CONVERT, active, HLS_active, /RGB_HLS
+;    lightness = reform(HLS_active[L_channel, *, *])
+;    
+;    ;L_channel = 0
+;    ;COLOR_CONVERT, active, YUV_active, /RGB_YUV
+;    ;luminance = reform(YUV_active[L_channel, *, *])
+;
+;    return, lightness
+;  endif
+;end
 
 function get_luminance, active
   n_channels = size(active, /N_DIMENSIONS)
+  
+  ; Float to RGB (if it's not already)
+  if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
 
   ; Monochrome (1) image
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
-    
-     active = grayscale_to_RGB_1(active)
+    ;active = grayscale_to_RGB_1(active)
   
-;    luminance = active
-;    return, luminance
+    luminance = active
+    return, luminance
   endif
   ; Multichannel, RGB (3) image
-;  if (n_channels EQ 3) then begin
-    ; Float to RGB (if it's not already)
-    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
+  if (n_channels EQ 3) then begin
 
-    L_channel = 0
-    COLOR_CONVERT, active, YUV_active, /RGB_YUV
-    luminance = reform(YUV_active[L_channel, *, *])
+    R = reform(active[0, *, *])
+    G = reform(active[1, *, *])
+    B = reform(active[2, *, *])
+
+    ; Calculate the Perceived brightness:
+    P = R*0.3 + G*0.59 + B*0.11
     
     return, luminance
-;  endif
+  endif
 end
 
 ; TO-DO:
@@ -267,10 +337,15 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 
    ; Multichannel, RGB (3) background layer [n_background = 3]
    if (n_background EQ 3) then begin
-     if (min(background) LT 0.0 OR max(background) LT 5) then begin
-;      background = scale_0_to_1(background)
-       background = float_to_RGB(background)
+     
+     if isa(active, /INT) then begin
+       background = RGB_to_float(active)
      endif
+     if isa(background, /INT) then begin
+       background = RGB_to_float(background)
+     endif
+     
+     
 
 ;     A. HLS method with lightness:
 ;      L_channel = 1
@@ -301,6 +376,7 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 
 end
 
+; input images: active & background in
 function blend_images, blend_mode, active, background, min_c=min_c, max_c=max_c
   case blend_mode of
     'Multiply': return, blend_multi_dim_images(blend_mode, active, background) 
@@ -366,8 +442,6 @@ end
 ;
 function render_all_images, layers, images
   rendered_image = []
-  
-  ;TO-DO: apply tiling
 
   for i=layers.length-1,0,-1 do begin
     ; if current layer has no visualization applied, skip
@@ -377,17 +451,18 @@ function render_all_images, layers, images
     ; if current layer has visualization applied, but there has been no rendering of images yet,
     ; then current layer will be the initial value of rendered_image
     if (rendered_image EQ []) then begin
-      rendered_image = images[visualization]
+      rendered_image = images[i]
       continue
     endif else begin
       ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
-      active = images[visualization]
+      active = images[i]
       background = rendered_image
       blend_mode = layers[i].blend_mode
-      opacity = layers[i].opacity
+      opacity = layers[i].opacity        
       
       top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
       rendered_image = render_images(top, background, opacity)
+      ;im2 = image(rendered_image)
     endelse
   endfor
   
@@ -406,6 +481,7 @@ pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_')
   radio_label_tif = '_'+radio_label+'.tif'
   out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
+  print, out_file
   write_image_to_geotiff, overwrite, out_file, final_image
 end
 
@@ -427,11 +503,13 @@ pro topo_advanced_vis_mixer_blend_modes, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   in_file_string = (*p_wdgt_state).selection_str
 
+  print, 'Finished blending images: '
+
   in_file_list = strsplit(in_file_string, '#', /extract)
   for nF = 0,in_file_list.length-1 do begin
     ; Input file
     in_file = in_file_list[nF]
-    print, 'File name:', in_file
+    ; print, 'File name:', in_file
     
     ; Get file names of produced files and open them for layering
     mixer_input_images_to_layers, event, in_file

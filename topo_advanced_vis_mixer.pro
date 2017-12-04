@@ -58,9 +58,6 @@
 ;
 ;       1.0  December 2016: Initial version written by Maja Somrak
 ;-
-pro topo_advanced_vis_mixer
-
-end
 
 function create_empty_mixer_layer
   return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
@@ -365,3 +362,7 @@ end
 ;    
 ;  endelse
 ;end
+;
+pro topo_advanced_vis_mixer
+
+end
