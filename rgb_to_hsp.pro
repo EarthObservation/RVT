@@ -11,48 +11,48 @@
 ;  return, hsp
 ;end
 
-function image_join_channels, R, G, B
-  dimensions = size(R, /DIMENSIONS)
-  x_size = dim[0]
-  y_size = dim[1]
-  rgb = make_array(3, x_size, y_size)
+;function image_join_channels, R, G, B
+;  dimensions = size(R, /DIMENSIONS)
+;  x_size = dim[0]
+;  y_size = dim[1]
+;  rgb = make_array(3, x_size, y_size)
+;
+;  rgb[0, *, *] = reform(R, 1, x_size, y_size)
+;  rgb[1, *, *] = reform(G, 1, x_size, y_size)
+;  rgb[2, *, *] = reform(B, 1, x_size, y_size)
+;
+;  return, rgb
+;end
 
-  rgb[0, *, *] = reform(R, 1, x_size, y_size)
-  rgb[1, *, *] = reform(G, 1, x_size, y_size)
-  rgb[2, *, *] = reform(B, 1, x_size, y_size)
-
-  return, rgb
-end
-
-; Gama correction, decoding
-function sRGB_to_RGB, sRGB
-
-  R = reform(sRGB[0, *, *])
-  G = reform(sRGB[1, *, *])
-  B = reform(sRGB[2, *, *])
-
-  R = R^2.2
-  G = G^2.2
-  B = B^2.2
-  
-  return, image_join_channels(R, G, B)
-
-end
-
-; Gamma correction, encoding
-function RGB_to_sRGB, linRGB
-
-  R = reform(linRGB[0, *, *])
-  G = reform(linRGB[1, *, *])
-  B = reform(linRGB[2, *, *])
-
-  R = R^(1.0/2.2)
-  G = G^(1.0/2.2)
-  B = B^(1.0/2.2)
-  
-  return, image_join_channels(R, G, B)
-
-end
+;; Gama correction, decoding
+;function sRGB_to_RGB, sRGB
+;
+;  R = reform(sRGB[0, *, *])
+;  G = reform(sRGB[1, *, *])
+;  B = reform(sRGB[2, *, *])
+;
+;  R = R^2.2
+;  G = G^2.2
+;  B = B^2.2
+;  
+;  return, image_join_channels(R, G, B)
+;
+;end
+;
+;; Gamma correction, encoding
+;function RGB_to_sRGB, linRGB
+;
+;  R = reform(linRGB[0, *, *])
+;  G = reform(linRGB[1, *, *])
+;  B = reform(linRGB[2, *, *])
+;
+;  R = R^(1.0/2.2)
+;  G = G^(1.0/2.2)
+;  B = B^(1.0/2.2)
+;  
+;  return, image_join_channels(R, G, B)
+;
+;end
 
 ;function RGB_to_HSP, rgb
 ;

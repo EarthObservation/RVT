@@ -1,0 +1,137 @@
+#----------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------
+#
+#	Relief Visualization Toolbox default settings COMBINATIONS
+#
+#	For more information about available settings in this file see RVT manual.
+#
+#----------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------
+#
+# VISUALIZATION METHODS:
+#
+# Analytical hillshading
+# Hillshading from multiple directions
+# PCA of hillshading
+# Slope gradient
+# Simple local relief model
+# Sky-View Factor
+# Anisotropic Sky-View Factor
+# Openness - Positive
+# Openness - Negative
+# Sky illumination
+# Local dominance
+# <none>
+#
+#
+# NORMALIZATIONS:
+#
+# Lin
+# Perc
+#
+#
+# BLEND MODES:
+#
+# Normal
+# Multiply
+# Overlay
+# Luminosity
+# Screen
+#
+#----------------------------------------------------------------------------------------------------------
+# It has to be written "# SECTION" to separate between different parts of settings below:
+#----------------------------------------------------------------------------------------------------------
+
+
+#----------------------------------------------------------------------------------------------------------
+# SECTION 1: DEFAULT min & max values for visualizations
+#
+# Recommended histogram stretch (see Ziga's book)
+# 
+# ... if they're different than overall min and max limits (-1000 to 1000) which is in the 'default_settings' file 
+#     -> this is something completely different
+#
+
+Analytical hillshading, min, 0
+Analytical hillshading, max, 1
+#Analytical hillshading, max, 2
+#linear stretch, % cut off
+
+Hillshading from multiple directions, min, 0
+Hillshading from multiple directions, max, 1
+#Hillshading from multiple directions, max, 2
+#linear stretch, % cut off
+
+PCA of hillshading, min, 2
+PCA of hillshading, max, 2
+#linear stretch, % cut off
+
+Slope gradient, min, 0
+Slope gradient, max, 50
+#linear stretch, degrees
+
+Simple local relief model, min, -1
+Simple local relief model, max, 1
+#meters
+
+Sky-View Factor, min, 0.65 
+Sky-View Factor, max, 1
+#linear stretch
+
+Anisotropic Sky-View Factor, min, 0.65
+Anisotropic Sky-View Factor, max, 1
+#linear stretch
+
+Openness - Positive, min, 65
+Openness - Positive, max, 95
+#linear stretch, degrees
+
+Openness - Negative, min, 60
+Openness - Negative, max, 95
+#linear stretch, degrees
+
+Sky illumination, min, 0.25
+Sky illumination, max, 0.3
+#linear stretch, % cut off
+
+Local dominance, min, 0.5
+Local dominance, max, 1.8
+#linear stretch
+
+#<none>
+
+#----------------------------------------------------------------------------------------------------------
+# SECTION 2: Visualizations combinations
+#
+
+combination = Combination 1
+
+layer:1, vis:PCA of hillshading, norm:Lin, min:1, max:100, blend_mode:Overlay, opacity:70
+layer:2, vis:Sky illumination, norm:Lin, min:1, max:10, blend_mode:Screen, opacity:40
+layer:3, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+layer:4, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+
+combination = Combination 2
+
+layer:1, vis:Sky-View Factor, norm:Lin, min:1, max:200, blend_mode:Luminosity, opacity:70
+layer:2, vis:Openness - Positive, norm:Lin, min:1, max:200, blend_mode:Normal, opacity:40
+layer:3, vis:Local dominance, norm:Perc, min:0, max:200, blend_mode:Screen, opacity:30
+layer:4, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+
+combination = Poznoanticna VIS1
+
+layer:1, vis:Sky-View Factor, norm:Lin, min:0.7, max:1.0, blend_mode:Multiply, opacity:25
+layer:2, vis:Openness - Positive, norm:Perc, min:68, max:93, blend_mode:Overlay, opacity:50
+layer:3, vis:Slope gradient, norm:Lin, min:0, max:50, blend_mode:Luminosity, opacity:50
+layer:4, vis:Analytical hillshading, norm:Lin, min:0, max:1, blend_mode:Normal, opacity:100
+layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+
+combination = Combination 4
+
+layer:1, vis:PCA of hillshading, norm:Lin, min:1, max:100, blend_mode:Multiply, opacity:50
+layer:2, vis:Simple local relief model, norm:Lin, min:1, max:100, blend_mode:Luminosity, opacity:100
+layer:3, vis:<none>, norm; min:, max:, blend_mode:, opacity:
+layer:4, vis:<none>, norm; min:, max:, blend_mode:, opacity:
+layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:

@@ -921,7 +921,10 @@ pro mixer_input_images_to_layers, event, source_image_file
     image = read_image_geotiff(file_names[i], (*p_wdgt_state).in_orientation)
     dim = size(image, /N_DIMENSIONS)
     
-    image = scale_0_to_1(image)
+    ;TODO: images will be already normalized later (delete row below?)
+    ; RGB to float
+    if max(image) gt 2 and min(image) ge 0 then $
+      image = RGB_to_float(image)
     
     ; image negative for slope
     if (visualization EQ 'Slope gradient' and strpos(file_names[i], '_8bit.tif') LT 0) then begin
@@ -983,7 +986,6 @@ pro user_widget_mixer_ok, event
   user_widget_save_state, event
 
   ; Make visualizations
-  ;TODO: uncomment below! change function topo_advanced_make_visualizations to actually make correct visualizations
   topo_advanced_make_visualizations, p_wdgt_state, $
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
@@ -1540,8 +1542,8 @@ pro topo_advanced_vis, re_run=re_run
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '1.3'
-  rvt_issue_year = '2016'
+  rvt_version = '2.1'
+  rvt_issue_year = '2017'
   
   ; Establish error handler
   catch, theError

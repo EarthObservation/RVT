@@ -15,7 +15,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   wdgt_state = *p_wdgt_state
 
   ;=========================================================================================================
-  ;=== Setup constnants that cannot be changed by the user =================================================
+  ;=== Setup constants that cannot be changed by the user =================================================
   ;=========================================================================================================
 
   ;Vertical exaggeration
@@ -233,7 +233,17 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       continue
     endif $
     else begin
-      heights = read_image_geotiff(in_fname, in_orientation)
+      ;heights = read_image_geotiff(in_fname, in_orientation)
+      
+      heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
+      if size(in_geotiff, /type) ne 8 then begin
+        ;geotiff is not a structure type, try to read world file
+        world_temp = read_worldfile(in_fname, pixels_size_temp, ul_x_temp, ul_y_temp, /to_geotiff)
+        if world_temp gt 1 then begin
+          in_geotiff = {MODELPIXELSCALETAG: [pixels_size_temp, pixels_size_temp, 0d], $
+                        MODELTIEPOINTTAG: [0, 0, 0, ul_x_temp, ul_y_temp, 0]}
+        endif        
+      endif
     endelse
 
     ; Define number of bands

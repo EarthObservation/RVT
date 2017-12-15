@@ -32,7 +32,7 @@
 
 
 function image_join_channels, R, G, B
-  dimensions = size(R, /DIMENSIONS)
+  dim = size(R, /DIMENSIONS)
   x_size = dim[0]
   y_size = dim[1]
   rgb = make_array(3, x_size, y_size)
@@ -45,33 +45,51 @@ function image_join_channels, R, G, B
 end
 
 ; Gama correction, decoding
-function sRGB_to_RGB, sRGB
+function sRGB_to_RGB, sRGB, gama=gama
 
-  R = reform(sRGB[0, *, *])
-  G = reform(sRGB[1, *, *])
-  B = reform(sRGB[2, *, *])
+ if keyword_set(gama) eq 0 then gama = 2.0
 
-  R = R^2.2
-  G = G^2.2
-  B = B^2.2
+ ; Color image
+ if boolean(size(sRGB, /N_DIMENSIONS) EQ 3) then begin
+   R = reform(sRGB[0, *, *])
+   G = reform(sRGB[1, *, *])
+   B = reform(sRGB[2, *, *])
 
-  return, image_join_channels(R, G, B)
+   R = R^gama
+   G = G^gama
+   B = B^gama
 
+   return, image_join_channels(R, G, B)  
+   
+ endif else begin
+ ; Grayscale image
+   Gs = sRGB^gama
+   return, Gs
+ endelse
 end
 
 ; Gamma correction, encoding
-function RGB_to_sRGB, linRGB
+function RGB_to_sRGB, linRGB, gama=gama
 
-  R = reform(linRGB[0, *, *])
-  G = reform(linRGB[1, *, *])
-  B = reform(linRGB[2, *, *])
+  if keyword_set(gama) eq 0 then gama = 2.0
 
-  R = R^(1.0/2.2)
-  G = G^(1.0/2.2)
-  B = B^(1.0/2.2)
+  ; Color image
+  if boolean(size(linRGB, /N_DIMENSIONS) EQ 3) then begin
+    R = reform(linRGB[0, *, *])
+    G = reform(linRGB[1, *, *])
+    B = reform(linRGB[2, *, *])
+  
+    R = R^(1.0/gama)
+    G = G^(1.0/gama)
+    B = B^(1.0/gama)
 
   return, image_join_channels(R, G, B)
 
+  endif else begin
+  ; Grayscale image
+    Gs = linRGB^(1.0/gama)
+    return, Gs
+  endelse
 end
 
 ; Normal
@@ -139,8 +157,14 @@ function blend_multi_dim_images, blend_mode, active, background
   a_rgb = boolean(size(active, /N_DIMENSIONS) EQ 3)
   b_rgb = boolean(size(background, /N_DIMENSIONS) EQ 3)
 
-  active = to_lin_RGB_in_float(active)
-  background = to_lin_RGB_in_float(background)
+;  active = to_lin_RGB_in_float(active)
+;  background = to_lin_RGB_in_float(background)
+
+;  active = scale_0_to_1(active)
+;  background = scale_0_to_1(background)
+
+;  if (min(active) LT 0.0 OR max(active) GT 1.1) then active = RGB_to_float(active)
+;  if (min(background) LT 0.0 OR max(background) GT 1.1) then background = RGB_to_float(background)
 
   blended_image = []
   if (a_rgb) then begin
@@ -172,8 +196,9 @@ function blend_multi_dim_images, blend_mode, active, background
     blended_image = equation_blend(blend_mode, active, background)
   endif
   
-  active = to_sRGB_in_float(active)
-  background = to_sRGB_in_float(background)
+;  active = to_sRGB_in_float(active)
+;  background = to_sRGB_in_float(background)
+;  blended_image = to_sRGB_in_float(blended_image)
   
   return, blended_image
 end
@@ -209,6 +234,13 @@ function clip_color, c, min_c=min_c, max_c=max_c
 ;        c[1, *, *] = float(c[1, *, *] - min_c) / float(max_c - min_c)
 ;        c[2, *, *] = float(c[2, *, *] - min_c) / float(max_c - min_c)
 ;  endif
+
+;  if (min_c lt 0.0) then begin
+;    c[*, *, *] = lum + (((reform(c[*, *, *]) - lum) * lum) / (lum - min_c))
+;  end
+;  if (max_c gt 1.0) then begin
+;    c[*, *, *] = lum + (((reform(c[*, *, *]) - lum) * (1.0 - lum)) / (max_c - lum))
+;  end
   
   if (min_c lt 0.0) then begin
     c[0, *, *] = lum + (((reform(c[0, *, *]) - lum) * lum) / (lum - min_c))
@@ -338,14 +370,9 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
    ; Multichannel, RGB (3) background layer [n_background = 3]
    if (n_background EQ 3) then begin
      
-     if isa(active, /INT) then begin
-       background = RGB_to_float(active)
-     endif
-     if isa(background, /INT) then begin
-       background = RGB_to_float(background)
-     endif
-     
-     
+;     active = to_lin_RGB_in_float(active)
+;     background = to_lin_RGB_in_float(background)
+ 
 
 ;     A. HLS method with lightness:
 ;      L_channel = 1
@@ -366,14 +393,17 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 ;      C. Adobe equation
       blended_image = blend_luminosity_equation(active, background, min_c=min_c, max_c=max_c)
       
-      return, blended_image
+
    endif
    ; Replacing luminosity of single channel, monochrome image
    ; means replacing the monochrome image completely
    if (n_background EQ 2) then begin
-      return, get_luminance(active)
+      blended_image =  get_luminance(active)
    endif
 
+;   blended_image = to_sRGB_in_float(blended_image)
+
+   return, blended_image
 end
 
 ; input images: active & background in

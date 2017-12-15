@@ -153,17 +153,25 @@ function scale_within_0_and_1, numeric_value
     return, numeric_value
 
   NaN_indices = Where(~Finite(numeric_value), count)
-  if (count gt 0) then numeric_value[NaN_indices] = 0
+  ;TODO: Replace min(numeric_value) with inpaint for NaN values
+  if (count gt 0) then numeric_value[NaN_indices] = min(numeric_value) 
 
-  min_value = min(0.0, min(numeric_value))
-  max_value = max(1.0, max(numeric_value))
+  actual_min = min(numeric_value)
+  norm_min_value = max(0.0, actual_min)
+  
+  actual_max = max(numeric_value)
+  norm_max_value = min(1.0, actual_max)
 
-  scaled = float(numeric_value - min_value) / float(max_value - min_value)
+  scaled = float(numeric_value - norm_min_value) / float(norm_max_value - norm_min_value)
   return, scaled
 end
 
 function scale_0_to_1, numeric_value
-    return, scale_strict_0_to_1(numeric_value)
+      if max(numeric_value) - min(numeric_value) gt 0.3 then begin
+        return, scale_within_0_and_1(numeric_value)
+      endif else begin
+        return, scale_strict_0_to_1(numeric_value)
+      endelse
 end
 
 function grayscale_to_RGB, grayscale
