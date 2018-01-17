@@ -256,6 +256,36 @@ function clip_color, c, min_c=min_c, max_c=max_c
   return, c
 end
 
+;TODO: background mora bit RGB, drugač vrne ... active!
+function blend_luminosity_HSP, active, background, min_c=min_c, max_c=max_c
+
+    background_channels = size(background, /N_DIMENSIONS)
+    if (background_channels EQ 2) then return, active
+
+    ; Luminosity:
+    hsp_background = RGB_to_HSP_Rex(background)
+
+    Hb = reform(hsp_background[0, *, *])
+    Sb = reform(hsp_background[1, *, *])
+    Pbd = reform(hsp_background[2, *, *])
+
+    active_channels = size(active, /N_DIMENSIONS)
+    if (active_channels EQ 2) then begin
+      Pa = active
+    endif else begin
+      hsp_active = RGB_to_HSP_Rex(active)
+
+      Ha = reform(hsp_active[0, *, *])
+      Sa = reform(hsp_active[1, *, *])
+      Pa = reform(hsp_active[2, *, *])
+    endelse
+    
+    HSP_blended_image = image_join_channels(Hb, Sb, Pa)    
+    blended_imahe = HSP_to_RGB_Rex(HSP_blended_image)
+    
+    return, blended_image
+end
+
 function blend_luminosity_equation, active, background, min_c=min_c, max_c=max_c
   ;background = RGB_to_float(background)
 
@@ -337,9 +367,8 @@ function get_luminance, active
   if (n_channels EQ 2) then begin
     ; Luminosity of monochrome image IS the monochrome image itself
     ;active = grayscale_to_RGB_1(active)
-  
-    luminance = active
-    return, luminance
+
+    return, active
   endif
   ; Multichannel, RGB (3) image
   if (n_channels EQ 3) then begin
@@ -350,8 +379,8 @@ function get_luminance, active
 
     ; Calculate the Perceived brightness:
     P = R*0.3 + G*0.59 + B*0.11
-    
-    return, luminance
+
+    return, P
   endif
 end
 
@@ -391,9 +420,11 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 ;      blended_image = RGB_to_float(blended_image)
       
 ;      C. Adobe equation
-      blended_image = blend_luminosity_equation(active, background, min_c=min_c, max_c=max_c)
+;      blended_image = blend_luminosity_equation(active, background, min_c=min_c, max_c=max_c)
       
-
+      ; USE RGB_to_HSP_Rex for LUMINOSITY
+      blended_image = blend_luminosity_HSP(active, background, min_c=min_c, max_c=max_c)
+      
    endif
    ; Replacing luminosity of single channel, monochrome image
    ; means replacing the monochrome image completely
@@ -411,7 +442,7 @@ function blend_images, blend_mode, active, background, min_c=min_c, max_c=max_c
   case blend_mode of
     'Multiply': return, blend_multi_dim_images(blend_mode, active, background) 
     'Overlay': return, blend_multi_dim_images(blend_mode, active, background) 
-    'Screen': return, blend_multi_dim_images(blend_mode, active, background) 
+    'Screen': return, blend_multi_dim_images(blend_mode, active, background)
     'Luminosity': return, blend_luminosity(active, background, min_c=min_c, max_c=max_c)
     ELSE: return, blend_normal(active, background)
   endcase
