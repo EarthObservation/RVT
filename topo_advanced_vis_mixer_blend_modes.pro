@@ -281,7 +281,7 @@ function blend_luminosity_HSP, active, background, min_c=min_c, max_c=max_c
     endelse
     
     HSP_blended_image = image_join_channels(Hb, Sb, Pa)    
-    blended_imahe = HSP_to_RGB_Rex(HSP_blended_image)
+    blended_image = HSP_to_RGB_Rex(HSP_blended_image)
     
     return, blended_image
 end

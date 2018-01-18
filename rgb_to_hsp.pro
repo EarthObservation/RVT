@@ -119,8 +119,14 @@ function indices_descending_layer_values, A, B, C
     return, WHERE(((A gt B) and (B ge C)) or ((A ge B) and (B gt C)))
 end
 
+
+; 
+;
+; Note: Ugly code, becuase the pretty version* had to use foreach with min() and max() which is much slower
+; Pretty version inspired by HSL conversion https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
 function RGB_to_HSP_Rex, rgb
 
+  ; RGB values on a range 0 to 1
   R = reform(rgb[0, *, *])
   G = reform(rgb[1, *, *])
   B = reform(rgb[2, *, *])
@@ -133,6 +139,7 @@ function RGB_to_HSP_Rex, rgb
   
   r_b_g = indices_descending_layer_values(R, B, G)
   H[r_b_g] = 6.0/6.0-1.0/6.0*(B[r_b_g]-G[r_b_g])/(R[r_b_g]-G[r_b_g])
+  ;H[r_b_g] = 6.0/6.0-1.0/6.0*(G[r_b_g]-B[r_b_g])/(R[r_b_g]-G[r_b_g])
   S[r_b_g] = 1.0-G[r_b_g]/R[r_b_g]
   
   r_g_b = indices_descending_layer_values(R, G, B)
@@ -159,42 +166,10 @@ function RGB_to_HSP_Rex, rgb
   H[gray_scale] = R[gray_scale]*0.0
   S[gray_scale] = R[gray_scale]*0.0
 
-;  ; Calculate the Hue and Saturation
-;  if  array_equal(R, G) and array_equal(R, B) then begin  ; R = G = B
-;      H=R*0.0
-;      S=R*0.0
-;      return, image_join_channels(H,S,P)
-;  endif
-  
-;  if  (R ge G) and (R ge B) then begin  ;  R is largest
-;      if  (B ge G) then begin
-;          H=6.0/6.0-1.0/6.0*(B-G)/(R-G); 
-;          S=1.0-G/R; 
-;      endif else begin
-;          H=0.0/6.0+1.0/6.0*(G-B)/(R-B); 
-;          S=1.0-B/R; 
-;      endelse      
-      
-;  endif else begin  
-;    if (G ge R) and (G ge B) then begin ;  G is largest
-;        if (R ge B) then begin
-;            H=2.0/6.0-1.0/6.0*(R-B)/(G-B); 
-;            S=1.0-B/G; 
-;        endif else begin
-;          H=2.0/6.0+1.0/6.0*(B-R)/(G-R); 
-;          S=1.0-R/G; 
-;        endelse
-;        
-;    endif else begin   ;  B is largest
-;        if (G ge R) then begin
-;            H=4.0/6.0-1./6.*(G-R)/(B-R); 
-;            S=1.0-R/B; 
-;        endif else begin
-;            H=4.0/6.0+1.0/6.0*(R-G)/(B-G); 
-;            S=1.0-G/B;
-;        endelse
-;    endelse  
-;  endelse
+   ; ONLY FOR COMPARISON
+   COLOR_CONVERT, rgb, hls_image, /RGB_HLS
+   COLOR_CONVERT, rgb, hsv_image, /RGB_HSV
+   COLOR_CONVERT, rgb, yuv_image, /RGB_YUV
 
    hsp = image_join_channels(H,S,P)
    return, hsp
@@ -215,7 +190,7 @@ function HSP_to_RGB_Rex, hsp
   y_size = dimensions[1]
 
   minOverMax = make_array(x_size, y_size)
-  part = make_array(x_size, y_size) 
+  part = make_array(x_size, y_size)
   R = make_array(x_size, y_size)
   G = make_array(x_size, y_size)
   B = make_array(x_size, y_size)
@@ -223,88 +198,127 @@ function HSP_to_RGB_Rex, hsp
   minOverMax = 1.0-S
 
   pos_idx = WHERE(minOverMax gt 0.0)
-    
-      idx = WHERE(H[pos_idx] lt 1.0/6.0)  ; R>G>B
-      H[idx] = 6.0*(H[idx] - 0./6.)
-      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx]-1.0)
-      B[idx] = P[idx]/sqrt(Pr/minOverMax[idx]/minOverMax[idx] + Pg * part[idx] * part[idx] + Pb)
-      R[idx] = B[idx]/minOverMax[idx]
-      G[idx] = B[idx] +H[idx]*(R[idx] - B[idx])
-    
-      idx = WHERE(H[pos_idx] ge 1.0/6.0 and H[pos_idx] gt 2.0/6.0) ;  G>R>B
-      H[idx] = 6.*(-H[idx] + 2./6.)
-      part[idx] = 1. + H[idx]*(1.0/minOverMax[idx] - 1.0)
-      B[idx] = P[idx]/sqrt(Pg/minOverMax[idx]/minOverMax[idx] + Pr * part[idx] * part[idx] + Pb)
-      G[idx] = B[idx]/minOverMax[idx] 
-      R[idx] = B[idx] + H[idx]*(G[idx] - B[idx])
+;    
+;      idx = WHERE(H[pos_idx] lt 1.0/6.0)  ; R>G>B
+;      H[idx] = 6.0*(H[idx] - 0./6.)
+;      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx]-1.0)
+;      B[idx] = P[idx]/sqrt(Pr/(minOverMax[idx]*minOverMax[idx]) + Pg * part[idx] * part[idx] + Pb)
+;      R[idx] = B[idx]/minOverMax[idx]
+;      G[idx] = B[idx] +H[idx]*(R[idx] - B[idx])
+;    
+;      idx = WHERE(H[pos_idx] ge 1.0/6.0 and H[pos_idx] lt 2.0/6.0) ;  G>R>B
+;      H[idx] = 6.*(-H[idx] + 2./6.)
+;      part[idx] = 1. + H[idx]*(1.0/minOverMax[idx] - 1.0)
+;      B[idx] = P[idx]/sqrt(Pg/(minOverMax[idx]*minOverMax[idx]) + Pr * part[idx] * part[idx] + Pb)
+;      G[idx] = B[idx]/minOverMax[idx] 
+;      R[idx] = B[idx] + H[idx]*(G[idx] - B[idx])
+;      
+;      idx = WHERE(H[pos_idx] ge 2.0/6.0 and H[pos_idx] lt 3.0/6.0) ;  G>B>R
+;      H[idx] = 6.0 *( H[idx] - 2.0/6.0)
+;      part[idx] = 1.0 + H[idx] * (1.0/minOverMax[idx]-1.0);
+;      R[idx] = P[idx]/sqrt(Pg/(minOverMax[idx]*minOverMax[idx]) + Pb * part[idx] * part[idx] + Pr)
+;      G[idx] = R[idx]/minOverMax[idx]
+;      B[idx] = R[idx] + H[idx]*(G[idx] - R[idx])
+;         
+;      idx = WHERE(H[pos_idx] ge 3.0/6.0 and H[pos_idx] lt 4.0/6.0)  ;  B>G>R
+;      H[idx] = 6.0*(-H[idx]+4.0/6.0)
+;      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx]-1.0)
+;      R[idx] = P[idx]/sqrt(Pb/(minOverMax[idx]*minOverMax[idx]) + Pg * part[idx] * part[idx] + Pr)
+;      B[idx] = R[idx]/minOverMax[idx]
+;      G[idx] = R[idx] + H[idx]*(B[idx] - R[idx])
+;      
+;      idx = WHERE(H[pos_idx] ge 4.0/6.0 and H[pos_idx] lt 5.0/6.0) ;  B>R>G
+;      H[idx] = 6.0*( H[idx] -4.0/6.0) 
+;      part[idx] = 1.0+H*(1.0/minOverMax[idx]-1.0)
+;      G[idx] = P[idx]/sqrt(Pb/(minOverMax[idx]*minOverMax[idx]) + Pr * part[idx] * part[idx] + Pg)
+;      B[idx] = G[idx]/minOverMax[idx]
+;      R[idx] = G[idx] + H[idx]*(B[idx] - G[idx])
+;              
+;      idx = WHERE(H[pos_idx] ge 5.0/6.0) ;  R>B>G
+;      H[idx] = 6.0*(-H[idx] + 6.0/6.0)
+;      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx] -1.0)
+;      G[idx] = P[idx]/sqrt(Pr/(minOverMax[idx]*minOverMax[idx]) + Pb * part[idx] * part[idx] + Pg)
+;      R[idx] = G[idx]/minOverMax[idx]
+;      B[idx] = G[idx] + H[idx]*(R[idx] - G[idx])
       
-      idx = WHERE(H[pos_idx] ge 2.0/6.0 and H[pos_idx] lt 3.0/6.0) ;  G>B>R
-      H[idx] = 6.0 *( H[idx] - 2.0/6.0)
-      part[idx] = 1.0 + H[idx] * (1.0/minOverMax[idx]-1.0);
-      R[idx] = P[idx]/sqrt(Pg/minOverMax[idx]/minOverMax[idx] + Pb * part[idx] * part[idx] + Pr)
-      G[idx] = R[idx]/minOverMax[idx]
-      B[idx] = R[idx] + H[idx]*(G[idx] - R[idx])
-         
-      idx = WHERE(H[pos_idx] ge 3.0/6.0 and H[pos_idx] lt 4.0/6.0)  ;  B>G>R
-      H[idx] = 6.0*(-H[idx]+4.0/6.0)
-      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx]-1.0)
-      R[idx] = P[idx]/sqrt(Pb/minOverMax[idx]/minOverMax[idx] + Pg * part[idx] * part[idx] + Pr)
-      B[idx] = R[idx]/minOverMax[idx]
-      G[idx] = R[idx] + H[idx]*(B[idx] - R[idx])
       
-      idx = WHERE(H[pos_idx] ge 4.0/6.0 and H[pos_idx] lt 5.0/6.0) ;  B>R>G
-      H[idx] = 6.0*( H[idx] -4.0/6.0) 
-      part[idx] = 1.0+H*(1.0/minOverMax[idx]-1.0)
-      G[idx] = P[idx]/sqrt(Pb/minOverMax[idx]/minOverMax[idx] + Pr * part[idx] * part[idx] + Pg)
-      B[idx] = G[idx]/minOverMax[idx]
-      R[idx] = G[idx] + H[idx]*(B[idx] - G[idx])
-              
-      idx = WHERE(H[pos_idx] ge 5.0/6.0) ;  R>B>G
-      H[idx] = 6.0*(-H[idx] + 6.0/6.0)
-      part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx] -1.0)
-      G[idx] = P[idx]/sqrt(Pr/minOverMax[idx]/minOverMax[idx] + Pb * part[idx] * part[idx] + Pg)
-      R[idx] = G[idx]/minOverMax[idx]
-      B[idx] = G[idx] + H[idx]*(R[idx] - G[idx])
-    
-    
-  neg_idx = WHERE(minOverMax gt 0.0)  
-
-       idx = WHERE(H[neg_idx] lt 1.0/6.0) ;  R>G>B
-       H[idx] = 6.0*(H[idx] - 0.0/6.0)
-       R[idx] = sqrt(P[idx]*P[idx]/(Pr+Pg*H[idx]*H[idx]))
-       G[idx] = R[idx]*H[idx]
-       B[idx] = H[idx] * 0.0
-  
-       idx = WHERE(H[neg_idx] ge 1.0/6.0 and H[neg_idx] lt 2.0/6.0) ;  G>R>B        
-       H[idx] = 6.0*(-H[idx] + 2.0/6.0)
-       G[idx] = sqrt(P[idx]*P[idx]/(Pg+Pr*H[idx]*H[idx]))
-       R[idx] = G[idx]*H[idx]
-       B[idx] = H[idx] * 0.0
-
-       idx = WHERE(H[neg_idx] ge 2.0/6.0 and H[neg_idx] lt 3.0/6.0) ;  G>B>R
-       H[idx] = 6.0*(H[idx] - 2.0/6.0)
-       G[idx] = sqrt(P[idx]*P[idx]/(Pg+Pb*H*H))
-       B[idx] = G[idx]*H[idx]
-       R[idx] = H[idx] * 0.0
+      
+      H_deg_sixths = ['R>G>B','G>R>B','G>B>R','B>G>R','B>R>G','R>B>G']
+      coeffs = DICTIONARY('R',Pr,'G',Pg,'B',Pb)
+      colors = DICTIONARY('R',R,'G',G,'B',B)
+      
+      for num = 0,5 do begin
+        idx = WHERE(H[pos_idx] ge num/6.0 and H[pos_idx] le (num+1)/6.0) ;  R>B>G
+        H[idx] = 6.0*(((-1)^num)*H[idx] + num/6.0)
+        part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx] -1.0)
+        colors = H_deg_sixths[num]
+        max_clr = colors[0]
+        mid_clr = colors[2]
+        min_clr = colors[4]
         
-       idx = WHERE(H[neg_idx] ge 3.0/6.0 and H[neg_idx] lt 4.0/6.0) ;  B>G>R
-       H[idx] = 6.0*(-H[idx] + 4.0/6.0)
-       B[idx] = sqrt(P[idx]*P[idx]/(Pb+Pg*H[idx]*H[idx]))
-       G[idx] = B[idx]*H[idx]
-       R[idx] = H[idx] * 0.0;
-     
-       idx = WHERE(H[neg_idx] gt 4.0/6.0 and H[neg_idx] lt 5.0/6.0) ;  B>R>G
-       H[idx] = 6.*( H[idx] - 4.0/6.0)
-       B[idx] = sqrt(P[idx]*P[idx]/(Pb+Pr*H[idx]*H[idx]))
-       R[idx] = B[idx]*H[idx]
-       G[idx] = H[idx] * 0.0
+        (colors[min_clr])[idx] = P[idx]/sqrt(Pr/minOverMax[idx]/minOverMax[idx] + coeffs[mid_clr] * part[idx] * part[idx] + coeffs[min_clr])
+        (colors[max_clr])[idx] = (colors[min_clr])[idx]/minOverMax[idx]
+        (colors[mid_clr])[idx] = (colors[min_clr])[idx] + H[idx]*((colors[max_clr])[idx] - (colors[min_clr])[idx])
+      endfor
+        
+      
+    
+    
+  neg_idx = WHERE(minOverMax le 0.0)  
+
+;       idx = WHERE(H[neg_idx] lt 1.0/6.0) ;  R>G>B
+;       H[idx] = 6.0*(H[idx] - 0.0/6.0)
+;       R[idx] = sqrt(P[idx]*P[idx]/(Pr+Pg*H[idx]*H[idx]))
+;       G[idx] = R[idx]*H[idx]
+;       B[idx] = H[idx] * 0.0
+;  
+;       idx = WHERE(H[neg_idx] ge 1.0/6.0 and H[neg_idx] lt 2.0/6.0) ;  G>R>B        
+;       H[idx] = 6.0*(-H[idx] + 2.0/6.0)
+;       G[idx] = sqrt(P[idx]*P[idx]/(Pg+Pr*H[idx]*H[idx]))
+;       R[idx] = G[idx]*H[idx]
+;       B[idx] = H[idx] * 0.0
+;
+;       idx = WHERE(H[neg_idx] ge 2.0/6.0 and H[neg_idx] lt 3.0/6.0) ;  G>B>R
+;       H[idx] = 6.0*(H[idx] - 2.0/6.0)
+;       G[idx] = sqrt(P[idx]*P[idx]/(Pg+Pb*H*H))
+;       B[idx] = G[idx]*H[idx]
+;       R[idx] = H[idx] * 0.0
+;        
+;       idx = WHERE(H[neg_idx] ge 3.0/6.0 and H[neg_idx] lt 4.0/6.0) ;  B>G>R
+;       H[idx] = 6.0*(-H[idx] + 4.0/6.0)
+;       B[idx] = sqrt(P[idx]*P[idx]/(Pb+Pg*H[idx]*H[idx]))
+;       G[idx] = B[idx]*H[idx]
+;       R[idx] = H[idx] * 0.0;
+;     
+;       idx = WHERE(H[neg_idx] ge 4.0/6.0 and H[neg_idx] lt 5.0/6.0) ;  B>R>G
+;       H[idx] = 6.*( H[idx] - 4.0/6.0)
+;       B[idx] = sqrt(P[idx]*P[idx]/(Pb+Pr*H[idx]*H[idx]))
+;       R[idx] = B[idx]*H[idx]
+;       G[idx] = H[idx] * 0.0
+;       
+;       idx = WHERE(H[neg_idx] gt 5.0/6.0) ;  R>B>G
+;       H[idx] = 6.0*(-H[idx] + 6.0/6.0)
+;       R[idx] = sqrt(P[idx]*P[idx]/(Pr+Pb*H[idx]*H[idx]))
+;       B[idx] = R[idx]*H[idx]
+;       G[idx] = H[idx]*0.0;
        
-       idx = WHERE(H[neg_idx] gt 5.0/6.0) ;  R>B>G
-       H[idx] = 6.0*(-H[idx] + 6.0/6.0)
-       R[idx] = sqrt(P[idx]*P[idx]/(Pr+Pb*H[idx]*H[idx]))
-       B[idx] = R[idx]*H[idx]
-       G[idx] = H[idx]*0.0;
-       
+       for num = 0,5 do begin
+           idx = WHERE(H[pos_idx] ge num/6.0 and H[pos_idx] le (num+1)/6.0) ;  R>B>G
+           
+           if num mod 2 eq 0 then h_factor = (-1)*num
+           if num mod 2 eq 1 then h_factor = num +1
+           
+           H[idx] = 6.0*(((-1)^num)*H[idx] + h_factor/6.0)
+           
+           colors = H_deg_sixths[num]
+           max_clr = colors[0]
+           mid_clr = colors[2]
+           min_clr = colors[4]
+           
+           (colors[max_clr])[idx] = sqrt(P[idx]*P[idx]/(coeffs[max_clr] + coeffs[mid_clr]*H[idx]*H[idx]))
+           (colors[mid_clr])[idx] = (colors[max_clr])[idx]*H[idx]
+           (colors[min_clr])[idx] = H[idx]*0.0;
+        endfor
   
   
   rgb = image_join_channels(R,G,B)
