@@ -94,7 +94,6 @@ end
 
 ; Normal
 function blend_normal, active, background
-   ;active = scale_0_to_1(active)
    return, active
 end
 
@@ -330,32 +329,32 @@ function blend_luminosity_equation, active, background, min_c=min_c, max_c=max_c
    return, clipped_image
 end
 
-;function get_lightness, active 
-;  n_channels = size(active, /N_DIMENSIONS)
-;
-;  ; Monochrome (1) image
-;  if (n_channels EQ 2) then begin
-;    ; Luminosity of monochrome image IS the monochrome image itself
-;    ; Make sure it's correct value scale!
-;    lightness = active
-;    return, lightness
-;  endif
-;  ; Multichannel, RGB (3) image
-;  if (n_channels EQ 3) then begin
-;    ; Float to RGB (if it's not already)
-;    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
-;
-;    L_channel = 1
-;    COLOR_CONVERT, active, HLS_active, /RGB_HLS
-;    lightness = reform(HLS_active[L_channel, *, *])
-;    
-;    ;L_channel = 0
-;    ;COLOR_CONVERT, active, YUV_active, /RGB_YUV
-;    ;luminance = reform(YUV_active[L_channel, *, *])
-;
-;    return, lightness
-;  endif
-;end
+function get_lightness, active 
+  n_channels = size(active, /N_DIMENSIONS)
+
+  ; Monochrome (1) image
+  if (n_channels EQ 2) then begin
+    ; Luminosity of monochrome image IS the monochrome image itself
+    ; Make sure it's correct value scale!
+    lightness = active
+    return, lightness
+  endif
+  ; Multichannel, RGB (3) image
+  if (n_channels EQ 3) then begin
+    ; Float to RGB (if it's not already)
+    if typename(active) eq 'FLOAT' then active = float_to_RGB(active)
+
+    L_channel = 1
+    COLOR_CONVERT, active, HLS_active, /RGB_HLS
+    lightness = reform(HLS_active[L_channel, *, *])
+    
+    ;L_channel = 0
+    ;COLOR_CONVERT, active, YUV_active, /RGB_YUV
+    ;luminance = reform(YUV_active[L_channel, *, *])
+
+    return, lightness
+  endif
+end
 
 function get_luminance, active
   n_channels = size(active, /N_DIMENSIONS)
@@ -404,12 +403,12 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
  
 
 ;     A. HLS method with lightness:
-;      L_channel = 1
-;      COLOR_CONVERT, background, HLS_background, /RGB_HLS
-;      HLS_background[L_channel,*, *] = get_lightness(active)
-;       
-;      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
-;      blended_image = RGB_to_float(blended_image)
+      L_channel = 1
+      COLOR_CONVERT, background, HLS_background, /RGB_HLS
+      HLS_background[L_channel,*, *] = get_lightness(active)
+       
+      COLOR_CONVERT, HLS_background, blended_image, /HLS_RGB
+      blended_image = RGB_to_float(blended_image)
       
 ;      B. YUV method with luminance:
 ;      L_channel = 0
@@ -422,14 +421,15 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 ;      C. Adobe equation
 ;      blended_image = blend_luminosity_equation(active, background, min_c=min_c, max_c=max_c)
       
-      ; USE RGB_to_HSP_Rex for LUMINOSITY
-      blended_image = blend_luminosity_HSP(active, background, min_c=min_c, max_c=max_c)
+;      D. USE RGB_to_HSP_Rex for LUMINOSITY
+;      blended_image = blend_luminosity_HSP(active, background, min_c=min_c, max_c=max_c)
       
    endif
    ; Replacing luminosity of single channel, monochrome image
    ; means replacing the monochrome image completely
    if (n_background EQ 2) then begin
-      blended_image =  get_luminance(active)
+      ;blended_image =  get_luminance(active)
+      blended_image = get_lightness(active)
    endif
 
 ;   blended_image = to_sRGB_in_float(blended_image)
@@ -519,11 +519,10 @@ function render_all_images, layers, images
       active = images[i]
       background = rendered_image
       blend_mode = layers[i].blend_mode
-      opacity = layers[i].opacity        
+      opacity = layers[i].opacity    
       
       top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
       rendered_image = render_images(top, background, opacity)
-      ;im2 = image(rendered_image)
     endelse
   endfor
   
@@ -560,6 +559,26 @@ pro mixer_render_layered_images, event, in_file
   write_rendered_image_to_file, p_wdgt_state, in_file, final_image
 end
 
+; For every input file
+pro mixer_write_layer_images, event, in_file
+  widget_control, event.top, get_uvalue=p_wdgt_state
+
+  layers = (*p_wdgt_state).current_combination.layers
+  images = (*p_wdgt_state).mixer_layer_images
+
+  for i=layers.length-1,0,-1 do begin
+    ; if current layer has no visualization applied, skip
+    visualization = layers[i].vis
+    if (visualization EQ '<none>') then continue
+
+    ; Save image to file
+    layer_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'.tif'
+    layer_image = images[i]
+
+    write_image_to_geotiff_float, 1, layer_file, layer_image
+  endfor
+end
+
 pro topo_advanced_vis_mixer_blend_modes, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   in_file_string = (*p_wdgt_state).selection_str
@@ -577,11 +596,17 @@ pro topo_advanced_vis_mixer_blend_modes, event
     
     ; Normalize images on all layers
     mixer_normalize_images_on_layers, event
+    
+    ; Add saving normalized images?
+    mixer_write_layer_images, event, in_file
 
     ; Apply blend modes, opacity and render into a composed image
     mixer_render_layered_images, event, in_file
   endfor
   
+  test_memory  
 end
+
+
 
 

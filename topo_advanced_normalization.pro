@@ -37,22 +37,22 @@ function normalize_lin, image, min, max
     image[idx_max] = max
     
     ; Stretch to 0.0-1.0 interval
-    image = float(image - min) / (float(max-min))
+    image = (float(image) - float(min)) / (float(max) - float(min))
 
     return, image
 end
 
 function normalize_perc, image, perc
-    if (perc GT 0.5 AND perc LT 100.0001) then perc = perc / 100.0
+    if (perc GT 1.0 AND perc LE 100.0) then perc = perc / 100.0
+    
     distribution = cgPercentiles(image, Percentiles=[perc, 1.0-perc])
-    min = distribution[0]
-    max = distribution[1]
+    min = min(distribution)
+    max = max(distribution)
     
     return, normalize_lin(image, min, max)
 end
 
 function topo_advanced_normalization, image, min, max, normalization
-
   if (normalization EQ 'Lin') then begin
     ;equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
     equ_image = normalize_lin(image, min, max)
@@ -72,6 +72,10 @@ end
 pro mixer_normalize_images_on_layers, event
     widget_control, event.top, get_uvalue = p_wdgt_state
     
+    ; for slope, putting this to one will invert scale 
+    ; meaning high slopes will be black
+    switch_slope_scale = 1
+    
     layers = (*p_wdgt_state).current_combination.layers
     images = (*p_wdgt_state).mixer_layer_images
  
@@ -83,11 +87,16 @@ pro mixer_normalize_images_on_layers, event
       visualization = layers[i].vis
       if (visualization EQ '<none>') then continue
       image = images[i]
-      min = float(layers[i].min)
-      max = float(layers[i].max)
+      min_norm = float(layers[i].min)
+      max_norm = float(layers[i].max)
       normalization = layers[i].normalization
 
-      (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min, max, normalization)
+      (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+      
+      if (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
+        image = (*p_wdgt_state).mixer_layer_images[i]
+        (*p_wdgt_state).mixer_layer_images[i] = 1 - image
+      endif      
     endfor
 end
 
@@ -141,8 +150,12 @@ function scale_strict_0_to_1, numeric_value
   NaN_indices = Where(~Finite(numeric_value), count)
   if (count gt 0) then numeric_value[NaN_indices] = 0
 
-  min_value = min(numeric_value)
-  max_value = max(numeric_value)
+  min_value = min(numeric_value) ; min(numeric_value, /NAN)
+  max_value = max(numeric_value) ; max(numeric_value, /NAN)
+  
+  ; new version
+;  finite_indices = Where(Finite(numeric_value))
+;  scaled[finite_indices] = float(numeric_value[finite_indices] - min_value) / float(max_value - min_value)
 
   scaled = float(numeric_value - min_value) / float(max_value - min_value)
   return, scaled
@@ -154,24 +167,36 @@ function scale_within_0_and_1, numeric_value
 
   NaN_indices = Where(~Finite(numeric_value), count)
   ;TODO: Replace min(numeric_value) with inpaint for NaN values
-  if (count gt 0) then numeric_value[NaN_indices] = min(numeric_value) 
+  if (count gt 0) then numeric_value[NaN_indices] = min(numeric_value)
 
   actual_min = min(numeric_value)
   norm_min_value = max(0.0, actual_min)
   
   actual_max = max(numeric_value)
   norm_max_value = min(1.0, actual_max)
+  
+  ; Do not scale values where max is between 1 and 255
+  ; ... if the max-min values difference is at least 30 and min is >0
+  ; ... and numeric values are integer type
+  if (actual_max le 255 and actual_max gt 1.0) then begin
+    if (actual_max - actual_min ge 30) and (actual_min ge 0) and typename(numeric_values) eq 'INT' then begin
+       scaled = float(numeric_value) / float(255.0)
+       return, scaled
+    endif
+  endif
 
   scaled = float(numeric_value - norm_min_value) / float(norm_max_value - norm_min_value)
   return, scaled
 end
 
 function scale_0_to_1, numeric_value
-      if max(numeric_value) - min(numeric_value) gt 0.3 then begin
-        return, scale_within_0_and_1(numeric_value)
-      endif else begin
-        return, scale_strict_0_to_1(numeric_value)
-      endelse
+    if max(numeric_value) le 1.0 and max(numeric_value) gt 0.9 and min(numeric_value) eq 0.0 then return, numeric_value
+
+    if max(numeric_value) - min(numeric_value) gt 0.3 then begin
+      return, scale_within_0_and_1(numeric_value)
+    endif else begin
+      return, scale_strict_0_to_1(numeric_value)
+    endelse
 end
 
 function grayscale_to_RGB, grayscale

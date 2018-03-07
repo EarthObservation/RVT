@@ -115,7 +115,6 @@ end
 ; Function returns a list of those indices where values at
 ; A are GE than B and values at B are GE than C
 function indices_descending_layer_values, A, B, C
-    ; return, WHERE((A ge B) and (B ge C))
     return, WHERE(((A gt B) and (B ge C)) or ((A ge B) and (B gt C)))
 end
 
@@ -139,7 +138,6 @@ function RGB_to_HSP_Rex, rgb
   
   r_b_g = indices_descending_layer_values(R, B, G)
   H[r_b_g] = 6.0/6.0-1.0/6.0*(B[r_b_g]-G[r_b_g])/(R[r_b_g]-G[r_b_g])
-  ;H[r_b_g] = 6.0/6.0-1.0/6.0*(G[r_b_g]-B[r_b_g])/(R[r_b_g]-G[r_b_g])
   S[r_b_g] = 1.0-G[r_b_g]/R[r_b_g]
   
   r_g_b = indices_descending_layer_values(R, G, B)
@@ -167,9 +165,9 @@ function RGB_to_HSP_Rex, rgb
   S[gray_scale] = R[gray_scale]*0.0
 
    ; ONLY FOR COMPARISON
-   COLOR_CONVERT, rgb, hls_image, /RGB_HLS
-   COLOR_CONVERT, rgb, hsv_image, /RGB_HSV
-   COLOR_CONVERT, rgb, yuv_image, /RGB_YUV
+;   COLOR_CONVERT, rgb, hls_image, /RGB_HLS
+;   COLOR_CONVERT, rgb, hsv_image, /RGB_HSV
+;   COLOR_CONVERT, rgb, yuv_image, /RGB_YUV
 
    hsp = image_join_channels(H,S,P)
    return, hsp
@@ -196,8 +194,18 @@ function HSP_to_RGB_Rex, hsp
   B = make_array(x_size, y_size)
   
   minOverMax = 1.0-S
+  
+  
+  if max(S) eq 0.0 then begin
+    R = P
+    G = P
+    B = P
+    
+    rgb = image_join_channels(R,G,B)
+    return, rgb
+  endif
 
-  pos_idx = WHERE(minOverMax gt 0.0)
+;  pos_idx = WHERE(minOverMax gt 0.0)
 ;    
 ;      idx = WHERE(H[pos_idx] lt 1.0/6.0)  ; R>G>B
 ;      H[idx] = 6.0*(H[idx] - 0./6.)
@@ -242,30 +250,32 @@ function HSP_to_RGB_Rex, hsp
 ;      B[idx] = G[idx] + H[idx]*(R[idx] - G[idx])
       
       
-      
       H_deg_sixths = ['R>G>B','G>R>B','G>B>R','B>G>R','B>R>G','R>B>G']
       coeffs = DICTIONARY('R',Pr,'G',Pg,'B',Pb)
-      colors = DICTIONARY('R',R,'G',G,'B',B)
+      channel = DICTIONARY('R',PTR_NEW(R),'G',PTR_NEW(G),'B',PTR_NEW(B))
       
       for num = 0,5 do begin
-        idx = WHERE(H[pos_idx] ge num/6.0 and H[pos_idx] le (num+1)/6.0) ;  R>B>G
-        H[idx] = 6.0*(((-1)^num)*H[idx] + num/6.0)
-        part[idx] = 1.0 + H[idx]*(1.0/minOverMax[idx] -1.0)
-        colors = H_deg_sixths[num]
+        idx = WHERE(minOverMax gt 0.0 and H ge num/6.0 and H le (num + 1)/6.0) 
+        
+        if num mod 2 eq 0 then h_factor = (-1) * num
+        if num mod 2 eq 1 then h_factor = num + 1
+        
+        H[idx] = 6.0*(((-1)^num)*H[idx] + h_factor/6.0)
+        
+        part[idx] = 1.0 + H[idx] * (1.0/(minOverMax[idx] + 0.5) - 1.0)  ;added 0.5 so that factor of H goes from 0 to 1
+        colors = H_deg_sixths[num].Split('>')
         max_clr = colors[0]
-        mid_clr = colors[2]
-        min_clr = colors[4]
+        mid_clr = colors[1]
+        min_clr = colors[2]
         
-        (colors[min_clr])[idx] = P[idx]/sqrt(Pr/minOverMax[idx]/minOverMax[idx] + coeffs[mid_clr] * part[idx] * part[idx] + coeffs[min_clr])
-        (colors[max_clr])[idx] = (colors[min_clr])[idx]/minOverMax[idx]
-        (colors[mid_clr])[idx] = (colors[min_clr])[idx] + H[idx]*((colors[max_clr])[idx] - (colors[min_clr])[idx])
+        (*channel[min_clr])[idx] = P[idx]/sqrt(coeffs[max_clr]/(minOverMax[idx] * minOverMax[idx]) + coeffs[mid_clr] * part[idx] * part[idx] + coeffs[min_clr])
+        (*channel[max_clr])[idx] = (*channel[min_clr])[idx]/minOverMax[idx]
+        (*channel[mid_clr])[idx] = (*channel[min_clr])[idx] + H[idx]*((*channel[max_clr])[idx] - (*channel[min_clr])[idx])        
       endfor
-        
       
     
-    
-  neg_idx = WHERE(minOverMax le 0.0)  
-
+;  neg_idx = WHERE(minOverMax le 0.0)  
+;
 ;       idx = WHERE(H[neg_idx] lt 1.0/6.0) ;  R>G>B
 ;       H[idx] = 6.0*(H[idx] - 0.0/6.0)
 ;       R[idx] = sqrt(P[idx]*P[idx]/(Pr+Pg*H[idx]*H[idx]))
@@ -303,23 +313,33 @@ function HSP_to_RGB_Rex, hsp
 ;       G[idx] = H[idx]*0.0;
        
        for num = 0,5 do begin
-           idx = WHERE(H[pos_idx] ge num/6.0 and H[pos_idx] le (num+1)/6.0) ;  R>B>G
+           idx = WHERE(minOverMax le 0.0 and H ge num/6.0 and H le (num + 1)/6.0) ;  R>B>G
            
-           if num mod 2 eq 0 then h_factor = (-1)*num
-           if num mod 2 eq 1 then h_factor = num +1
+           if num mod 2 eq 0 then h_factor = (-1)* num
+           if num mod 2 eq 1 then h_factor = num + 1
            
-           H[idx] = 6.0*(((-1)^num)*H[idx] + h_factor/6.0)
+           H[idx] = 6.0 * (((-1)^num)*H[idx] + h_factor/6.0)
            
-           colors = H_deg_sixths[num]
+           colors = H_deg_sixths[num].Split('>')
            max_clr = colors[0]
-           mid_clr = colors[2]
-           min_clr = colors[4]
+           mid_clr = colors[1]
+           min_clr = colors[2]
            
-           (colors[max_clr])[idx] = sqrt(P[idx]*P[idx]/(coeffs[max_clr] + coeffs[mid_clr]*H[idx]*H[idx]))
-           (colors[mid_clr])[idx] = (colors[max_clr])[idx]*H[idx]
-           (colors[min_clr])[idx] = H[idx]*0.0;
-        endfor
+           (*channel[max_clr])[idx] = sqrt(P[idx] * P[idx]/(coeffs[max_clr] + coeffs[mid_clr] * H[idx] * H[idx]))
+           (*channel[mid_clr])[idx] = (*channel[max_clr])[idx] * H[idx]
+           (*channel[min_clr])[idx] = H[idx] * 0.0
+       endfor
   
+  R = (*channel['R'])
+  G = (*channel['G'])
+  B = (*channel['B'])
+  
+;  max_val = max([R, G, B])
+;  if (max_val gt 1.0) then begin
+;    R = R/max_val
+;    G = G/max_val
+;    B = B/max_val
+;  endif
   
   rgb = image_join_channels(R,G,B)
   return, rgb

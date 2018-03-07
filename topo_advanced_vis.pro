@@ -923,13 +923,14 @@ pro mixer_input_images_to_layers, event, source_image_file
     
     ;TODO: images will be already normalized later (delete row below?)
     ; RGB to float
-    if max(image) gt 2 and min(image) ge 0 then $
+    if max(image) gt 2 and min(image) ge 0 and typename(image) eq 'INT' then $
       image = RGB_to_float(image)
     
     ; image negative for slope
-    if (visualization EQ 'Slope gradient' and strpos(file_names[i], '_8bit.tif') LT 0) then begin
-       image = image * (-1) + 1
-    endif
+    ; if (visualization EQ 'Slope gradient' and strpos(file_names[i], '_8bit.tif') LT 0) then begin
+;    if (visualization EQ 'Slope gradient' and strpos(file_names[i], '.tif') GT 0) then begin
+;       ;image = 1 - image ;image * (-1) + 1
+;    endif
     
 ;    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
 ;    ; btw, grayscale has dim = 2, but has only 1 channel

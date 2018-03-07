@@ -76,6 +76,16 @@ pro write_image_to_geotiff_bits_per_sample, overwrite, out_file, image_out, bits
     write_tiff, out_file, image_out, bits_per_sample=bits, geotiff=geotiff, compression=1
 end
 
+pro test_memory
+  mem_high = MEMORY(/HIGHWATER)
+  mem_high = float(mem_high)/(1024.*1024.)
+  message = 'Most dynamic memory used in this run was  '
+  sentence = message + STRTRIM(mem_high,2)+' megabytes.'
+  print, sentence
+  
+  ; dl_log.add, sentence
+end
+
 function read_image_geotiff, in_file, in_orientation
 
   if file_test(in_file) eq 0 then begin

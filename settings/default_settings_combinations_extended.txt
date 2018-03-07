@@ -114,16 +114,16 @@ layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
 
 combination = Combination 2
 
-layer:1, vis:Sky-View Factor, norm:Lin, min:1, max:200, blend_mode:Luminosity, opacity:70
-layer:2, vis:Openness - Positive, norm:Lin, min:1, max:200, blend_mode:Normal, opacity:40
-layer:3, vis:Local dominance, norm:Perc, min:0, max:200, blend_mode:Screen, opacity:30
-layer:4, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
+layer:1, vis:Sky-View Factor, norm:Lin, min:0.8, max:1.0, blend_mode:Multiply, opacity:25
+layer:2, vis:Openness - Positive, norm:Lin, min:75, max:92, blend_mode:Overlay, opacity:50
+layer:3, vis:Slope gradient, norm:Lin, min:0, max:40, blend_mode:Luminosity, opacity:50
+layer:4, vis:Analytical hillshading, norm:Lin, min:0, max:1, blend_mode:Normal, opacity:100
 layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
 
 combination = Poznoanticna VIS1
 
 layer:1, vis:Sky-View Factor, norm:Lin, min:0.7, max:1.0, blend_mode:Multiply, opacity:25
-layer:2, vis:Openness - Positive, norm:Perc, min:68, max:93, blend_mode:Overlay, opacity:50
+layer:2, vis:Openness - Positive, norm:Lin, min:68, max:93, blend_mode:Overlay, opacity:50
 layer:3, vis:Slope gradient, norm:Lin, min:0, max:50, blend_mode:Luminosity, opacity:50
 layer:4, vis:Analytical hillshading, norm:Lin, min:0, max:1, blend_mode:Normal, opacity:100
 layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
