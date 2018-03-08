@@ -52,7 +52,7 @@
 ;       December 2016
 ;-
 
-pro write_image_to_geotiff, overwrite, out_file, image_out
+pro write_image_to_geotiff, overwrite, out_file, image_out, geotiff=geotiff
 ;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
   if (overwrite eq 0 and file_test(out_file) eq 1) then $
     print, ' Image already exists ('+out_file+')' $
@@ -60,7 +60,7 @@ pro write_image_to_geotiff, overwrite, out_file, image_out
     Write_tiff, out_file, image_out, compression=1, geotiff=geotiff
 end
 
-pro write_image_to_geotiff_float, overwrite, out_file, image_out
+pro write_image_to_geotiff_float, overwrite, out_file, image_out, geotiff=geotiff
 ;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
   if (overwrite eq 0 and file_test(out_file) eq 1) then $
     print, ' Image already exists ('+out_file+')' $
@@ -68,7 +68,7 @@ pro write_image_to_geotiff_float, overwrite, out_file, image_out
     Write_tiff, out_file, image_out, compression=1, geotiff=geotiff, /float
 end
 
-pro write_image_to_geotiff_bits_per_sample, overwrite, out_file, image_out, bits
+pro write_image_to_geotiff_bits_per_sample, overwrite, out_file, image_out, bits, geotiff=geotiff
 ;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
   if (overwrite eq 0 and file_test(out_file) eq 1) then $
     print, ' Image already exists ('+out_file+')' $
@@ -86,7 +86,7 @@ pro test_memory
   ; dl_log.add, sentence
 end
 
-function read_image_geotiff, in_file, in_orientation
+function read_image_geotiff, in_file, in_orientation, in_geotiff=in_geotiff
 
   if file_test(in_file) eq 0 then begin
     errMsg = 'ERROR: Processing stopped! Selected TIF image was not found. '+ in_file

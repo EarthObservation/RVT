@@ -530,7 +530,7 @@ function render_all_images, layers, images
 end
 
 ; Save rendered image (blended) to file
-pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
+pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=geotiff
   final_image = scale_0_to_1(final_image)
   final_image = float_to_RGB(final_image)
 
@@ -542,7 +542,7 @@ pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image
   radio_label_tif = '_'+radio_label+'.tif'
   out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
   print, out_file
-  write_image_to_geotiff, overwrite, out_file, final_image
+  write_image_to_geotiff, overwrite, out_file, final_image, geotiff=geotiff
 end
 
 ; For every input file
@@ -554,9 +554,12 @@ pro mixer_render_layered_images, event, in_file
 
   ; Rendering in order
   final_image = render_all_images(layers, images)
+  
+  ; Get geotiff data from original file
+  tmp_img = read_image_geotiff(in_file, in_orientation, in_geotiff=in_geotiff)
 
   ; Save image to file
-  write_rendered_image_to_file, p_wdgt_state, in_file, final_image
+  write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=in_geotiff
 end
 
 ; For every input file
