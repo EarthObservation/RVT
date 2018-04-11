@@ -23,4 +23,5 @@ MIXER_TEST_STATS*.txt
 #################
 *.enp
 *.sav
-MIXER_TEST_STATS_2017-01-31_12-04-51.txt
+*.tif
+*.tiff

@@ -798,7 +798,7 @@ function gen_combination, title, nr_layers
   combination_layers = REPLICATE(combination_layer, nr_layers)
   combination = create_struct('title', title, 'layers', combination_layers)
   return, combination
-end 
+end
 
 function user_widget_mixer_state_to_combination, widgetIDs, custom_combination_name
   ; inherit number of layers from widgets
@@ -996,10 +996,10 @@ pro user_widget_mixer_ok, event
                                      
   ;TODO: Use TILED blending
   ; Blending visualizations with mixer
-  ;topo_advanced_vis_mixer_blend_modes_tiled, event  
+  topo_advanced_vis_mixer_tiled_blend_modes, event  
     
   ; Blending, non-tiled
-  topo_advanced_vis_mixer_blend_modes, event  
+  ;topo_advanced_vis_mixer_blend_modes, event  
 
 end
 
@@ -1543,8 +1543,8 @@ pro topo_advanced_vis, re_run=re_run
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '2.1'
-  rvt_issue_year = '2017'
+  rvt_version = '2.3'
+  rvt_issue_year = '2018'
   
   ; Establish error handler
   catch, theError
@@ -2110,8 +2110,8 @@ pro topo_advanced_vis, re_run=re_run
   ; Mixer tab --------------------
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
-  output_files_array = hash()
-  mixer_layer_images = orderedhash()
+  output_files_array = hash(!null)
+  mixer_layer_images = orderedhash(!null)
   mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
   is_blend_image_rbg = boolean(0)
  
@@ -2144,7 +2144,7 @@ pro topo_advanced_vis, re_run=re_run
   
   hash_vis_norm_default = gen_vis_norm_default()
  
-  file_settings_combinations = programrootdir()+'settings\default_settings_combinations_extended.txt'
+  file_settings_combinations = programrootdir()+'settings\default_mixer_combinations.txt'
   vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
   vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
   

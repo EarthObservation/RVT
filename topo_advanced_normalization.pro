@@ -90,6 +90,23 @@ pro mixer_normalize_images_on_layers, event
       min_norm = float(layers[i].min)
       max_norm = float(layers[i].max)
       normalization = layers[i].normalization
+      
+      ; Workaround:
+      ; for RGB images, because they are 
+      ; on scale 0 to 255, not 0.0 - 1.0, 
+      ; we use multiplier to get proper values
+      if normalization eq 'Lin' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
+        if max(image) gt 100.0  and (size(image, /N_DIMENSIONS) eq 3) then begin
+          ; limit normalization 0.0 to 1.0;
+          ; all numbers below are 0.0, 
+          ; numbers above are 1.0
+          if min_norm lt 0.0 then min_norm = 0.0
+          if max_norm gt 1.0 then max_norm = 1.0
+          
+          min_norm = round(min_norm * 255)
+          max_norm = round(max_norm * 255)
+        endif        
+      endif
 
       (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min_norm, max_norm, normalization)
       

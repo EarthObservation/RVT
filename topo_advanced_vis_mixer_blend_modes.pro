@@ -404,6 +404,8 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
 
 ;     A. HLS method with lightness:
       L_channel = 1
+      if max(background) le 1.0 then background = fix(background*255)
+      
       COLOR_CONVERT, background, HLS_background, /RGB_HLS
       HLS_background[L_channel,*, *] = get_lightness(active)
        

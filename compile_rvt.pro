@@ -34,11 +34,13 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_localrelief'
-;resolve_routine, 'blend_tile_iterator', /COMPILE_FULL_FILE
+resolve_routine, 'blend_tile_iterator', /is_function, /COMPILE_FULL_FILE
 ;resolve_routine, 'RGB_to_sRGB', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'RGB_to_HSP', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_normalization', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_options_data', /COMPILE_FULL_FILE
+resolve_routine, 'read_worldfile', /is_function
+resolve_routine, 'image_access', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_blend_modes', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_multihillshade', /COMPILE_FULL_FILE
@@ -48,9 +50,9 @@ resolve_routine, 'topo_advanced_vis_slope'
 resolve_routine, 'topo_advanced_vis_svf'
 resolve_routine, 'topo_advanced_vis_xyz_to_tiff'
 resolve_routine, 'topo_morph_shade', /is_function
-resolve_routine, 'read_worldfile', /is_function
+;resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
-resolve_routine, 'image_access', /COMPILE_FULL_FILE
+;resolve_routine, 'image_access', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_make_visualizations', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis', /COMPILE_FULL_FILE
 resolve_routine, 'unit_test_mixer', /COMPILE_FULL_FILE
@@ -59,9 +61,10 @@ resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
 ;naredi pripadajoči exe
-out_subdir = 'RVT_2.1_Win64'
+out_subdir = 'RVT_2.3_Win64'
 ;file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
 make_rt, out_subdir, rvt_dir, savefile=rvt_dir+'topo_advanced_vis.sav', /overwrite, /win64
+
 ;izbriši nezaželjene datoteke iz izdelane daotekte
 ;delete_files_topo_advanced_vis, rvt_dir + out_subdir
 ;file_delete, 'topo_advanced_vis.sav', /allow_nonexistent, /quiet

@@ -8,7 +8,7 @@ pro make_sav_file
   save, /routines, filename='topo_advanced_vis.sav'
   
   ;naredi pripadajoči exe
-  out_subdir = 'RVT_1.3_Win64'
+  out_subdir = 'RVT_2.2_Win64'
   file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
   make_rt, out_subdir, rvt_dir, savefile='topo_advanced_vis.sav', /overwrite, /win64
   ;izbriši nezaželjene datoteke iz izdelane daotekte
