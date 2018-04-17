@@ -993,13 +993,21 @@ pro user_widget_mixer_ok, event
                                      (*p_wdgt_state).rvt_version, $
                                      (*p_wdgt_state).rvt_issue_year, $
                                      /INVOKED_BY_MIXER                                                                
-                                     
+                             
+  ; TIME PERF.
+  start = systime(/seconds)
+  
   ;TODO: Use TILED blending
   ; Blending visualizations with mixer
-  topo_advanced_vis_mixer_tiled_blend_modes, event  
+  topo_advanced_vis_mixer_tiled_blend_modes, event
     
   ; Blending, non-tiled
   ;topo_advanced_vis_mixer_blend_modes, event  
+
+  stop = systime(/seconds)
+  elapsed = stop - start
+  
+  print, 'Elapsed time (sec): '+ string(elapsed)
 
 end
 
@@ -2199,7 +2207,7 @@ pro topo_advanced_vis, re_run=re_run
   bt_mixer_test = widget_button(mixer_row_finish_test, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
   WIDGET_CONTROL, mixer_row_finish_test, MAP=0 ; hide test button
   
-  bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
+  ;bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
 
   ; --- Preset visualizations ---
 

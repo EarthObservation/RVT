@@ -67,6 +67,39 @@ function topo_advanced_normalization, image, min, max, normalization
   return, equ_image
 end
 
+function mixer_normalize_image, image, visualization, min_norm, max_norm, normalization
+  ; for slope, putting this to one will invert scale
+  ; meaning high slopes will be black
+  switch_slope_scale = 1
+
+  if (visualization EQ '<none>' OR visualization EQ '<custom>') then return, image
+
+  ; Workaround:
+  ; for RGB images, because they are
+  ; on scale 0 to 255, not 0.0 - 1.0,
+  ; we use multiplier to get proper values
+  if normalization eq 'Lin' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
+    if max(image) gt 100.0  and (size(image, /N_DIMENSIONS) eq 3) then begin
+      ; limit normalization 0.0 to 1.0;
+      ; all numbers below are 0.0,
+      ; numbers above are 1.0
+      if min_norm lt 0.0 then min_norm = 0.0
+      if max_norm gt 1.0 then max_norm = 1.0
+
+      min_norm = round(min_norm * 255)
+      max_norm = round(max_norm * 255)
+    endif
+  endif
+
+  image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+
+  if (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
+    image = 1 - image
+  endif
+  
+  return, image
+end
+
 ; Iterate through images on layers in widget_state
 ; normalize them according to min, max, normalization
 pro mixer_normalize_images_on_layers, event
@@ -84,6 +117,7 @@ pro mixer_normalize_images_on_layers, event
     if (images.length NE count) then print, 'Error: Number of layers does not match number of images!'
     
     for i=0,nr_layers-1 do begin
+      
       visualization = layers[i].vis
       if (visualization EQ '<none>') then continue
       image = images[i]
@@ -114,6 +148,15 @@ pro mixer_normalize_images_on_layers, event
         image = (*p_wdgt_state).mixer_layer_images[i]
         (*p_wdgt_state).mixer_layer_images[i] = 1 - image
       endif      
+
+;      image = images[i]
+;      vizualization = layers[i].vis
+;      min_norm = float(layers[i].min)
+;      max_norm = float(layers[i].max)
+;      normalization = layers[i].normalization
+;      
+;      norm_image = mixer_normalize_image(image, vizualization, min_norm, max_norm, normalization)
+;      (*p_wdgt_state).mixer_layer_images[i] = norm_image
     endfor
 end
 

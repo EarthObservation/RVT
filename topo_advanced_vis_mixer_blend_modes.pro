@@ -532,7 +532,7 @@ function render_all_images, layers, images
 end
 
 ; Save rendered image (blended) to file
-pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=geotiff
+pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=geotiff, out_file=out_file
   final_image = scale_0_to_1(final_image)
   final_image = float_to_RGB(final_image)
 
