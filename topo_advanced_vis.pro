@@ -994,21 +994,21 @@ pro user_widget_mixer_ok, event
                                      (*p_wdgt_state).rvt_issue_year, $
                                      /INVOKED_BY_MIXER                                                                
                              
-  ; TIME PERF.
-  start = systime(/seconds)
+;  ; TIME PERF.
+;  start = systime(/seconds)
   
-  ;TODO: Use TILED blending
-  ; Blending visualizations with mixer
-  topo_advanced_vis_mixer_tiled_blend_modes, event
-    
-  ; Blending, non-tiled
-  ;topo_advanced_vis_mixer_blend_modes, event  
+  if do_i_need_tiling(event) eq 1 then begin
+    ; Blending visualizations with mixer, tiled
+    topo_advanced_vis_mixer_tiled_blend_modes, event
+  endif else begin
+    ; Blending, non-tiled
+    topo_advanced_vis_mixer_blend_modes, event
+  endelse
 
-  stop = systime(/seconds)
-  elapsed = stop - start
-  
-  print, 'Elapsed time (sec): '+ string(elapsed)
-
+;  stop = systime(/seconds)
+;  elapsed = stop - start
+;  
+;  print, 'Elapsed time (sec): '+ string(elapsed)
 end
 
 ; Called when user presses Add file(s) button
