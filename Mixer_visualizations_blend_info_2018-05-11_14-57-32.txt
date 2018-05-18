@@ -1,0 +1,4 @@
+Fri May 11 14:57:32 2018 :   Mixer processing time (sec):    43.6430
+Fri May 11 14:57:32 2018 :   > No tiling neccessary.
+
+Fri May 11 14:57:57 2018 :   Visualization: Sky-View Factor

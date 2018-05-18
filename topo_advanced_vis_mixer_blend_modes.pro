@@ -609,6 +609,8 @@ pro topo_advanced_vis_mixer_blend_modes, event
     mixer_render_layered_images, event, in_file
   endfor
   
+  clear_tmp_files, ['tmp_*.tif']
+  
   test_memory  
 end
 

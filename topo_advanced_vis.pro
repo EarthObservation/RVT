@@ -340,14 +340,15 @@ pro user_widget_convert, event
   progress_bar2 -> Update, progress_curr  
   
   for nF = 0, n_files -1 do begin
-    date = Systime(/Julian)
-    Caldat, date, Month, Day, Year, Hour, Minute, Second
-    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+;    date = Systime(/Julian)
+;    Caldat, date, Month, Day, Year, Hour, Minute, Second
+;    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
+;    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
+;    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
+;    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
+;    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
+;    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+    date_time = date_time()
     
     last_dot = strpos(panel_text[nF], '.' , /reverse_search)
     if last_dot eq -1 or (last_dot gt 0 and strlen(panel_text[nF])-last_dot ge 6) then out_file = panel_text[nF] $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
@@ -391,14 +392,15 @@ pro user_widget_mosaic, event
   progress_bar2 -> Update, progress_curr
 
   nf = 0
-  date = Systime(/Julian)
-  Caldat, date, Month, Day, Year, Hour, Minute, Second
-  IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-  IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-  IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-  IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-  IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-  date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+;  date = Systime(/Julian)
+;  Caldat, date, Month, Day, Year, Hour, Minute, Second
+;  IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
+;  IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
+;  IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
+;  IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
+;  IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
+;  date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+  date_time = date_time()
 
   last_dot = strpos(panel_text[nF], '.' , /reverse_search)
   if last_dot eq -1 or (last_dot gt 0 and strlen(panel_text[nF])-last_dot ge 6) then out_file = panel_text[nF] $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
@@ -783,6 +785,11 @@ pro user_widget_mixer_save_combination_radio, event
       return
     endif
   endfor
+  
+  ;TO-DO: ENABLE/DISABLE user_defined_combination_text,
+;  if (*p_wdgt_state).combination_index eq (*p_wdgt_state).combination_radios.length-1 then begin
+;    widget_control, (*p_wdgt_state).user_defined_combination_text, get_value = val_min
+;  endif
 end
 
 ; It's the opposite of combination_to_mixer_widgets
@@ -866,6 +873,8 @@ pro user_widget_mixer_check_if_preset_combination, event
     ; change to custom combination
       widget_control, (*p_wdgt_state).combination_radios[nr_combinations], set_button=1  
       (*p_wdgt_state).combination_index = nr_combinations
+      
+      ;TO-DO: Show element with textbox for user_defined_combination_name that the user can change
   endif
 end
 
@@ -967,6 +976,75 @@ pro user_widget_mixer_unit_test, event
 
 end
 
+;function get_combination_title, event
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  
+;  return, (*p_wdgt_state).current_combination.title
+;
+;  nr_combinations = (*p_wdgt_state).combination_radios.length-1
+;  if (*p_wdgt_state).combination_index eq nr_combinations then begin
+;    return, (*p_wdgt_state).user_defined_combination_name
+;  endif else begin
+;    return, (*p_wdgt_state).current_combination.title
+;  endelse
+;end
+
+; Mixer blending 
+pro topo_advanced_vis_mixer_blending_main, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+
+  ; TIME PERF.
+  start = systime(/seconds)
+  tiling = 0
+
+  if do_i_need_tiling(event) eq 1 then begin
+    ; Blending visualizations with mixer, tiled
+    tiling = 1
+    topo_advanced_vis_mixer_tiled_blend_modes, event 
+  endif else begin
+    ; Blending, non-tiled
+    topo_advanced_vis_mixer_blend_modes, event
+  endelse
+
+  stop = systime(/seconds)
+  elapsed = stop - start
+ 
+  date_time = date_time()
+  blend_log = obj_new('logger', 'Visualizations_blend_log_' + date_time + '.txt', width=250)
+  str_elapsed = string(elapsed, format='(d10.4)')
+  blend_log.add,'Mixer processing time (sec): '+ str_elapsed
+  if (tiling eq 1) then blend_log.add,'> Used tiling on input images.' else blend_log.add, '> No tiling neccessary.'
+  blend_log.add,''
+  
+  ; write configurations for all layers
+  layers = (*p_wdgt_state).current_combination.layers ;(*p_wdgt_state).mixer_widgetIDs.layers
+  cnt = 0
+  
+  blend_log.add, 'Blending combination: '+ (*p_wdgt_state).current_combination.title  ; get_combination_title(event)
+  blend_log.add, ''
+
+  foreach layer, layers do begin
+    cnt += 1    
+    if (layer.vis ne '<none>') then begin
+      blend_log.add, 'Visualization: '+ layer.vis
+      if layer.normalization eq 'Lin' then begin
+        blend_log.add, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2)
+      endif else begin
+        if layer.normalization eq 'Perc' then begin
+          lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin 
+          blend_log.add, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.'
+        endif
+      endelse
+      blend_log.add, 'Blend mode: '+ layer.blend_mode
+      blend_log.add, 'Opacity: '+ strtrim(layer.opacity,2)
+
+      blend_log.add, ''
+    endif
+   
+ endforeach  
+
+end
+
 pro user_widget_mixer_ok, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   wdgt_state = *p_wdgt_state
@@ -993,22 +1071,9 @@ pro user_widget_mixer_ok, event
                                      (*p_wdgt_state).rvt_version, $
                                      (*p_wdgt_state).rvt_issue_year, $
                                      /INVOKED_BY_MIXER                                                                
-                             
-;  ; TIME PERF.
-;  start = systime(/seconds)
-  
-  if do_i_need_tiling(event) eq 1 then begin
-    ; Blending visualizations with mixer, tiled
-    topo_advanced_vis_mixer_tiled_blend_modes, event
-  endif else begin
-    ; Blending, non-tiled
-    topo_advanced_vis_mixer_blend_modes, event
-  endelse
+  ; Bleding of images in mixer
+  topo_advanced_vis_mixer_blending_main, event
 
-;  stop = systime(/seconds)
-;  elapsed = stop - start
-;  
-;  print, 'Elapsed time (sec): '+ string(elapsed)
 end
 
 ; Called when user presses Add file(s) button
@@ -2118,8 +2183,8 @@ pro topo_advanced_vis, re_run=re_run
   ; Mixer tab --------------------
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
-  output_files_array = hash(!null)
-  mixer_layer_images = orderedhash(!null)
+  output_files_array = orderedhash() ; could be just hash() for this one
+  mixer_layer_images = orderedhash()
   mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
   is_blend_image_rbg = boolean(0)
  
@@ -2128,7 +2193,7 @@ pro topo_advanced_vis, re_run=re_run
   mixer_row_1_text_preset = widget_label(base_mixer, value='Preset combinations:   ', /align_left)
   
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_frame_method_name*3)
-  mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row) 
+  mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row)
     
   ; Select visualizations to blend
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_wide_row)
@@ -2331,9 +2396,10 @@ pro topo_advanced_vis, re_run=re_run
                         vis_min_limit:vis_min_limit, $
                         vis_max_default:vis_max_default, $
                         vis_min_default:vis_min_default, $
-                        custom_combination_name:custom_combination_name, $
+                        custom_combination_name:custom_combination_name, $ 
                         nr_combinations:nr_combinations, $
                         combination_radios:combination_radios, $
+                        ; user_defined_combination_name:user_defined_combination_name, $
                         mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, bt_mixer_test:bt_mixer_test, $
                         mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $

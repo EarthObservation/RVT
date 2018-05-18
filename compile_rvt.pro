@@ -25,6 +25,7 @@ resolve_routine, 'cgScaleVector', /is_function
 resolve_routine, 'fpufix', /is_function
 
 cd, rvt_dir
+resolve_routine, 'logger__define'
 resolve_routine, 'programrootdir', /is_function
 resolve_routine, 'format_string', /is_function
 resolve_routine, 'get_settings', /is_function
@@ -34,13 +35,15 @@ resolve_routine, 'topo_advanced_vis_converter'
 resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_localrelief'
-resolve_routine, 'blend_tile_iterator', /is_function, /COMPILE_FULL_FILE
+;resolve_routine, 'blend_tile_iterator', /is_function, /COMPILE_FULL_FILE
 ;resolve_routine, 'RGB_to_sRGB', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'RGB_to_HSP', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_normalization', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_options_data', /COMPILE_FULL_FILE
 resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'image_access', /COMPILE_FULL_FILE
+resolve_routine, 'blend_tile_iterator', /is_function, /COMPILE_FULL_FILE
+
 resolve_routine, 'topo_advanced_vis_mixer_blend_modes', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_multihillshade', /COMPILE_FULL_FILE

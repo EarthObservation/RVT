@@ -1,0 +1,11 @@
+Mon May 14 15:36:40 2018 :   Mixer processing time (sec):    70.3780
+Mon May 14 15:36:40 2018 :   > No tiling neccessary.
+
+Mon May 14 15:36:40 2018 :   Visualization: Sky-View Factor
+Mon May 14 15:36:42 2018 :   Linear normalization, min: 0.700000, max: 1.00000
+Mon May 14 15:36:49 2018 :   Blend mode: Multiply
+      25
+Mon May 14 15:36:54 2018 :   Visualization: Openness - Positive
+Mon May 14 15:36:54 2018 :   Linear normalization, min: 68.0000, max: 93.0000
+Mon May 14 15:36:54 2018 :   Blend mode: Overlay
+Mon May 14 15:37:48 2018 :   Opacity: 50

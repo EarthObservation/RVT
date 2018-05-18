@@ -1,29 +1,28 @@
 ; Here is the typical workflow when using tile iterators:
 
 function do_i_need_tiling, event
-   tiling_recommended = 0
+   widget_control, event.top, get_uvalue=p_wdgt_state
 
    ; 32-bit systems should use tiling
    IF Float(!Version.memory_bits) le 32 THEN return, 1
    
-   ; 64-bit systems need extra analysis   
    ; LARGE IMAGES should also use tiling (current threshold = 800 MB)
-   widget_control, event.top, get_uvalue=p_wdgt_state
    in_file_string = (*p_wdgt_state).selection_str
-
    in_file_list = strsplit(in_file_string, '#', /extract)
-   file_sizes = (file_info(in_file_list)).size
-   largest_file = max(file_sizes) ; bytes
+   file_infos = (file_info(in_file_list))
+   file_sizes = file_infos.size
+   largest_file = max(file_sizes)
+      
+   if largest_file ge 8L*10L^8 then return, 1 
    
-   ; If largest file is over 800 MB then process with tiling for all of them
-   if largest_file ge 838860800 then return, 1
+   ; LARGEST IMAGE x NR LAYERS over 1 GB
+   layers = (*p_wdgt_state).current_combination.layers
+   used_layers = 0
+   foreach layer, layers do begin
+    if layer.vis ne '<none>' then used_layers += 1
+   endforeach
    
-   ;TODO: Total RAM - tiling if it's less than 8GB OR less than 2GB available for IDL
-   help, /memory
-   ;total_RAM = 
-   
-   ; Largest image / available RAM if it's 20% or less
-   if float(largest_image)/float(total_RAM) le 0.2 then return, 1
+   if (used_layers * largest_file) gt 10L^9 then return, 1
    
    return, 0
 end
@@ -237,7 +236,7 @@ end
 pro clear_tmp_files, list_regex
     foreach regex_ext, list_regex do begin
       list_files = FILE_SEARCH(regex_ext, /FOLD_CASE)
-      if size(length, /dimensions) eq 0 then continue
+      if size(list_files, /dimensions) eq 0 then continue
       foreach tmp_file, list_files do begin
         file_delete, tmp_file, /ALLOW_NONEXISTENT
       endforeach

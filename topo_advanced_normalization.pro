@@ -42,14 +42,29 @@ function normalize_lin, image, min, max
     return, image
 end
 
-function normalize_perc, image, perc
-    if (perc GT 1.0 AND perc LE 100.0) then perc = perc / 100.0
-    
-    distribution = cgPercentiles(image, Percentiles=[perc, 1.0-perc])
-    min = min(distribution)
-    max = max(distribution)
-    
-    return, normalize_lin(image, min, max)
+;function normalize_perc, image, perc
+;    if (perc GT 1.0 AND perc LE 100.0) then perc = perc / 100.0
+;    
+;    distribution = cgPercentiles(image, Percentiles=[perc, 1.0-perc])
+;    min = min(distribution)
+;    max = max(distribution)
+;    
+;    return, normalize_lin(image, min, max)
+;end
+
+pro lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
+  if (min GT 1.0 AND min LE 100.0) then min = min / 100.0
+  if (max GT 1.0 AND max LE 100.0) then max = max / 100.0
+  
+  distribution = cgPercentiles(image, Percentiles=[min, 1.0-max])
+  min_lin = min(distribution)
+  max_lin = max(distribution)
+end
+
+function normalize_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
+  lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
+
+  return, normalize_lin(image, min_lin, max_lin)
 end
 
 function topo_advanced_normalization, image, min, max, normalization
@@ -59,7 +74,7 @@ function topo_advanced_normalization, image, min, max, normalization
   endif
   if (normalization EQ 'Perc') then begin
     ;equ_image = HIST_EQUAL(image, PERCENT=max, TOP=1.0)
-    equ_image = normalize_perc(image, max)
+    equ_image = normalize_perc(image, min, max)
   endif
   if (normalization EQ '<none>') then begin
     equ_image = image

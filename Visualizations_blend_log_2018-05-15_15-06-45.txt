@@ -1,0 +1,25 @@
+Tue May 15 15:06:45 2018 :   Mixer processing time (sec):    25.2630
+Tue May 15 15:06:45 2018 :   > No tiling neccessary.
+
+Tue May 15 15:06:53 2018 :   Blending combination: Custom combination
+
+Tue May 15 15:06:53 2018 :   Visualization: Sky-View Factor
+Tue May 15 15:06:53 2018 :   Linear normalization, min: 0.700000, max: 1.00000
+Tue May 15 15:06:53 2018 :   Blend mode: Multiply
+Tue May 15 15:06:53 2018 :   Opacity: 25
+
+Tue May 15 15:06:53 2018 :   Visualization: Openness - Positive
+Tue May 15 15:06:53 2018 :   Linear normalization, min: 68.0000, max: 93.0000
+Tue May 15 15:06:53 2018 :   Blend mode: Overlay
+Tue May 15 15:06:53 2018 :   Opacity: 50
+
+Tue May 15 15:06:53 2018 :   Visualization: Slope gradient
+Tue May 15 15:06:53 2018 :   Linear normalization, min: 0.000000, max: 50.0000
+Tue May 15 15:06:53 2018 :   Blend mode: Luminosity
+Tue May 15 15:06:53 2018 :   Opacity: 50
+
+Tue May 15 15:06:53 2018 :   Visualization: Analytical hillshading
+Tue May 15 15:06:53 2018 :   Linear normalization, min: 0.000000, max: 1.00000
+Tue May 15 15:06:53 2018 :   Blend mode: Normal
+Tue May 15 15:06:53 2018 :   Opacity: 100
+
