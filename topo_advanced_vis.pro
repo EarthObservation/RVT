@@ -137,7 +137,7 @@ pro user_widget_toggle_asvf_checkbox, event
     ; ... if status is un-checked, and if also SVF and the other two dependent methods are un-checked, hide SVF params  
     id_svf_checkbox = widget_info(event.top, find_by_uname='u_svf_checkbox')   
     id_svf_checkbox_get = widget_info(id_svf_checkbox, /button_set)
-    id_open_checkbox = widget_info(event.top, find_by_uname='u_open_checkbox')   
+    id_open_checkbox = widget_info(event.top, find_by_uname='u_open_checkbox')
     id_open_checkbox_get = widget_info(id_open_checkbox, /button_set) 
     id_open_neg_checkbox = widget_info(event.top, find_by_uname='u_open_neg_checkbox')   
     id_open_neg_checkbox_get = widget_info(id_open_neg_checkbox, /button_set) 
@@ -989,6 +989,64 @@ end
 ;  endelse
 ;end
 
+pro write_blend_log, p_wdgt_state, tiling, elapsed
+  output_files = (*p_wdgt_state).output_blend_images_paths
+
+  date_time = date_time()
+  out_folder = file_dirname(output_files[0])
+  blend_log = obj_new('logger', out_folder + '\Visualizations_blend_log_' + date_time + '.txt', width=250)
+  str_elapsed = string(elapsed, format='(d10.4)')
+  blend_log.add,'Mixer processing time (sec): '+ str_elapsed, /omit_timestamp
+  test_memory, log=blend_log, /omit_timestamp
+  if (tiling eq 1) then blend_log.add,'> Used tiling on input images.', /omit_timestamp else blend_log.add, '> No tiling neccessary.', /omit_timestamp
+  blend_log.add,''
+
+  ; write configurations for all layers
+  layers = (*p_wdgt_state).current_combination.layers ;(*p_wdgt_state).mixer_widgetIDs.layers
+  cnt = 0
+
+  blend_log.add, '=========================================================================', /omit_timestamp
+  blend_log.add, '  Blending combination: '+ STRUPCASE((*p_wdgt_state).current_combination.title), /omit_timestamp  ; get_combination_title(event)
+  blend_log.add, '=========================================================================', /omit_timestamp
+  blend_log.add, ''
+  
+  blend_log.add, '=== TOP LAYER === ', /omit_timestamp
+  blend_log.add, ''
+
+  foreach layer, layers do begin
+    cnt += 1
+    if (layer.vis ne '<none>') then begin
+      blend_log.add, 'Layer: ' + strtrim(cnt,2), /omit_timestamp
+      blend_log.add, 'Visualization: '+ layer.vis, /omit_timestamp
+      if layer.normalization eq 'Lin' then begin
+        blend_log.add, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2), /omit_timestamp
+      endif else begin
+        if layer.normalization eq 'Perc' then begin
+          lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
+          blend_log.add, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.', /omit_timestamp
+        endif
+      endelse
+      blend_log.add, 'Blend mode: '+ layer.blend_mode, /omit_timestamp
+      blend_log.add, 'Opacity: '+ strtrim(layer.opacity,2), /omit_timestamp
+      blend_log.add, ''
+    endif
+  endforeach
+  
+  blend_log.add, '=== BOTTOM LAYER === ', /omit_timestamp
+  blend_log.add, ''
+  
+  blend_log.add, 'Visualizations blend is made by stacking visualizations in order from the bottom layer towards the top layer.', /omit_timestamp
+  blend_log.add, ''
+
+  blend_log.add, ''
+  blend_log.add,'OUTPUT IMAGES: ', /omit_timestamp
+  blend_log.add,'--------------', /omit_timestamp
+  foreach out_file, output_files do begin
+    ;out_file = get_out_image_name_from_input(p_wdgt_state, in_file)
+    blend_log.add, out_file, /omit_timestamp
+  endforeach
+end
+
 ; Mixer blending 
 pro topo_advanced_vis_mixer_blending_main, event
   widget_control, event.top, get_uvalue=p_wdgt_state
@@ -1008,41 +1066,21 @@ pro topo_advanced_vis_mixer_blending_main, event
 
   stop = systime(/seconds)
   elapsed = stop - start
- 
-  date_time = date_time()
-  blend_log = obj_new('logger', 'Visualizations_blend_log_' + date_time + '.txt', width=250)
-  str_elapsed = string(elapsed, format='(d10.4)')
-  blend_log.add,'Mixer processing time (sec): '+ str_elapsed
-  if (tiling eq 1) then blend_log.add,'> Used tiling on input images.' else blend_log.add, '> No tiling neccessary.'
-  blend_log.add,''
   
-  ; write configurations for all layers
-  layers = (*p_wdgt_state).current_combination.layers ;(*p_wdgt_state).mixer_widgetIDs.layers
-  cnt = 0
-  
-  blend_log.add, 'Blending combination: '+ (*p_wdgt_state).current_combination.title  ; get_combination_title(event)
-  blend_log.add, ''
+  write_blend_log, p_wdgt_state, tiling, elapsed
+end
 
-  foreach layer, layers do begin
-    cnt += 1    
-    if (layer.vis ne '<none>') then begin
-      blend_log.add, 'Visualization: '+ layer.vis
-      if layer.normalization eq 'Lin' then begin
-        blend_log.add, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2)
-      endif else begin
-        if layer.normalization eq 'Perc' then begin
-          lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin 
-          blend_log.add, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.'
-        endif
-      endelse
-      blend_log.add, 'Blend mode: '+ layer.blend_mode
-      blend_log.add, 'Opacity: '+ strtrim(layer.opacity,2)
+;pro pop_up_mixer_start_processing, event
+;  varname = TextBox(Title='Choose a name for your custom combination', Group_Leader=event.top, $
+;    Label='Name (use letters, numbers and underscores): ', Cancel=cancelled, XSize=200, Value='Custom_combination')
+;  IF NOT cancelled THEN BEGIN
+;    ; use user input name for custom combination
+;    ; processing
+;  ENDIF
+;end
 
-      blend_log.add, ''
-    endif
-   
- endforeach  
-
+pro pop_up_finished_processing, event
+  result = dialog_message('Processing finished!', /INFORMATION)
 end
 
 pro user_widget_mixer_ok, event
@@ -1073,7 +1111,9 @@ pro user_widget_mixer_ok, event
                                      /INVOKED_BY_MIXER                                                                
   ; Bleding of images in mixer
   topo_advanced_vis_mixer_blending_main, event
-
+  
+  ; Pop-up notify end of processing
+  pop_up_finished_processing
 end
 
 ; Called when user presses Add file(s) button
@@ -1748,7 +1788,8 @@ pro topo_advanced_vis, re_run=re_run
   ;Multiple hillshading
   sc_mhls_n_dir = [4,16,8,32,64,360]   ;number of directions; drop-down menu values: 16,8,32,64; editable!
   sc_mhls_n_dir = [0., 75.]            ;solar vertical elevation angle in degres
-  sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  ;sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  sc_mhls_a_rgb = [315., 22.5, 90.]     ;azimuth for RGB components
   sc_mhls_n_psc = [3, 5]               ;number of principal componnents to save
   
   ;Simple local relief model
@@ -2184,6 +2225,7 @@ pro topo_advanced_vis, re_run=re_run
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
   output_files_array = orderedhash() ; could be just hash() for this one
+  output_blend_images_paths = list()
   mixer_layer_images = orderedhash()
   mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
   is_blend_image_rbg = boolean(0)
@@ -2375,7 +2417,8 @@ pro topo_advanced_vis, re_run=re_run
                             skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
                         locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
-                        output_files_array:output_files_array, $
+                        output_files_array:output_files_array, $ ; of visualizations
+                        output_blend_images_paths:output_blend_images_paths, $
                         base_mixer_layers:base_mixer_layers, $
                         mixer_layer_filepaths:mixer_layer_filepaths, $
                         mixer_layer_images:mixer_layer_images, $

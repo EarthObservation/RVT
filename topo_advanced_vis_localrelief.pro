@@ -40,7 +40,7 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
     in_slrm_r_max, sc_slrm_ev, $
     overwrite=overwrite
   
-  idx_background = where(dem lt -10000 or dem gt 20000, n_idx_background)
+  idx_background = where(dem lt -12000 or dem gt 20000, n_idx_background)
   if n_idx_background gt 0 then begin
     dem_temp = Double(dem)
     dem_temp[idx_background] = !Values.F_NaN
@@ -59,7 +59,7 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
 ;  else $
 ;    Write_tiff, out_file, diff, compression=1, geotiff=geotiff, /float
     
-  diff = HIST_EQUAL(diff, percent=2, binsize=0.05)
+  diff = HIST_EQUAL(diff, percent=2, binsize=0.05) ; find out what % of values are NAN
   out_file = in_file + '_8bit.tif'
   
   write_image_to_geotiff, overwrite, out_file, diff

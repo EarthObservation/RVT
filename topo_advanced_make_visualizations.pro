@@ -32,7 +32,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   ;Multiple hillshading
   sc_mhls_n_dir = [4,16,8,32,64,360]   ;number of directions; drop-down menu values: 16,8,32,64; editable!
   sc_mhls_n_dir = [0., 75.]            ;solar vertical elevation angle in degres
-  sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  ;sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  sc_mhls_a_rgb = [315., 22.5, 90.]     ;azimuth for RGB components
   sc_mhls_n_psc = [3, 5]               ;number of principal componnents to save
 
   ;Simple local relief model
@@ -859,7 +860,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       Printf, unit, '          Sun elevation angle [deg.]: ', in_mhls_sun_h
       Printf, unit, '          >> Output file 1 (each band corresponds to shading from one direction; linear histogram strech between 0 and 1): '
       Printf, unit, '              ' + out_file_mhls + '.tif'
-      Printf, unit, '          >> Output file 2 (RGB; Red-315°, Green-15°, Blue-75°; linear histogram strech between 0 and 1): '
+      ;Printf, unit, '          >> Output file 2 (RGB; Red-315°, Green-15°, Blue-75°; linear histogram strech between 0 and 1): '
+      Printf, unit, '          >> Output file 2 (RGB; Red-315°, Green-22.5°, Blue-90°; linear histogram strech between 0 and 1): '
       Printf, unit, '              ' + out_file_mhls + '_RGB.tif'
     ENDIF
     IF in_mhls_pca THEN BEGIN

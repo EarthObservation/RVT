@@ -531,20 +531,32 @@ function render_all_images, layers, images
   return, rendered_image
 end
 
+function get_out_image_name_from_input, p_wdgt_state, in_file
+  widgetID = (*p_wdgt_state).combination_radios[(*p_wdgt_state).combination_index]
+  widget_control, widgetID, get_value = radio_label
+
+  radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_')
+  radio_label_tif = '_'+radio_label+'.tif'
+  out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
+  
+  ;TODO: there is another var holding value of combination name!
+  ;Combination name could be changed (?) if it's custom combination.
+  
+  return, out_file
+end
+
 ; Save rendered image (blended) to file
 pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=geotiff, out_file=out_file
   final_image = scale_0_to_1(final_image)
   final_image = float_to_RGB(final_image)
 
   overwrite = (*p_wdgt_state).overwrite
-  widgetID = (*p_wdgt_state).combination_radios[(*p_wdgt_state).combination_index]
-  widget_control, widgetID, get_value = radio_label
-  
-  radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_')
-  radio_label_tif = '_'+radio_label+'.tif'
-  out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
+  out_file = get_out_image_name_from_input(p_wdgt_state, in_file)
+
   print, out_file
   write_image_to_geotiff, overwrite, out_file, final_image, geotiff=geotiff
+  
+  (*p_wdgt_state).output_blend_images_paths.add, out_file
 end
 
 ; For every input file

@@ -54,7 +54,8 @@ pro topo_advanced_vis__RUN_IDL
   ;Multiple hillshading
   sc_mhls_n_dir = [4,16,8,32,64,360]   ;number of directions; drop-down menu values: 16,8,32,64; editable!
   sc_mhls_n_dir = [0., 75.]            ;solar vertical elevation angle in degres
-  sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  ;sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  sc_mhls_a_rgb = [315., 22.5, 90.]     ;azimuth for RGB components
   sc_mhls_n_psc = [3, 5]               ;number of principal componnents to save
   
   ;Simple local relief model

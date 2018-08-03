@@ -48,7 +48,8 @@ pro logger::add, txt, priority, omit_timestamp=omit_timestamp
     if priority le self.max_priority then begin
       openw, self.log_lun, self.log_path, /append
       if txt ne '' then begin
-        printf, self.log_lun, systime()+' :   '+txt
+        if keyword_set(omit_timestamp) then printf, self.log_lun, ' '+txt $
+        else printf, self.log_lun, systime()+' :   '+txt 
       endif else printf, self.log_lun, txt
       close, self.log_lun
     endif

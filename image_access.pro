@@ -76,13 +76,13 @@ pro write_image_to_geotiff_bits_per_sample, overwrite, out_file, image_out, bits
     write_tiff, out_file, image_out, bits_per_sample=bits, geotiff=geotiff, compression=1
 end
 
-pro test_memory, log=log
+pro test_memory, log=log, omit_timestamp=omit_timestamp
   mem_high = MEMORY(/HIGHWATER)
   mem_high = float(mem_high)/(1024.*1024.)
   message = 'Most dynamic memory used in this run was  '
-  sentence = message + STRTRIM(mem_high,2)+' megabytes.'
+  sentence = message + STRTRIM(mem_high,2)+' MB.'
   print, sentence
-  if keyword_set(log) then log.add, sentence
+  if keyword_set(log) then log.add, sentence, omit_timestamp=omit_timestamp
 end
 
 function read_image_geotiff, in_file, in_orientation, in_geotiff=in_geotiff
