@@ -269,6 +269,21 @@ function render_all_imgs_tiled, event, in_file
         active = normalize_image_tiled(path_active, layers[i], in_orientation, normalize_image=normalize_active)
         background = normalize_image_tiled(path_background, layers[i+1], in_orientation, normalize_image=normalize_background)  
         
+        ; Save temporary normalized layer image
+;        tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'.tif'
+;        write_image_to_geotiff_float, 1, tmp_file, active
+        tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'_RGB.tif'
+        active_rgb = float_to_rgb(active)
+        write_image_to_geotiff, 1, tmp_file, active_rgb
+        
+        if (normalize_background EQ 1) then begin
+;          tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'.tif'
+;          write_image_to_geotiff_float, 1, tmp_file, background
+          tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'_RGB.tif'
+          background_rgb = float_to_rgb(background)
+          write_image_to_geotiff, 1, tmp_file, background_rgb
+        endif
+        
         ; Blending parameters
         blend_mode = layers[i].blend_mode
         opacity = layers[i].opacity           
