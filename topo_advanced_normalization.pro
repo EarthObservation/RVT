@@ -108,7 +108,8 @@ function mixer_normalize_image, image, visualization, min_norm, max_norm, normal
 
   image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
 
-  if (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
+  ;TODO: inverted greyscale for negative openess
+  if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
     image = 1 - image
   endif
   
@@ -120,9 +121,9 @@ end
 pro mixer_normalize_images_on_layers, event
     widget_control, event.top, get_uvalue = p_wdgt_state
     
-    ; for slope, putting this to one will invert scale 
+    ; for slope and negative openess, putting this to one will invert scale 
     ; meaning high slopes will be black
-    switch_slope_scale = 1
+    switch_scale = 1
     
     layers = (*p_wdgt_state).current_combination.layers
     images = (*p_wdgt_state).mixer_layer_images
@@ -149,8 +150,9 @@ pro mixer_normalize_images_on_layers, event
           ; limit normalization 0.0 to 1.0;
           ; all numbers below are 0.0, 
           ; numbers above are 1.0
-          if min_norm lt 0.0 then min_norm = 0.0
+          if min_norm lt 0.0 then min_norm = 0.0 
           if max_norm gt 1.0 then max_norm = 1.0
+          ;TODO: change this ... regardless of whether max(RGB)=2 or max(RGB)=255, it will normalize to 255 value set!
           
           min_norm = round(min_norm * 255)
           max_norm = round(max_norm * 255)
@@ -159,7 +161,7 @@ pro mixer_normalize_images_on_layers, event
 
       (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min_norm, max_norm, normalization)
       
-      if (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
+      if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient') then begin
         image = (*p_wdgt_state).mixer_layer_images[i]
         (*p_wdgt_state).mixer_layer_images[i] = 1 - image
       endif      
@@ -185,36 +187,15 @@ function float_to_RGB, float_value
     return, rgb
 end
 
-; grayscale, luminance
-;function RGB_to_grayscale, rgb
-;    r = reform(rgb[0, *, *])
-;    g = reform(rgb[1, *, *])
-;    b = reform(rgb[2, *, *])
-;
-;    gs = ((0.3 * R) + (0.59 * G) + (0.11 * B))
-;    
-;    return, gs
-;end
-
 function RGB_to_luminance, rgb
   r = reform(rgb[0, *, *])
   g = reform(rgb[1, *, *])
   b = reform(rgb[2, *, *])
 
   gs = (0.3 * R) + (0.59 * G) + (0.11 * B)
-  ;gs = SQRT((0.299 * R * R) + (0.587 * G * G) + (0.114 * B * B))
 
   return, gs
 end
-
-;function RGB_to_lightness, rgb
-;  r = reform(rgb[0, *, *])
-;  g = reform(rgb[1, *, *])
-;  b = reform(rgb[2, *, *])
-;
-;  ls = (min(R,G,B) + max([R,G,B])) / 2
-;  return, ls
-;end
 
 ; Either float or integer
 ; TODO: should only be used right before writing to file (not during 'processing')
@@ -331,41 +312,6 @@ function grayscale_to_RGB_1, grayscale
 
     return, RGB
 end
-
-
-;function grayscale_to_RGB_2, grayscale
-;  grayscale = scale_0_to_1(grayscale)
-;
-;  dimensions = size(grayscale, /DIMENSIONS)
-;  x_size = dimensions[0]
-;  y_size = dimensions[1]
-;  RGB = make_array(3, x_size, y_size)
-;  RGB[0, *, *] = reform(grayscale/3, 1, x_size, y_size)
-;  RGB[1, *, *] = reform(grayscale/3, 1, x_size, y_size)
-;  RGB[2, *, *] = reform(grayscale/3, 1, x_size, y_size)
-; 
-;  RGB = float_to_RGB(RGB) 
-;
-;  return, RGB
-;end
-
-;function grayscale_to_RGB_3, grayscale
-;  r = grayscale*0.3
-;  g = grayscale*0.59
-;  b = grayscale*0.11
-;
-;  dimensions = size(grayscale, /DIMENSIONS)
-;  x_size = dimensions[0]
-;  y_size = dimensions[1]
-;  RGB = make_array(3, x_size, y_size)
-;  RGB[0, *, *] = reform(r, 1, x_size, y_size)
-;  RGB[1, *, *] = reform(g, 1, x_size, y_size)
-;  RGB[2, *, *] = reform(b, 1, x_size, y_size)
-;
-;  RGB = scale_0_to_1(RGB)
-;
-;  return, RGB
-;end
 
 function grayscale_to_RGB_4, grayscale
   r = grayscale

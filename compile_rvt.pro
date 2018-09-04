@@ -56,7 +56,7 @@ resolve_routine, 'topo_morph_shade', /is_function
 ;resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
 ;resolve_routine, 'image_access', /COMPILE_FULL_FILE
-resolve_routine, 'topo_advanced_make_visualizations', /COMPILE_FULL_FILE
+resolve_routine, 'topo_advanced_make_visualizations', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis', /COMPILE_FULL_FILE
 resolve_routine, 'unit_test_mixer', /COMPILE_FULL_FILE
 

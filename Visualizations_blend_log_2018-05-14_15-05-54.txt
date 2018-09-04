@@ -1,8 +1,0 @@
-Mon May 14 15:06:29 2018 :   Mixer processing time (sec):    66.2740
-Mon May 14 15:06:54 2018 :   > Used tiling on input images.
-Mon May 14 15:07:00 2018 :   > No tiling neccessary.
-Mon May 14 15:07:41 2018 :   Mixer processing time (sec):    66.2740
-Mon May 14 15:07:41 2018 :   > No tiling neccessary.
-
-Mon May 14 15:07:53 2018 :   Visualization: Sky-View Factor
-Mon May 14 15:07:55 2018 :   Visualization: Sky-View Factor

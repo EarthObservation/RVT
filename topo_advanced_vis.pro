@@ -917,7 +917,7 @@ pro mixer_input_images_to_layers, event, source_image_file
   
   ; Get paths to input files
   file_names = mixer_get_paths_to_input_files(event, source_image_file)
-
+  
   ; Open the files into appropriate layers
   mixer_layer_images = orderedhash()
   layers = (*p_wdgt_state).current_combination.layers
@@ -935,24 +935,7 @@ pro mixer_input_images_to_layers, event, source_image_file
     if max(image) gt 2 and min(image) ge 0 and typename(image) eq 'INT' then $
       image = RGB_to_float(image)
     
-    ; image negative for slope
-    ; if (visualization EQ 'Slope gradient' and strpos(file_names[i], '_8bit.tif') LT 0) then begin
-;    if (visualization EQ 'Slope gradient' and strpos(file_names[i], '.tif') GT 0) then begin
-;       ;image = 1 - image ;image * (-1) + 1
-;    endif
-    
-;    ; If image is 3-channel RGB, it has values 0-255 (but we need values 0.0-1.0) 
-;    ; btw, grayscale has dim = 2, but has only 1 channel
-;    if (dim EQ 3) then begin
-;      idx = WHERE((*p_wdgt_state).mixer_layers_rgb EQ visualization, count)
-;      if (~(count GT 0 AND max(image) GT 1 AND max(image) LT 256)) then continue
-;      (*p_wdgt_state).is_blend_image_rbg = boolean(1)
-;
-;       image = RGB_to_float(image)
-;    endif
-    
     mixer_layer_images += hash(i, image)
-    ;mixer_layer_images[i] = image
 
   endfor
   (*p_wdgt_state).mixer_layer_images = mixer_layer_images
@@ -989,85 +972,87 @@ end
 ;  endelse
 ;end
 
-pro write_blend_log, p_wdgt_state, tiling, elapsed
-  output_files = (*p_wdgt_state).output_blend_images_paths
+pro write_blend_log, p_wdgt_state, in_file, tiling, elapsed, log_list 
+  out_file_name = get_out_image_name_from_input(p_wdgt_state, in_file)
+  
+  log_file = log_list[in_file]
+  Get_lun, unit
+  Openw, unit, log_file, /append 
 
   date_time = date_time()
-  out_folder = file_dirname(output_files[0])
-  blend_log = obj_new('logger', out_folder + '\Visualizations_blend_log_' + date_time + '.txt', width=250)
+  out_folder = file_dirname(in_file)
   str_elapsed = string(elapsed, format='(d10.4)')
-  blend_log.add,'Mixer processing time (sec): '+ str_elapsed, /omit_timestamp
+  printf, unit, ''
+  printf, unit, ''
+  printf, unit, ''
+  printf, unit, 'Mixer processing time (sec): '+ str_elapsed
   test_memory, log=blend_log, /omit_timestamp
-  if (tiling eq 1) then blend_log.add,'> Used tiling on input images.', /omit_timestamp else blend_log.add, '> No tiling neccessary.', /omit_timestamp
-  blend_log.add,''
+  if (tiling eq 1) then printf, unit, '> Used tiling on input image.' else printf, unit, '> No tiling neccessary.'
+  printf, unit, ''
 
   ; write configurations for all layers
   layers = (*p_wdgt_state).current_combination.layers ;(*p_wdgt_state).mixer_widgetIDs.layers
   cnt = 0
 
-  blend_log.add, '=========================================================================', /omit_timestamp
-  blend_log.add, '  Blending combination: '+ STRUPCASE((*p_wdgt_state).current_combination.title), /omit_timestamp  ; get_combination_title(event)
-  blend_log.add, '=========================================================================', /omit_timestamp
-  blend_log.add, ''
+  printf, unit, '========================================================================='
+  printf, unit, '  Blend combination: '+ STRUPCASE((*p_wdgt_state).current_combination.title)
+  printf, unit, '========================================================================='
+  printf, unit, ''
   
-  blend_log.add, '=== TOP LAYER === ', /omit_timestamp
-  blend_log.add, ''
+  printf, unit, '=== TOP LAYER === '
+  printf, unit, ''
 
   foreach layer, layers do begin
     cnt += 1
     if (layer.vis ne '<none>') then begin
-      blend_log.add, 'Layer: ' + strtrim(cnt,2), /omit_timestamp
-      blend_log.add, 'Visualization: '+ layer.vis, /omit_timestamp
+      printf, unit, 'Layer: ' + strtrim(cnt,2)
+      printf, unit, 'Visualization: '+ layer.vis
       if layer.normalization eq 'Lin' then begin
-        blend_log.add, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2), /omit_timestamp
+        printf, unit, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2)
       endif else begin
         if layer.normalization eq 'Perc' then begin
-          lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
-          blend_log.add, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.', /omit_timestamp
+          lin_cutoff_calc_from_perc, image, layer.min, layer.max, min_lin=min_lin, max_lin=max_lin
+          printf, unit, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.';, /omit_timestamp
         endif
       endelse
-      blend_log.add, 'Blend mode: '+ layer.blend_mode, /omit_timestamp
-      blend_log.add, 'Opacity: '+ strtrim(layer.opacity,2), /omit_timestamp
-      blend_log.add, ''
+      printf, unit, 'Blend mode: '+ layer.blend_mode
+      printf, unit, 'Opacity: '+ strtrim(layer.opacity,2)
+      printf, unit, ''
     endif
   endforeach
   
-  blend_log.add, '=== BOTTOM LAYER === ', /omit_timestamp
-  blend_log.add, ''
+  printf, unit, '=== BOTTOM LAYER === '
+  printf, unit, ''
   
-  blend_log.add, 'Visualizations blend is made by stacking visualizations in order from the bottom layer towards the top layer.', /omit_timestamp
-  blend_log.add, ''
+  printf, unit, 'Visualizations blend is made by stacking visualizations in order from the bottom layer towards the top layer.'
+  printf, unit, ''
 
-  blend_log.add, ''
-  blend_log.add,'OUTPUT IMAGES: ', /omit_timestamp
-  blend_log.add,'--------------', /omit_timestamp
-  foreach out_file, output_files do begin
-    ;out_file = get_out_image_name_from_input(p_wdgt_state, in_file)
-    blend_log.add, out_file, /omit_timestamp
-  endforeach
+  printf, unit, ''
+  printf, unit, 'OUTPUT IMAGE: '+out_file_name
+  
+  free_lun, unit
+end
+
+; Clean mixer state from previous run (run = when 'Mix selected' was pressed)
+pro mixer_clean_previous_run, p_wdgt_state
+   (*p_wdgt_state).output_blend_images_paths = list() 
 end
 
 ; Mixer blending 
-pro topo_advanced_vis_mixer_blending_main, event
+pro topo_advanced_vis_mixer_blending_main, event, log_list
   widget_control, event.top, get_uvalue=p_wdgt_state
-
-  ; TIME PERF.
-  start = systime(/seconds)
-  tiling = 0
+  
+  ; clear settings from previous mixer run
+  mixer_clean_previous_run, p_wdgt_state
 
   if do_i_need_tiling(event) eq 1 then begin
     ; Blending visualizations with mixer, tiled
     tiling = 1
-    topo_advanced_vis_mixer_tiled_blend_modes, event 
+    topo_advanced_vis_mixer_tiled_blend_modes, event, log_list 
   endif else begin
     ; Blending, non-tiled
-    topo_advanced_vis_mixer_blend_modes, event
+    topo_advanced_vis_mixer_blend_modes, event, log_list
   endelse
-
-  stop = systime(/seconds)
-  elapsed = stop - start
-  
-  write_blend_log, p_wdgt_state, tiling, elapsed
 end
 
 ;pro pop_up_mixer_start_processing, event
@@ -1101,16 +1086,22 @@ pro user_widget_mixer_ok, event
   
   ; Only save state after checkboxes on 'Visualizations' tab are changed, too
   user_widget_save_state, event
+  
+  ; start measuring time
+  TIC
 
   ; Make visualizations
-  topo_advanced_make_visualizations, p_wdgt_state, $
+  log_list = topo_advanced_make_visualizations(p_wdgt_state, $
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
                                      (*p_wdgt_state).rvt_version, $
                                      (*p_wdgt_state).rvt_issue_year, $
-                                     /INVOKED_BY_MIXER                                                                
+                                     /INVOKED_BY_MIXER)                                                                
   ; Bleding of images in mixer
-  topo_advanced_vis_mixer_blending_main, event
+  topo_advanced_vis_mixer_blending_main, event, log_list
+  
+  ; start measuring time
+  TOC
   
   ; Pop-up notify end of processing
   pop_up_finished_processing
@@ -2488,7 +2479,7 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Write processing metadata into TXT metafile =========================================================
   ;=========================================================================================================
 
-  topo_advanced_make_visualizations, p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year
+  log_list = topo_advanced_make_visualizations(p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year)
   
   ; Free pointer
   ptr_free, p_wdgt_state

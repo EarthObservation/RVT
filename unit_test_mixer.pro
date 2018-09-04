@@ -51,12 +51,12 @@ function test_combination, event, in_file, visualization, blend_mode, opacity, r
   user_widget_save_state, event
   
   ; Make visualizations
-  topo_advanced_make_visualizations, p_wdgt_state, $
+  logs = topo_advanced_make_visualizations(p_wdgt_state, $
     (*p_wdgt_state).temp_sav, $
     in_file, $                         ;(*p_wdgt_state).selection_str, $
     (*p_wdgt_state).rvt_version, $
     (*p_wdgt_state).rvt_issue_year, $
-    /INVOKED_BY_MIXER
+    /INVOKED_BY_MIXER)
 
   ; Blending visualizations with mixer
   final_image = apply_blend_mode(event, in_file)

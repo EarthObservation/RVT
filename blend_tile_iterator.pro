@@ -125,19 +125,9 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
   if (n_channels_active ne n_channels_background) then begin         
     if (n_channels_active eq 3 and n_channels_background eq 2) then begin
       indx_all = indgen(n_elements(background), /LONG)
-      
-      ;indx_active = Where(finite(active))
-;      indx_active = where(active)
-;      indx_active = ARRAY_INDICES(active, indx_active)
-;      indx_all = Where(finite(active[indx_active[0]]) and finite(background))
     endif
     if (n_channels_background eq 3 and n_channels_active eq 2) then begin
       indx_all = indgen(n_elements(active), /LONG)
-      
-      ;indx_background = Where(finite(background)
-;      indx_background = where(background)
-;      indx_background = ARRAY_INDICES(background, indx_background)
-;      indx_all = Where(finite(active) and finite(background[indx_background[0]]))
     endif
   endif else begin    
 ;    if (n_elements(active) ne n_elements(background)) then begin
@@ -146,14 +136,9 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
     if (n_channels_active eq 3 and n_channels_background eq 3) then begin     
       single_channel = reform(active[0, *, *])
       indx_all = indgen(n_elements(single_channel), /LONG)
-      
-;      indx_active = where(active)
-;      indx_all = ARRAY_INDICES(active, indx_active)
-;      indx_all = Where(finite(active[indx_all[0]]) and finite(background[indx_all[0]]))
     endif
     if (n_channels_active eq 2 and n_channels_background eq 2) then begin
       indx_all = indgen(n_elements(active), /LONG)
-;     indx_all = where(finite(active) and finite(background))
     endif
      
   endelse
@@ -318,18 +303,27 @@ end
 ;end
 
 ; TILED VERSION OF topo_advanced_vis_mixer_blend_modes
-pro topo_advanced_vis_mixer_tiled_blend_modes, event
+pro topo_advanced_vis_mixer_tiled_blend_modes, event, log_list
   widget_control, event.top, get_uvalue=p_wdgt_state
+  tiling = 1
   in_file_string = (*p_wdgt_state).selection_str
 
   in_file_list = strsplit(in_file_string, '#', /extract)
   for nF = 0,in_file_list.length-1 do begin
+    ; Time start
+    start = systime(/seconds)
+    
     ; Input file
     in_file = in_file_list[nF]
     print, 'File name:', in_file
     
     ; process with tiling (manual)
     path_final_image = render_all_imgs_tiled(event, in_file)
+    
+    ; Time stop
+    stop = systime(/seconds)
+    elapsed = stop - start
+    write_blend_log, p_wdgt_state, in_file, tiling, elapsed, log_list
   endfor
 end
 

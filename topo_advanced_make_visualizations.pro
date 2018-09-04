@@ -11,7 +11,7 @@ function date_time
   return, date_time
 end
 
-pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year, INVOKED_BY_MIXER = invoked_by_mixer
+function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year, INVOKED_BY_MIXER = invoked_by_mixer
   wdgt_state = *p_wdgt_state
 
   ;=========================================================================================================
@@ -124,8 +124,9 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   if (in_file_string eq '') then begin
     print
     print, '# WARNING: No input files selected. Processing stopped!'
+    result = dialog_message('WARNING: No input files selected. Processing stopped!')
     file_delete, temp_sav, /allow_nonexistent, /quiet
-    return
+    return, null
   endif
   in_file_list = strsplit(in_file_string, '#', /extract)
   n_files = n_elements(in_file_list)
@@ -149,6 +150,8 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   ;     return
   ;  ENDIF
   progress_bar -> Update, progress_curr
+  
+  log_list = hash()
 
 
   for nF = 0, n_files-1 do begin
@@ -179,6 +182,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
     if last_dot eq -1 or (last_dot gt 0 and strlen(in_file)-last_dot ge 6) then out_file = in_file $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
     else out_file = strmid(in_file, 0, last_dot)
     out_file += '_process_log_' + date_time() + '.txt'
+    log_list[in_file] = out_file
     ;out_file = strmid(in_file,0,strlen(in_file)-4) + '_process_log_' + date_time + '.txt'
     ;Open metadata ASCII for writing
 
@@ -1014,5 +1018,5 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   progress_bar -> Destroy
   
   PRINT, 'Memory used: ', MEMORY(/CURRENT)
-  
+  return, log_list
 end

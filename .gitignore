@@ -16,6 +16,7 @@ RVT_1.3_Lin64
 .project
 MIXER_TEST_STATS*.txt
 *process_log*.txt
+log.txt
 
 
 #################
@@ -25,3 +26,4 @@ MIXER_TEST_STATS*.txt
 *.sav
 *.tif
 *.tiff
+*.log
