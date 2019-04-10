@@ -1,4 +1,4 @@
-# RVT
+## RVT
 
 Relief Visualization Toolbox was produced to help scientist visualize raster elevation model datasets. We have narrowed down the selection to include techniques that have proven to be effective for identification of small scale features. Default settings therefore assume working with high resolution digital elevation models, derived from airborne laser scanning missions (lidar).
 
@@ -13,19 +13,20 @@ Methods currently implemented are:
 *   simple local relief model,
 *   sky-view factor (as developed by our team),
 *   anisotropic sky-view factor,
-*   positive and negative openness.
+*   positive and negative openness,
+*   sky illumination, and
+*   local dominance.
 
-For a more detailed description see references given at each method in the manual and a comparative paper describing them (e.g. Kokalj et al. 2013, see below).
+For a more detailed description see references given at each method in the manual and a comparative paper describing them (e.g. Kokalj and Hesse 2017, see below).
 
-The tool also supports elevation raster file data conversion. It is possible to convert all frequently used single band raster formats into GeoTIFF, ASCII gridded XYZ, Erdas Imagine file and ENVI file formats.
+RVT supports elevation raster file data conversion. It is possible to convert all frequently used single band raster formats into GeoTIFF, ASCII gridded XYZ, Erdas Imagine file and ENVI file formats. Mosaicking of multiple files, e.g. tiled lidar elevation models, works well if data are reasonable, i.e. if all the files have the same projection, resolution, square pixels etc.
 
-Development of RVT was part financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project.
+Development of RVT was part financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project and by the Slovenian Research Agency core funding No. P2-0406, and by research projects No. J6-7085 and No. J6-9395.
 
 ## Downloads
 
-Relief Visualization Toolbox Standalone version (EXE), Windows 32-bit, version 1.1, no ENVI/IDL installation is required.
-Relief Visualization Toolbox manual, version 1.1 (Instructions for use)
-Relief Visualization Toolbox Computation code (SAV), version 1.1, for ENVI 5.0. You can also run the computation code with IDL Virtual Machine. You need to copy the GDAL library if you want to process anything other than (geo)TIFF files.
+Relief Visualization Toolbox Standalone version (EXE), Windows 64-bit, version 2.0.
+Relief Visualization Toolbox manual, version 1.3 (Instructions for use)
 
 Please report any bugs and suggestions for improvements.
 
@@ -33,6 +34,6 @@ Please report any bugs and suggestions for improvements.
 
 When using the tools, please cite:
 
-*   Zakšek, K., Oštir, K., Kokalj, Ž. 2011. Sky-View Factor as a Relief Visualization Technique. Remote Sensing 3: 398-415.
-
+*   Kokalj, Ž., somrak, M. 2019. Why Not a Single Image? Combining Visualizations to Facilitate Fieldwork and On-Screen Mapping. Remote Sensing 11(7): 747.
 *   Kokalj, Ž., Zakšek, K., Oštir, K. 2011. Application of Sky-View Factor for the Visualization of Historic Landscape Features in Lidar-Derived Relief Models. Antiquity 85, 327: 263-273.
+
