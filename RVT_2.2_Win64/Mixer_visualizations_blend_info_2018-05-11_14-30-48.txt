@@ -1,4 +1,0 @@
-Fri May 11 14:30:48 2018 :   Mixer processing time (sec):     1.7960
-Fri May 11 14:30:48 2018 :   > No tiling neccessary.
-
-         199

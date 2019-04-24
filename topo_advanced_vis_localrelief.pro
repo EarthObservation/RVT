@@ -53,20 +53,12 @@ PRO topo_advanced_vis_localrelief, in_file, geotiff, $
   ;Write results
   out_file = in_file + '.tif'
   
-  write_image_to_geotiff_float, overwrite, out_file, diff
-;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-;    print, ' Image already exists ('+out_file+')' $
-;  else $
-;    Write_tiff, out_file, diff, compression=1, geotiff=geotiff, /float
+  write_image_to_geotiff_float, overwrite, out_file, diff, geotiff=geotiff
     
   diff = HIST_EQUAL(diff, percent=2, binsize=0.05) ; find out what % of values are NAN
   out_file = in_file + '_8bit.tif'
   
-  write_image_to_geotiff, overwrite, out_file, diff
-;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-;    print, ' Image already exists ('+out_file+')' $
-;  else $
-;    Write_tiff, out_file, diff, compression=1, geotiff=geotiff
+  write_image_to_geotiff, overwrite, out_file, diff, geotiff=geotiff
 
   diff = !null
   

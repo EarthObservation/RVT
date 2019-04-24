@@ -103,7 +103,7 @@ PRO Topo_advanced_vis_multihillshade, in_file, geotiff, $
   
   ;Write results
   out_file = in_file + '.tif'
-  write_image_to_geotiff, overwrite, out_file, multihillshade_image
+  write_image_to_geotiff, overwrite, out_file, multihillshade_image, geotiff=geotiff
 
   ;cosi = !null & cosi_all = !null
    
@@ -115,7 +115,7 @@ PRO Topo_advanced_vis_multihillshade, in_file, geotiff, $
 
   ; Write
   out_file = in_file + '_RGB.tif'
-  write_image_to_geotiff, overwrite, out_file, multihillshade_RGB
+  write_image_to_geotiff, overwrite, out_file, multihillshade_RGB, geotiff=geotiff
     
     
   ; Free up space ---------------------------------------------------------------------------

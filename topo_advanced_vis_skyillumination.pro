@@ -64,11 +64,7 @@ if keyword_set(shadow_only) then begin
   out_file = in_file + '.tif'
   if n_elements(out_shadow_img) gt 0 then begin
     
-    write_image_to_geotiff_bits_per_sample, overwrite, out_file, out_shadow_img, 1
-;    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-;      print, ' Image already exists ('+out_file+')' $
-;    else $
-;      write_tiff, in_file+'.tif', out_shadow_img, bits_per_sample=1, geotiff=geotiff, compression=1
+    write_image_to_geotiff_bits_per_sample, overwrite, out_file, out_shadow_img, 1, geotiff=geotiff
       
   endif
 endif else begin
@@ -121,11 +117,7 @@ endif else begin
   dem[novalues] = !Values.F_NaN
   out_file = in_file + '.tif'
   
-  write_image_to_geotiff_float, overwrite, out_file, out_skyillumination_img
-;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-;    print, ' Image already exists ('+out_file+')' $
-;  else $
-;    Write_tiff, out_file, out_skyillumination_img, compression=1, geotiff=geotiff, /float
+  write_image_to_geotiff_float, overwrite, out_file, out_skyillumination_img, geotiff=geotiff
   
   ;determine lower and upper cut-off value for scaling when conerting to 8-bit image
   total_points = dem_size[0] * dem_size[1]
@@ -157,11 +149,7 @@ endif else begin
   out_skyillumination_img_8bit = Bytscl(out_skyillumination_img, max=max_scale_val, min=min_scale_val)
   out_file = in_file + '_8bit.tif'
   
-  write_image_to_geotiff, overwrite, out_file, out_skyillumination_img_8bit
-;  if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-;    print, ' Image already exists ('+out_file+')' $
-;  else $
-;    Write_tiff, out_file, out_skyillumination_img_8bit, compression=1, geotiff=geotiff
+  write_image_to_geotiff, overwrite, out_file, out_skyillumination_img_8bit, geotiff=geotiff
     
   cosi = !null
 endelse

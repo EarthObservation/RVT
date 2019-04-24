@@ -1,0 +1,29 @@
+#################
+## Subdirectories
+#################
+GDAL
+RVT_1.2_Win64
+RVT_1.2_Win32
+RVT_1.2_Lin64
+RVT_1.3_Win64
+RVT_1.3_Win32
+RVT_1.3_Lin64
+
+
+#################
+## Files
+#################
+.project
+MIXER_TEST_STATS*.txt
+*process_log*.txt
+log.txt
+
+
+#################
+## File extensions
+#################
+*.enp
+*.sav
+*.tif
+*.tiff
+*.log

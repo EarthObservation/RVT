@@ -41,7 +41,7 @@ function normalize_image_tiled, image_path, layer, in_orientation, normalize_ima
   min = float(layer.min)
   max = float(layer.max)
     
-  norm_image = mixer_normalize_image(image, vizualization, min, max, normalization)
+  norm_image = mixer_normalize_image_tile(image, vizualization, min, max, normalization)
   
   return, norm_image
 end
@@ -63,18 +63,6 @@ function where3D
   row = (index / ncol) MOD nrow
   frame = index / (nrow*ncol)
 end
-
-
-pro test123
-  seed = 111
-  array = RANDOMU(seed, 10, 10)
-  mx = MAX(array, location)
-  dims = SIZE(array, /DIMENSIONS)
-  ind = ARRAY_INDICES(dims, location, /DIMENSIONS)
-  print, ind, array[ind[0],ind[1]], $
-    format = '(%"Value at [%d, %d] is %f")'
-end
-
 
 ; Make a tile from full image
 function make_tile, full_image, indx_ok, ncol
@@ -103,7 +91,7 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
   dim_active = size(active, /DIMENSIONS)
   dim_background = size(background, /DIMENSIONS)
     
-  tmp_img = read_image_geotiff(image_title, in_orientation, in_geotiff=in_geotiff)
+  tmp_img = read_tiff(image_title, in_orientation, geotiff=in_geotiff)
   tmp_img = !null
 
   if ((dim_active[dim_active.length-1] ne dim_background[dim_background.length-1]) or $
@@ -242,6 +230,9 @@ function render_all_imgs_tiled, event, in_file
     in_orientation = (*p_wdgt_state).in_orientation
  
     paths_images = mixer_get_paths_to_input_files(event, in_file)
+    
+    tmp_img = read_tiff(in_file, in_orientation, geotiff=in_geotiff)
+    tmp_img = !null
 
     norm_min = hash()
     norm_max = hash()
@@ -274,14 +265,14 @@ function render_all_imgs_tiled, event, in_file
 ;        write_image_to_geotiff_float, 1, tmp_file, active
         tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'_RGB.tif'
         active_rgb = float_to_rgb(active)
-        write_image_to_geotiff, 1, tmp_file, active_rgb
+        write_image_to_geotiff, 1, tmp_file, active_rgb, geotiff=in_geotiff
         
         if (normalize_background EQ 1) then begin
 ;          tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'.tif'
 ;          write_image_to_geotiff_float, 1, tmp_file, background
           tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'_RGB.tif'
           background_rgb = float_to_rgb(background)
-          write_image_to_geotiff, 1, tmp_file, background_rgb
+          write_image_to_geotiff, 1, tmp_file, background_rgb, geotiff=in_geotiff
         endif
         
         ; Blending parameters

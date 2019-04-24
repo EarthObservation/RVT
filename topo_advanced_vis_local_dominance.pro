@@ -96,11 +96,11 @@ PRO Topo_advanced_vis_local_dominance, in_file, geotiff, $
   
   out_file = in_file+'.tif'
   
-  write_image_to_geotiff_float, overwrite, out_file, ld_img_out
+  write_image_to_geotiff_float, overwrite, out_file, ld_img_out, geotiff=geotiff
     
   ld_img_out_8bit = bytscl(ld_img_out, min=sc_ld_ev[0], max=sc_ld_ev[1])
   out_file = in_file+'_8bit.tif'
   
-  write_image_to_geotiff_bits_per_sample, overwrite, out_file, ld_img_out_8bit, 8
+  write_image_to_geotiff_bits_per_sample, overwrite, out_file, ld_img_out_8bit, 8, geotiff=geotiff
 
 end

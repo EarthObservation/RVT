@@ -85,27 +85,27 @@ pro test_memory, log=log, omit_timestamp=omit_timestamp
   if keyword_set(log) then log.add, sentence, omit_timestamp=omit_timestamp
 end
 
-function read_image_geotiff, in_file, in_orientation, in_geotiff=in_geotiff
-
-  if file_test(in_file) eq 0 then begin
-    errMsg = 'ERROR: Processing stopped! Selected TIF image was not found. '+ in_file
-    print, errMsg
-    return, 0
-  endif $
-  else begin
-    read_image = read_tiff(in_file, orientation=in_orientation, geotiff=in_geotiff)
-    if size(in_geotiff, /type) ne 8 then begin
-      ;geotiff is not a structure type, try to read world file
-      world_temp = read_worldfile(in_file, pixels_size_temp, ul_x_temp, ul_y_temp, /to_geotiff)
-      if world_temp gt 1 then begin
-        in_geotiff = {MODELPIXELSCALETAG: [pixels_size_temp, pixels_size_temp, 0d], $
-          MODELTIEPOINTTAG: [0, 0, 0, ul_x_temp, ul_y_temp, 0]}
-      endif
-    endif
-
-    return, read_image
-  endelse
-end
+;function read_image_geotiff, in_file, in_orientation, in_geotiff=in_geotiff
+;
+;  if file_test(in_file) eq 0 then begin
+;    errMsg = 'ERROR: Processing stopped! Selected TIF image was not found. '+ in_file
+;    print, errMsg
+;    return, 0
+;  endif $
+;  else begin
+;    read_image = read_tiff(in_file, orientation=in_orientation, geotiff=in_geotiff)
+;    if size(in_geotiff, /type) ne 8 then begin
+;      ;geotiff is not a structure type, try to read world file
+;      world_temp = read_worldfile(in_file, pixels_size_temp, ul_x_temp, ul_y_temp, /to_geotiff)
+;      if world_temp gt 1 then begin
+;        in_geotiff = {MODELPIXELSCALETAG: [pixels_size_temp, pixels_size_temp, 0d], $
+;          MODELTIEPOINTTAG: [0, 0, 0, ul_x_temp, ul_y_temp, 0]}
+;      endif
+;    endif
+;
+;    return, read_image
+;  endelse
+;end
 
 pro image_access
 end

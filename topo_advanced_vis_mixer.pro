@@ -60,7 +60,7 @@
 ;-
 
 function create_empty_mixer_layer;, args = !null
-  return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+  return, create_struct('vis', '<none>', 'normalization', 'Value', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
 end
 
 function create_new_mixer_layer, visualization, p_wdgt_state, BLEND_MODE = blend_mode, OPACITY = opacity
@@ -72,7 +72,7 @@ function create_new_mixer_layer, visualization, p_wdgt_state, BLEND_MODE = blend
     normalization =  get_norm_default(visualization, p_wdgt_state)
     return, create_struct('vis', visualization, 'normalization', normalization, 'min', min, 'max', max, 'blend_mode', blend_mode, 'opacity', opacity)
   endif else begin
-    return, create_struct('vis', '<none>', 'normalization', 'Lin', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
+    return, create_struct('vis', '<none>', 'normalization', 'Value', 'min', '', 'max', '', 'blend_mode', 'Normal', 'opacity', 100)
   endelse
 end
 

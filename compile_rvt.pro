@@ -11,11 +11,13 @@ pro compile_rvt
 ;-------------------------------------------------------------------------------
 
 
-; nastavi lokacijo kjer se nakahaj koda in vse ostale stvari (parametri, gdal...)
-gdal_dir = 'C:\Code\GitHub\RVT-IDL\GDAL\' ;'f:\IDLWorkspace\RVT-IDL\GDAL\'
-rvt_dir = 'C:\Code\GitHub\RVT-IDL\' ; 'f:\IDLWorkspace\RVT-IDL\'
-coyote_dir = 'C:\Code\GitHub\coyote\'
+; Set location, folder that contains this file (and other files)
+rvt_dir = 'C:\Users\Maja\IDLWorkspace\RVT-IDL\'
+; Set location of GDAL, parameters, additional libraries used
+gdal_dir = rvt_dir + 'GDAL\'
 param_dir = rvt_dir + 'settings\'
+coyote_dir = rvt_dir + 'coyote_helper_functions\'
+
 
 cd, coyote_dir
 resolve_routine, 'cgErrorMsg', /is_function
@@ -36,8 +38,6 @@ resolve_routine, 'topo_advanced_vis_gradient'
 resolve_routine, 'topo_advanced_vis_hillshade', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_localrelief'
 ;resolve_routine, 'blend_tile_iterator', /is_function, /COMPILE_FULL_FILE
-;resolve_routine, 'RGB_to_sRGB', /is_function, /COMPILE_FULL_FILE
-resolve_routine, 'RGB_to_HSP', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_normalization', /is_function, /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis_mixer_options_data', /COMPILE_FULL_FILE
 resolve_routine, 'read_worldfile', /is_function
@@ -56,7 +56,7 @@ resolve_routine, 'topo_morph_shade', /is_function
 ;resolve_routine, 'read_worldfile', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
 ;resolve_routine, 'image_access', /COMPILE_FULL_FILE
-resolve_routine, 'topo_advanced_make_visualizations', /is_function, /COMPILE_FULL_FILE
+resolve_routine, 'topo_advanced_make_visualizations', /COMPILE_FULL_FILE ;/is_function,
 resolve_routine, 'topo_advanced_vis', /COMPILE_FULL_FILE
 resolve_routine, 'unit_test_mixer', /COMPILE_FULL_FILE
 
@@ -64,7 +64,7 @@ resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
 ;naredi pripadajoči exe
-out_subdir = 'RVT_2.3_Win64'
+out_subdir = 'RVT_2.0_Win64'
 ;file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
 make_rt, out_subdir, rvt_dir, savefile=rvt_dir+'topo_advanced_vis.sav', /overwrite, /win64
 

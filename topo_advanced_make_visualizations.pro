@@ -11,7 +11,7 @@ function date_time
   return, date_time
 end
 
-function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year, INVOKED_BY_MIXER = invoked_by_mixer
+pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, rvt_version, rvt_issue_year, INVOKED_BY_MIXER = invoked_by_mixer, log_list = log_list
   wdgt_state = *p_wdgt_state
 
   ;=========================================================================================================
@@ -126,7 +126,7 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
     print, '# WARNING: No input files selected. Processing stopped!'
     result = dialog_message('WARNING: No input files selected. Processing stopped!')
     file_delete, temp_sav, /allow_nonexistent, /quiet
-    return, null
+    return
   endif
   in_file_list = strsplit(in_file_string, '#', /extract)
   n_files = n_elements(in_file_list)
@@ -168,14 +168,6 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
     ;Start processing metadata TXT file
     ;========================================================================================================
     ;Define metadata filename
-;    date = Systime(/Julian)
-;    Caldat, date, Month, Day, Year, Hour, Minute, Second
-;    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-;    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-;    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-;    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-;    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-;    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
     date_time = date_time()
 
     last_dot = strpos(in_file, '.' , /reverse_search)
@@ -239,8 +231,6 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
       continue
     endif $
     else begin
-      ;heights = read_image_geotiff(in_fname, in_orientation)
-      
       heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
       if size(in_geotiff, /type) ne 8 then begin
         ;geotiff is not a structure type, try to read world file
@@ -606,12 +596,25 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
     endif
 
     ;Hillshading
-    IF in_hls EQ 1 THEN BEGIN
+    IF in_hls EQ 1 THEN BEGIN      
+      
+      ;TODO different 'flat terrain check'
+      if keyword_set(invoked_by_mixer) then begin
+        ; is it flat terrain visualization?
+        ;TODO flat terrain 35 degrees
+        idx = (*p_wdgt_state).combination_index
+        title = (*p_wdgt_state).all_combinations[idx].title
+        if STRMATCH(title, 'VAT flat terrain', /fold_case) then begin
+          in_hls_sun_h = 15
+        endif
+      endif   
+      
       out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
       
       output_files_array += hash('Analytical hillshading', out_file_hls) ; + '_8bit')
       ;if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_hls+'_8bit.tif') EQ 0) ) then begin
-      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_hls+'.tif') EQ 0) ) then begin
+      if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_hls+'.tif') EQ 0) ) then begin   
+        
         Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
           heights, resolution, $                ;relief
           in_hls_sun_a, in_hls_sun_h, $                   ;solar position
@@ -723,7 +726,7 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
       if in_asvf NE 0 then output_files_array += hash('Anisotropic Sky-View Factor', out_file_svf[1]) ; + '_8bit')
       if in_open NE 0 then output_files_array += hash('Openness - Positive', out_file_svf[2]) ; + '_8bit')
    
-      if (~KEYWORD_SET(invoked_by_mixer) OR (in_svf+in_open+in_asvf GT f_svf+f_open+f_asvf)) then begin
+      if (~KEYWORD_SET(invoked_by_mixer) OR (in_svf GT f_svf) OR (in_open GT f_open) OR (in_asvf GT f_asvf)) then begin
         Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
           heights, resolution, $                    ;elevation
           in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
@@ -749,13 +752,13 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
         1: str_aniso = '_AIlow'
         2: str_aniso = '_AIstrong'
       ENDCASE
-      heights = heights * (-1.)
+      neg_heights = heights * (-1.)
       out_file_no = ['', '', in_file + '_OPEN-NEG_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
       output_files_array += hash('Openness - Negative', out_file_no[2]) ; + '_8bit')
       ; if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_no[2] + '_8bit.tif') EQ 0)) then begin
       if (~KEYWORD_SET(invoked_by_mixer) OR (file_test(out_file_no[2]+'.tif') EQ 0)) then begin
         Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
-          heights, resolution, $                    ;elevation
+          neg_heights, resolution, $                    ;elevation
           in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
           in_svf_noise, sc_svf_r_min, $                       ;noise
           sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
@@ -796,7 +799,7 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
         endelse
       endif
       progress_bar -> Update, progress_curr
-      progress_curr += progress_step*(in_skyilm)
+      progress_curr += progress_step ;*(in_skyilm)
     ENDIF
 
     ;Local dominance
@@ -1018,5 +1021,5 @@ function topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_stri
   progress_bar -> Destroy
   
   PRINT, 'Memory used: ', MEMORY(/CURRENT)
-  return, log_list
+  return
 end

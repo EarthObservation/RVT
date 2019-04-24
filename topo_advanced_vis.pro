@@ -20,11 +20,11 @@ pro user_widget_about, event
   msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar, Maja Somrak and Ziga Kokalj'
   msg[4] = '* Online resource and manual'
   msg[5] = 'http://iaps.zrc-sazu.si/en/rvt'
-  msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to peter.pehani@zrc-sazu.si'
+  msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to zkokalj@zrc-sazu.si'
   msg[8] = '* License agreement'
   msg[9] = 'This software is distributed without any warranty and without even the implied warranty of merchantability or fitness for a particular purpose.'
   msg[11] = '* Acknowledgment'
-  msg[12] = "Development of RVT was partly financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project."
+  msg[12] = "Development of RVT was partly financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project and by the Slovenian Research Agency core funding No. P2-0406, and by research projects No. J6-7085 and No. J6-9395."
   msg[14] = '* Copyright'
   msg[15] = '(c) Research Centre of the Slovenian Academy of Sciences and Arts (ZRC SAZU), ' + (*p_wdgt_state).rvt_year
   show_about = dialog_message(msg, title='About RVT', /information)
@@ -305,7 +305,10 @@ pro user_widget_cancel, event
   (*p_wdgt_state).user_cancel = 1
   ;widget_control, event.top, set_uvalue=wdgt_state  ; pass changes back to calling procedure
   widget_control, event.top, /destroy
+  
   file_delete, programrootdir()+'settings\temp_settings.sav', /allow_nonexistent, /quiet
+  
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 
@@ -367,6 +370,7 @@ pro user_widget_convert, event
   progress_bar2 -> Update, progress_curr 
   progress_bar2 -> Destroy
 
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 ; When user presses Create mosaic button under Mosaic tab
@@ -414,6 +418,7 @@ pro user_widget_mosaic, event
   progress_bar2 -> Update, progress_curr
   progress_bar2 -> Destroy
 
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 ; When shadow modelling under Sky illumination is toggled
@@ -446,23 +451,23 @@ end
 
 ; For a visualization, used in mixer,
 ; select checkbox in first tab ('Visualizations')
-pro select_used_visualization_mixer, visualization, hash_unames, event
+pro select_used_visualization_mixer, visualization, hash_unames, event_top
   uname = hash_unames[visualization]
 
   ; check if visualization is already set, otherwise select it
-  id_checkbox = widget_info(event.top, find_by_uname=uname+'_checkbox')
+  id_checkbox = widget_info(event_top, find_by_uname=uname+'_checkbox')
   widget_control, id_checkbox, set_button=1
   
   ; enable setting parameters for selected visualization
-  id_params = widget_info(event.top, find_by_uname=uname+'_params')
+  id_params = widget_info(event_top, find_by_uname=uname+'_params')
   widget_control, id_params, sensitive=1
   ;endif
 end
 
 ; For all visualizations that are NOT used in mixer,
 ; deselect their checkboxes in first tab ('Visualizations')
-pro deselect_unused_visualizations_mixer, hash_unames, event
-  widget_control, event.top, get_uvalue = p_wdgt_state
+pro deselect_unused_visualizations_mixer, hash_unames, event_top
+  widget_control, event_top, get_uvalue = p_wdgt_state
 
   foreach visualization, (*p_wdgt_state).vis_droplist do begin
     if (visualization EQ '<none>') then continue
@@ -480,9 +485,9 @@ pro deselect_unused_visualizations_mixer, hash_unames, event
     if (vis_used EQ 0) then begin
       uname = hash_unames[visualization]
       ; de-select checkbox and parameters
-      id_checkbox = widget_info(event.top, find_by_uname=uname+'_checkbox')
+      id_checkbox = widget_info(event_top, find_by_uname=uname+'_checkbox')
       widget_control, id_checkbox, set_button=0
-      id_params = widget_info(event.top, find_by_uname=uname+'_params')
+      id_params = widget_info(event_top, find_by_uname=uname+'_params')
       widget_control, id_params, sensitive=0
     endif
   endforeach
@@ -490,8 +495,8 @@ end
 
 ; Trigger when 'Mix selected' button is pressed
 ; For each visualization on layers
-pro mixer_select_checkboxes_visualizations_tab, event
-  widget_control, event.top, get_uvalue = p_wdgt_state  ; structure containing widget state
+pro mixer_select_checkboxes_visualizations_tab, event_top
+  widget_control, event_top, get_uvalue = p_wdgt_state  ; structure containing widget state
 
   ; Select/deselect checkboxes on Visualizations tab according to Mixer's layers' configurations
   hash_unames = hash_visualizations_tab_widget_unames()
@@ -502,12 +507,12 @@ pro mixer_select_checkboxes_visualizations_tab, event
     visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
 
     if (visualization NE '<none>') then begin
-      select_used_visualization_mixer, visualization, hash_unames, event
+      select_used_visualization_mixer, visualization, hash_unames, event_top
     endif
   endfor
 
   ; deselect other visualizations?
-  deselect_unused_visualizations_mixer, hash_unames, event
+  deselect_unused_visualizations_mixer, hash_unames, event_top
 end
 
 pro get_input_files, event
@@ -528,12 +533,13 @@ pro user_widget_save_state, event
   
   ; Input files, folders, lists ----------------
   get_input_files, event
-;  id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
-;  widget_control, id_selection_panel, get_value=panel_text
-;  in_delimiter = ';'
-;  panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
-;  panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
-;  (*p_wdgt_state).selection_str = panel_text_string
+  
+  id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
+  widget_control, id_selection_panel, get_value=panel_text
+  in_delimiter = ';'
+  panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
+  panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
+  (*p_wdgt_state).selection_str = panel_text_string
   
   ; Overwrite ---
   do_overwrite = widget_info((*p_wdgt_state).overwrite_checkbox, /button_set) 
@@ -679,55 +685,88 @@ pro user_widget_save_state, event
 end
 
 pro user_widget_ok, event
-  user_widget_save_state, event
-  widget_control, event.top, /destroy
-end
-
-pro user_widget_mixer_add_layer, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   
-  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length()
-  nr_layers++
-  
-  layers_tag = (*p_wdgt_state).layers_tag
-  if (layers_tag.length LT nr_layers) then begin
-    print, 'Maximum number of layers already reached!'
-    return
-  endif
-  
-;  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
-;  widget_layers = REPLICATE(widget_layer, nr_layers)
-;  
-;  for i=0, nr_layers-2 do begin
-;    cp = (*p_wdgt_state).mixer_widgetIDs.layers[i]
-;    
-;    ; foreach tag, TAG_NAMES(widget_layers[i]) do     
-;    widget_layers[i].base = cp.base
-;    widget_layers[i].params = cp.params
-;    widget_layers[i].row = cp.row
-;    widget_layers[i].text = cp.text
-;    widget_layers[i].vis = cp.vis    
-;    widget_layers[i].normalization = cp.normalization
-;    widget_layers[i].min = cp.min
-;    widget_layers[i].max = cp.max
-;    widget_layers[i].blend_mode = cp.blend_mode
-;    widget_layers[i].opacity = cp.opacity
-;  endfor
-;  
-;  nl = new_mixer_layer((*p_wdgt_state).base_mixer_layers, LONG(nr_layers), (*p_wdgt_state).layers_tag[nr_layers], (*p_wdgt_state).vis_droplist, (*p_wdgt_state).blend_droplist, (*p_wdgt_state).norm_droplist)
-;  widget_layers[nr_layers-1].base = nl.base
-;  widget_layers[nr_layers-1].params = nl.params
-;  widget_layers[nr_layers-1].row = nl.row
-;  widget_layers[nr_layers-1].text = nl.text
-;  widget_layers[nr_layers-1].vis = nl.vis
-;  widget_layers[nr_layers-1].normalization = nl.normalization
-;  widget_layers[nr_layers-1].min = nl.min
-;  widget_layers[nr_layers-1].max = nl.max
-;  widget_layers[nr_layers-1].blend_mode = nl.blend_mode
-;  widget_layers[nr_layers-1].opacity = nl.opacity
+  ;user_widget_mixer_validate_visualization_all, p_wdgt_state
 
-  (*p_wdgt_state).mixer_widgetIDs = create_struct('layers', widget_layers)
+  user_widget_save_state, event
+    
+  widget_control, event.top, /destroy
+  topo_advanced_make_visualizations, p_wdgt_state, $
+    (*p_wdgt_state).temp_sav, $
+    (*p_wdgt_state).selection_str, $
+    (*p_wdgt_state).rvt_version, $
+    (*p_wdgt_state).rvt_issue_year
+  
+  ; Pop-up notify end of processing
+  pop_up_finished_processing
+    
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
+
+pro mixer_default_combination_selected, default_idx, p_wdgt_state, event_top
+  widgetIDs = (*p_wdgt_state).mixer_widgetIDs
+  nr_layers = widgetIDs.layers.length
+  combination =(*p_wdgt_state).all_combinations[default_idx]
+
+  for i=0,nr_layers-1 do begin
+    widget_control, widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
+    widget_control, widgetIDs.layers[i].min, set_value = strtrim(combination.layers[i].min, 1)
+    widget_control, widgetIDs.layers[i].max, set_value = strtrim(combination.layers[i].max, 1)
+    widget_control, widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
+    widget_control, widgetIDs.layers[i].opacity, set_value = strtrim(combination.layers[i].opacity, 1)
+    widget_control, widgetIDs.layers[i].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[combination.layers[i].normalization]
+  endfor
+
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
+  mixer_select_checkboxes_visualizations_tab, event_top
+end
+
+;pro user_widget_mixer_add_layer, event
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  
+;  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length()
+;  nr_layers++
+;  
+;  layers_tag = (*p_wdgt_state).layers_tag
+;  if (layers_tag.length LT nr_layers) then begin
+;    print, 'Maximum number of layers already reached!'
+;    return
+;  endif
+;  
+;;  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
+;;  widget_layers = REPLICATE(widget_layer, nr_layers)
+;;  
+;;  for i=0, nr_layers-2 do begin
+;;    cp = (*p_wdgt_state).mixer_widgetIDs.layers[i]
+;;    
+;;    ; foreach tag, TAG_NAMES(widget_layers[i]) do     
+;;    widget_layers[i].base = cp.base
+;;    widget_layers[i].params = cp.params
+;;    widget_layers[i].row = cp.row
+;;    widget_layers[i].text = cp.text
+;;    widget_layers[i].vis = cp.vis    
+;;    widget_layers[i].normalization = cp.normalization
+;;    widget_layers[i].min = cp.min
+;;    widget_layers[i].max = cp.max
+;;    widget_layers[i].blend_mode = cp.blend_mode
+;;    widget_layers[i].opacity = cp.opacity
+;;  endfor
+;;  
+;;  nl = new_mixer_layer((*p_wdgt_state).base_mixer_layers, LONG(nr_layers), (*p_wdgt_state).layers_tag[nr_layers], (*p_wdgt_state).vis_droplist, (*p_wdgt_state).blend_droplist, (*p_wdgt_state).norm_droplist)
+;;  widget_layers[nr_layers-1].base = nl.base
+;;  widget_layers[nr_layers-1].params = nl.params
+;;  widget_layers[nr_layers-1].row = nl.row
+;;  widget_layers[nr_layers-1].text = nl.text
+;;  widget_layers[nr_layers-1].vis = nl.vis
+;;  widget_layers[nr_layers-1].normalization = nl.normalization
+;;  widget_layers[nr_layers-1].min = nl.min
+;;  widget_layers[nr_layers-1].max = nl.max
+;;  widget_layers[nr_layers-1].blend_mode = nl.blend_mode
+;;  widget_layers[nr_layers-1].opacity = nl.opacity
+;
+;  (*p_wdgt_state).mixer_widgetIDs = create_struct('layers', widget_layers)
+;end
 
 ; combination_selected => index of selected combination (on radio buttons)
 ; when inputing parameters of the combination simply choose combination in an array
@@ -748,7 +787,7 @@ pro user_widget_mixer_toggle_combination_radio, event
   user_widget_mixer_validate_visualization_all, p_wdgt_state
   
   ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
-  mixer_select_checkboxes_visualizations_tab, event
+  mixer_select_checkboxes_visualizations_tab, event.top
   
 end
 
@@ -874,7 +913,7 @@ pro user_widget_mixer_check_if_preset_combination, event
       widget_control, (*p_wdgt_state).combination_radios[nr_combinations], set_button=1  
       (*p_wdgt_state).combination_index = nr_combinations
       
-      ;TO-DO: Show element with textbox for user_defined_combination_name that the user can change
+      ;TODO: Show element with textbox for user_defined_combination_name that the user can change
   endif
 end
 
@@ -892,9 +931,13 @@ function mixer_get_paths_to_input_files, event, source_image_file
     widget_control, event.top, get_uvalue = p_wdgt_state
     layers = (*p_wdgt_state).current_combination.layers
         
-    ; Get paths to input files
-    in_file = StrJoin(StrSplit(source_image_file, '.tiff', /Regex, /Extract, /Preserve_Null), '')
-    in_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), '')
+    ; Get file name with full path (but without file extension)
+    in_filter = allowed_image_extensions(as_array=1)
+    foreach extension, in_filter do begin
+      in_file = StrJoin(StrSplit(source_image_file, extension, /Regex, /Extract, /Preserve_Null), '')
+      if STRMATCH(in_file, source_image_file) eq 0 then break
+    end
+
     input_files = (*p_wdgt_state).output_files_array[in_file]
     format_ending = '.tif'
     
@@ -927,7 +970,8 @@ pro mixer_input_images_to_layers, event, source_image_file
     
     if (visualization EQ '<none>') then continue
 
-    image = read_image_geotiff(file_names[i], (*p_wdgt_state).in_orientation)
+    in_orientation=(*p_wdgt_state).in_orientation
+    image = read_tiff(file_names[i], orientation=in_orientation)
     dim = size(image, /N_DIMENSIONS)
     
     ;TODO: images will be already normalized later (delete row below?)
@@ -1007,12 +1051,11 @@ pro write_blend_log, p_wdgt_state, in_file, tiling, elapsed, log_list
     if (layer.vis ne '<none>') then begin
       printf, unit, 'Layer: ' + strtrim(cnt,2)
       printf, unit, 'Visualization: '+ layer.vis
-      if layer.normalization eq 'Lin' then begin
+      if layer.normalization eq 'Value' then begin
         printf, unit, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2)
       endif else begin
         if layer.normalization eq 'Perc' then begin
-          lin_cutoff_calc_from_perc, image, layer.min, layer.max, min_lin=min_lin, max_lin=max_lin
-          printf, unit, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.';, /omit_timestamp
+          printf, unit, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values'; with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.';, /omit_timestamp
         endif
       endelse
       printf, unit, 'Blend mode: '+ layer.blend_mode
@@ -1055,17 +1098,8 @@ pro topo_advanced_vis_mixer_blending_main, event, log_list
   endelse
 end
 
-;pro pop_up_mixer_start_processing, event
-;  varname = TextBox(Title='Choose a name for your custom combination', Group_Leader=event.top, $
-;    Label='Name (use letters, numbers and underscores): ', Cancel=cancelled, XSize=200, Value='Custom_combination')
-;  IF NOT cancelled THEN BEGIN
-;    ; use user input name for custom combination
-;    ; processing
-;  ENDIF
-;end
-
 pro pop_up_finished_processing, event
-  result = dialog_message('Processing finished!', /INFORMATION)
+  ;result = dialog_message('Processing finished!', /INFORMATION)
 end
 
 pro user_widget_mixer_ok, event
@@ -1082,7 +1116,7 @@ pro user_widget_mixer_ok, event
   user_widget_mixer_save_current_combination, event
   
   ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
-  mixer_select_checkboxes_visualizations_tab, event
+  mixer_select_checkboxes_visualizations_tab, event.top
   
   ; Only save state after checkboxes on 'Visualizations' tab are changed, too
   user_widget_save_state, event
@@ -1091,12 +1125,13 @@ pro user_widget_mixer_ok, event
   TIC
 
   ; Make visualizations
-  log_list = topo_advanced_make_visualizations(p_wdgt_state, $
+  topo_advanced_make_visualizations, p_wdgt_state, $
                                      (*p_wdgt_state).temp_sav, $
                                      (*p_wdgt_state).selection_str, $
                                      (*p_wdgt_state).rvt_version, $
                                      (*p_wdgt_state).rvt_issue_year, $
-                                     /INVOKED_BY_MIXER)                                                                
+                                     /INVOKED_BY_MIXER, $                                                               
+                                     log_list = log_list
   ; Bleding of images in mixer
   topo_advanced_vis_mixer_blending_main, event, log_list
   
@@ -1107,9 +1142,15 @@ pro user_widget_mixer_ok, event
   pop_up_finished_processing
 end
 
+function allowed_image_extensions, as_array = as_array    
+    if keyword_set(as_array) then begin
+      return, ['.tif','.tiff','.img','.bin','.xyz','.dat','.txt','.asc','.jp2','.bsq']
+    endif else return, ['*.tif;*.tiff;*.img;*.bin;*.xyz;*.dat;*.txt;*.asc;*.jp2;*.bsq']
+end
+
 ; Called when user presses Add file(s) button
 pro user_select_files, event
-  in_filter = ['*.tif;*.tiff;*.img;*.bin;*.xyz;*.dat;*.txt;*.asc;*.jp2;*.bsq']
+  in_filter = allowed_image_extensions()
   dialog_title = 'Select one or more input files'
   in_fname = dialog_pickfile(title=dialog_title, filter=in_filter, /multiple_files, path = 'C:/')
   if n_elements(in_fname) gt 0 then panel_new_entry, in_fname, event
@@ -1242,17 +1283,17 @@ pro resize_event, event
 ;  print, event.x, event.y
 end
 
-pro disable_last_row, event  
-  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
-  tab = widget_info((*p_wdgt_state).base_tab, /tab_current)
-  if tab gt 0 then begin
-    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
-    widget_control, buttons, scr_xsize = 0
-  endif else begin
-    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
-    widget_control, buttons, scr_xsize = 600
-  endelse
-end
+;pro disable_last_row, event  
+;  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+;  tab = widget_info((*p_wdgt_state).base_tab, /tab_current)
+;  if tab gt 0 then begin
+;    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
+;    widget_control, buttons, scr_xsize = 0
+;  endif else begin
+;    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
+;    widget_control, buttons, scr_xsize = 600
+;  endelse
+;end
 
 function test_tag, tag, tags
   return, total(tag eq tags)
@@ -1369,6 +1410,7 @@ pro user_widget_mixer_enable_layer, p_wdgt_state, layer
   user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 1
 end
 
+;TODO user_widget_mixer_show_input_custom_file
 pro user_widget_mixer_show_input_custom_file, p_wdgt_state, layer
   ;TODO: hide other elements
   widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 0
@@ -1380,7 +1422,6 @@ pro user_widget_mixer_show_input_custom_file, p_wdgt_state, layer
 end
 
 pro user_widget_mixer_hide_input_custom_file, p_wdgt_state, layer
-
   ;TODO: hide other elements
   widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 5
   widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, xsize = 5
@@ -1398,7 +1439,7 @@ pro user_widget_mixer_validate_visualization_all, p_wdgt_state
     
     IF (visualization EQ '<none>') THEN BEGIN
       ; disable other fields: min, max, blend_mode, opacity
-      ; TO-DO automatic input of empty layer to widgets
+      ; TODO automatic input of empty layer to widgets
       empty_layer = create_empty_mixer_layer()
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = empty_layer.min
       widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = empty_layer.max
@@ -1441,6 +1482,8 @@ pro mixer_widget_change_vis, event
   widget_control, event.top, get_uvalue=p_wdgt_state
   layer = get_mixer_layer(event)
   
+  ;TODO: get terrain type, thenn get hash for terrain_type
+  ;
   ; TO-DO: ? If previous vis selection was the same, don't alter min and max values?
   visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
   IF (visualization NE '<none>') THEN BEGIN
@@ -1454,7 +1497,7 @@ pro mixer_widget_change_vis, event
   user_widget_mixer_validate_visualization_all, p_wdgt_state
   
   ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
-  mixer_select_checkboxes_visualizations_tab, event  
+  mixer_select_checkboxes_visualizations_tab, event.top  
 end
 
 pro mixer_widget_change_norm, event
@@ -1515,6 +1558,7 @@ pro mixer_widget_change_max, event
   user_widget_mixer_check_if_preset_combination, event
 end
 
+;TODO: does change in opacity means blend combination is changed as well?
 pro mixer_widget_change_opacity, event
   layer = get_mixer_layer(event)
   widget_control, event.ID, GET_VALUE=slider_value
@@ -1640,23 +1684,23 @@ end
 ;                         keyword that enables settings to be stored between consecutive sessions. Overwrite keyword added 
 ;                         to all function/procesures that produce some kind of raster output.
 ;            September 2016: Added local dominance visualization procedure.
-;       1.4 
+;       1.4  
 ;-
 
 pro topo_advanced_vis, re_run=re_run
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '2.3'
-  rvt_issue_year = '2018'
+  rvt_version = '2.0'
+  rvt_issue_year = '2019'
   
   ; Establish error handler
   catch, theError
   if theError ne 0 then begin
     catch, /cancel
     help, /last_message, output=errText
-    errMsg = dialog_message(errText, /error, title='Error processing request')
-    return
+    errMsg = dialog_message(errText, /error, title='Error processing request. Restarting program')
+    if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis
   endif
   
   ; Start the main program
@@ -1673,6 +1717,7 @@ pro topo_advanced_vis, re_run=re_run
   temp_sav = programrootdir()+'settings\temp_settings.sav'
   if keyword_set(re_run) and file_test(temp_sav) then begin
     restore, temp_sav
+    
   endif else begin
     set_file = programrootdir()+'settings\default_settings.txt'
     if file_test(set_file) then input_settings = get_settings(set_file) $
@@ -1751,7 +1796,7 @@ pro topo_advanced_vis, re_run=re_run
     if test_tag('max_radius', settings_tags) then max_radius = input_settings.max_radius $
     else max_radius = 0
     
-    
+       
     process_file = programrootdir()+'settings\process_files.txt'
     if file_test(process_file) then begin
       n_lines = file_lines(process_file)
@@ -1761,8 +1806,8 @@ pro topo_advanced_vis, re_run=re_run
         readf, txt_proc, files_to_process
         free_lun, txt_proc
         skip_gui = 1
-      endif else if keyword_set(re_run) then skip_gui = 1
-    endif else if keyword_set(re_run) then skip_gui = 1   
+      endif 
+    endif 
   endelse  
   
   ;=========================================================================================================
@@ -1835,16 +1880,6 @@ pro topo_advanced_vis, re_run=re_run
   xsize_short_label = 100
   xsize_slider = 140
   xsize_wide_row = 640
-
-  ; input file metadata
-;  wtext = ['Input file:   ' + in_fname, $
-;    'Size (cols, rows):   ' + strtrim(ncols,2) + ' x ' + strtrim(nrows,2), $
-;    strmid(wtext_resolution,5,strlen(wtext_resolution)-5), $
-;    string(format='("Data range (min, max):   ", f0.2, ", ", f0.2)', $
-;    heights_min, heights_max)]
-
-  ;about_row = widget_base(base_main, /row, /align_right)
-  ;bt_about = widget_button(about_row, event_pro='user_widget_about', value='About', xoffset=330, yoffset=20, scr_xsize=65)
   
   main_row_0 = widget_base(base_main, /row)
   add_files_text = widget_label(main_row_0, value='List of currently selected input files: ')
@@ -1864,14 +1899,15 @@ pro topo_advanced_vis, re_run=re_run
   widget_control, overwrite_checkbox, set_button=overwrite  
   
   empty_text_row = widget_label(base_main, value='  ', scr_ysize=10)
-  base_tab = WIDGET_TAB(base_main, event_pro='disable_last_row', uname = 'base_tab_window')
+  base_tab = WIDGET_TAB(base_main, event_pro='user_widget_do_nothing', uname = 'base_tab_window')
+  ;base_tab = WIDGET_TAB(base_main, event_pro='disable_last_row', uname = 'base_tab_window')
   base_all = WIDGET_BASE(base_tab, TITLE='   Visualizations   ', /COLUMN, xsize=655, /scroll, uname = 'base_tab_window_all')
   
   ; exaggetarion factor
   ve_floor = sc_ve_ex[0]
   ve_ceil = sc_ve_ex[1]
 
-  base_row_1 = widget_base(base_all, /row)
+  base_row_1 = widget_base(base_all, /row, yoffset=10)
   ve_text = widget_label(base_row_1, value='Vertical exaggetarion factor (used in all methods) (min=-1000., max=1000.):  ')
   ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value=string(exaggeration_factor, format='(F0.2)'), xsize=5, /editable)
  
@@ -2010,7 +2046,7 @@ pro topo_advanced_vis, re_run=re_run
   svf_rn_checkbox = widget_button(svf_rn_nonexclusive, event_pro='user_widget_toggle_method_checkbox', value='Remove noise')
   widget_control, svf_rn_checkbox, set_button=remove_noise
   svf_rn_row = widget_base(svf_rn_base, /row, sensitive=remove_noise)
-  svf_rn_text = widget_label(svf_rn_row, value='level of noise removal:  ')
+  svf_rn_text = widget_label(svf_rn_row, value='Level of noise removal:  ')
   svf_rn_entry = widget_combobox(svf_rn_row, event_pro='user_widget_do_nothing', value=svf_rn_droplist)
 
   ; ... and Anisotropic Sky-View Factor --------------------
@@ -2073,12 +2109,18 @@ pro topo_advanced_vis, re_run=re_run
     
   skyilm_row_1 = widget_base(skyilm_params, /row)  
   skyilm_droplist = strarr(2)
+  ;TODO: remove temp solution
+  if sky_model eq !NULL or sky_model eq '' then sky_model = 'overcast'
+  ;END-TODO
   skyilm_droplist[0] = sky_model
   skyilm_droplist[1] = 'uniform'
   skyilm_droplist_text = widget_label(skyilm_row_1, value='Sky model:     ')
   skyilm_droplist_entry = widget_combobox(skyilm_row_1, event_pro='user_widget_do_nothing', value=skyilm_droplist)
   
   skyilm_droplist2 = strarr(2)
+  ;TODO: remove temp solution
+  if number_points eq !NULL or number_points eq '' then number_points = 250
+  ;END-TODO
   skyilm_droplist2[0] = strtrim(number_points,2)
   skyilm_droplist2[1] = '500'
   skyilm_droplist2_text = widget_label(skyilm_row_1, value='            Number of sampling points:  ')
@@ -2086,6 +2128,9 @@ pro topo_advanced_vis, re_run=re_run
   
   skyilm_row_4 = widget_base(skyilm_params, /row)
   skyilm_droplist3 = strarr(4)
+  ;TODO: remove temp solution
+  if max_shadow_dist eq !NULL or max_shadow_dist eq '' then max_shadow_dist = 100
+  ;END-TODO
   skyilm_droplist3[0] = strtrim(max_shadow_dist,2)
   skyilm_droplist3[1] = '50'
   skyilm_droplist3[2] = '500'
@@ -2117,18 +2162,22 @@ pro topo_advanced_vis, re_run=re_run
     
   locald_row_1 = widget_base(locald_params, /row)
   locald_text_1 = widget_label(locald_row_1, value='Minimum radius:  ')
-  locald_min_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(min_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
+  ;TODO: remove temp solution
+  if min_radius eq !NULL or strtrim(min_radius,2) eq '' then min_radius = 2 else min_radius = strtrim(min_radius,2)
+  locald_min_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=min_radius, xsize=5, /editable, uname='locald_min_entry')
   locald_text_2 = widget_label(locald_row_1, value='                   ')
   locald_text_3 = widget_label(locald_row_1, value='Maximum radius:  ')
-  locald_max_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(max_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
+  ;TODO: remove temp solution
+  if max_radius eq !NULL or strtrim(max_radius,2) eq '' then max_radius = 0 else max_radius = strtrim(max_radius,2)
+  locald_max_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=max_radius, xsize=5, /editable, uname='locald_max_entry')
 
 
   ; Buttons --------------------
-  bt_row = widget_base(base_main, /align_left, uname='buttons_last_raw', scr_ysize = 45, scr_xsize=600)
+  bt_row = widget_base(base_all, /align_left, uname='buttons_last_raw', scr_ysize = 45, scr_xsize=600)
   bt_all = widget_button(bt_row, event_pro='user_widget_all', value='Select all', xoffset=5, yoffset=20, scr_xsize=65)
-  bt_none = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=65)
-  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=330, yoffset=20, scr_xsize=65)
-  bt_cancel = widget_button(bt_row, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
+  bt_none = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=70)
+  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=330, yoffset=20, scr_xsize=90, /align_center)
+  ;bt_cancel = widget_button(bt_row, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
 ;  tole je varianta z le dvema gumboma Start in Cancel
 ;  bt_row = widget_base(base_all, /align_center)
 ;  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=0, yoffset=20, scr_xsize=60)
@@ -2199,18 +2248,16 @@ pro topo_advanced_vis, re_run=re_run
     value='Enable', uname = 'erdas_checkbox' , sensitive=0)
   widget_control, erdas_checkbox, set_button=0
   
-  bt_row2 = widget_base(base_convert, /align_left)
-  ;bt_all2 = widget_button(bt_row, event_pro='user_widget_all', value='Select all', xoffset=5, yoffset=20, scr_xsize=65)
-  ;bt_none2 = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=65)
-  bt_ok2 = widget_button(bt_row2, event_pro='user_widget_convert', value='Convert', xoffset=330, yoffset=20, scr_xsize=65)
-  bt_cancel2 = widget_button(bt_row2, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
+  bt_row2 = widget_base(base_convert, yoffset=20, /align_center)
+  ;btx = widget_label(bt_row2, value='  ', scr_ysize=30)
+  bt_ok2 = widget_button(bt_row2, event_pro='user_widget_convert', value='Convert', xoffset=5, yoffset=20, scr_xsize=90, /align_center) ; value='Convert', xoffset=5, yoffset=20, 
   
   ; Mosaic tab --------------------
   base_mosaic = WIDGET_BASE(base_tab, TITLE='   Mosaic   ', /COLUMN, /scroll, uname = 'base_tab_mosaic', xsize=655)
-  mosaic_row_0 = widget_label(base_mosaic, value='  ', scr_ysize=30)
-  mosaic_row_1 = widget_base(base_mosaic, /align_left)
-  bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 20, yoffset=20, scr_xsize=120)
-  bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+  ;mosaic_row_0 = widget_label(base_mosaic, value='  ', scr_ysize=30)
+  mosaic_row_1 = widget_base(base_mosaic, /align_center)
+  bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 5, yoffset=20, scr_xsize=110)
+  ;bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
  
   ; Mixer tab --------------------
   base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
@@ -2221,9 +2268,10 @@ pro topo_advanced_vis, re_run=re_run
   mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
   is_blend_image_rbg = boolean(0)
  
-  ; --- Preset visualization combinations ---
+  ; --- Preset blend combinations ---
   mixer_row_0 = widget_base(base_mixer, /row)
-  mixer_row_1_text_preset = widget_label(base_mixer, value='Preset combinations:   ', /align_left)
+  mixer_row_0_empty = widget_label(base_mixer, value='  ', scr_ysize=30)
+  mixer_row_1_text_preset = widget_label(base_mixer, value='  Blend combination:   ', /align_left)
   
   mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_frame_method_name*3)
   mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row)
@@ -2262,7 +2310,7 @@ pro topo_advanced_vis, re_run=re_run
   ; --- Mixer Tab: Layers
   ; Dinamically generated layer rows with widgets 
   nr_layers = 5 
-  layers_tag = ['1st:', '2nd:', '3rd:', '4th:', '5th', '6th', '7th', '8th']
+  layers_tag = ['1st:', '2nd:', '3rd:', '4th:', '5th']
   base_mixer_layers = widget_base(base_mixer, row=8)
   mixer_layer_filepaths = make_array(nr_layers, /string)
   file_names = MAKE_ARRAY(nr_layers, /STRING, VALUE = '')
@@ -2273,14 +2321,13 @@ pro topo_advanced_vis, re_run=re_run
   mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer_layers, nr_layers, layers_tag, vis_droplist, blend_droplist, norm_droplist)
   
   ; Custom combination
-  custom_combination_name = 'Custom combination'
+  custom_combination_name = 'Custom'
   current_combination = user_widget_mixer_state_to_combination(mixer_widgetIDs, custom_combination_name) 
  
-  ; TO-DO hash tables of defaults: norm, min, max
   all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
   
-  ; TO-DO: If more preset visualizations are needed, rethink the placement of radio buttons
-  nr_combinations = 4
+  ; TODO: If more preset visualizations are needed, rethink the placement of radio buttons
+  nr_combinations = 6
   
   all_combinations = limit_combinations(all_combinations, nr_combinations)
   nr_combinations = all_combinations.length
@@ -2292,20 +2339,29 @@ pro topo_advanced_vis, re_run=re_run
   endfor
   combination_radios = [combination_radios, widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=custom_combination_name)]
 
-  ; default combination radio button set to 'custom' (index = nr_combinations)
-  widget_control, combination_radios[nr_combinations], set_button=1
-  combination_index = nr_combinations
+  ; default combination radio button set to first combination (index can go from 0 to nr_combinations; not to nr_combinations-1 becuase there's always extra 'Custom' combination)
   
+  ; To preselect first combination available
+  widget_control, combination_radios[0], set_button=1
+  combination_index = 0
+  
+  
+  
+;  ; To preselect Custom combination
+;  widget_control, combination_radios[nr_combinations], set_button=1
+;  combination_index = nr_combinations
 
-  ; --- Mixer Tab: Buttons to Mix selected
-  mixer_row_finish = widget_base(base_mixer, /align_left)
-  bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Mix selected', xoffset= 20, yoffset=20, scr_xsize=120)
+  ; --- Mixer Tab: Buttons to Blend images
+  mixer_row_finish = widget_base(base_mixer, /align_center)
+  bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Blend images', xoffset= 5, yoffset=20, scr_xsize=110, /align_center)
   
-  mixer_row_finish_test = widget_base(mixer_row_finish, /align_left)
-  bt_mixer_test = widget_button(mixer_row_finish_test, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
-  WIDGET_CONTROL, mixer_row_finish_test, MAP=0 ; hide test button
+   ; UNIT TEST BUTTON  
+;  mixer_row_finish_test = widget_base(mixer_row_finish, /align_left)
+;  bt_mixer_test = widget_button(mixer_row_finish_test, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
+;  WIDGET_CONTROL, mixer_row_finish_test, MAP=0 ; hide test button
   
-  ;bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
+   ; ADD LAYER BUTTON
+;  bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
 
   ; --- Preset visualizations ---
 
@@ -2369,8 +2425,10 @@ pro topo_advanced_vis, re_run=re_run
 
   user_cancel = 0   ; user
   
-  selection_str = ''; Input files
+  if selection_str eq !null then selection_str = ''; Input files
 
+  skip_gui = keyword_set(skip_gui)
+  ; if keyword_set(skip_gui) eq 0 then skip_gui = 0 else skip_gui = 1
   
   
   ; Create a pointer to annonymous structure, containing state of widgets
@@ -2400,13 +2458,16 @@ pro topo_advanced_vis, re_run=re_run
                         open_checkbox:open_checkbox, open_use:open_use, $      ; Openness
                         open_neg_checkbox:open_neg_checkbox, open_neg_use:open_neg_use, $  ; Negative openness
                         user_cancel:user_cancel, convert_dropdown:convert_dropdown, $
+                        selection_str:selection_str, $
                         convert_dropdown_envi:convert_dropdown_envi,tzw_checkbox:tzw_checkbox,erdas_checkbox:erdas_checkbox,$
                         erdas_stat_checkbox:erdas_stat_checkbox,$
-                        skyilm_checkbox:skyilm_checkbox, skyilm_checkbox2:skyilm_checkbox2, skyilm_use:skyilm_use, skyilm_shadow_use:skyilm_shadow_use, skyilm_shadow_dist:skyilm_shadow_dist, $  ;Sky illumination
+                        skyilm_checkbox:skyilm_checkbox, skyilm_checkbox2:skyilm_checkbox2, $
+                            skyilm_use:skyilm_use, skyilm_shadow_use:skyilm_shadow_use, skyilm_shadow_dist:skyilm_shadow_dist, $  ;Sky illumination
                             skyilm_model:skyilm_model, skyilm_points:skyilm_points, skyilm_az:skyilm_az, skyilm_el:skyilm_el,$
-                            skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, skyilm_droplist3_entry:skyilm_droplist3_entry,$
-                            skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
-                        locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
+                            skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, $
+                            skyilm_droplist3_entry:skyilm_droplist3_entry, skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
+                        locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry, $
+                            locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
                         jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
                         output_files_array:output_files_array, $ ; of visualizations
                         output_blend_images_paths:output_blend_images_paths, $
@@ -2414,7 +2475,6 @@ pro topo_advanced_vis, re_run=re_run
                         mixer_layer_filepaths:mixer_layer_filepaths, $
                         mixer_layer_images:mixer_layer_images, $
                         mixer_layers_rgb:mixer_layers_rgb, $
-                        selection_str:selection_str, $  ; selection string
                         in_orientation:1, $             ; tiff reading parameters
                         mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
                         vis_droplist:vis_droplist, $
@@ -2434,27 +2494,31 @@ pro topo_advanced_vis, re_run=re_run
                         nr_combinations:nr_combinations, $
                         combination_radios:combination_radios, $
                         ; user_defined_combination_name:user_defined_combination_name, $
-                        mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, bt_mixer_test:bt_mixer_test, $
+                        mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, $ ;bt_mixer_test:bt_mixer_test, $
                         mixer_widgetIDs:mixer_widgetIDs, $
                         current_combination:current_combination, $
                         current_combination_file_names:file_names, $
                         all_combinations:all_combinations, combination_index:combination_index, $
                         is_blend_image_rbg:is_blend_image_rbg, $
-                        temp_sav:temp_sav, rvt_version:rvt_version, rvt_issue_year:rvt_issue_year}, $
+                        temp_sav:temp_sav, rvt_version:rvt_version, rvt_issue_year:rvt_issue_year, $
+                        skip_gui:skip_gui}, $
                         /no_copy)  ; data stored in heap only
 
   ;skip GUI creation if user specied any files in process_files text file
   widget_control, base_main, set_uvalue=p_wdgt_state
+  mixer_default_combination_selected, 0, p_wdgt_state, base_main
+  
   if keyword_set(skip_gui) then user_widget_ok, create_struct('TOP', base_main) $
   else begin
     widget_control, base_main, /realize     ; create the widget
     user_widget_mixer_validate_visualization_all, p_wdgt_state
     xmanager, 'resize', base_main ; wait for the events
   endelse
-;  xmanager, 'rvt_sa_v1', base_main    ; wait for the events
+  ;  xmanager, 'rvt_sa_v1', base_main    ; wait for the eventsjh
   
   ; Get the user values and free the pointer
   wdgt_state = *p_wdgt_state
+  ptr_free, p_wdgt_state
   
   ; Continue after event handler: restore user inputs  ==========================
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
@@ -2478,14 +2542,6 @@ pro topo_advanced_vis, re_run=re_run
   ;=== Start processing  ===================================================================================
   ;=== Write processing metadata into TXT metafile =========================================================
   ;=========================================================================================================
-
-  log_list = topo_advanced_make_visualizations(p_wdgt_state, temp_sav, wdgt_state.selection_str, rvt_version, rvt_issue_year)
-  
-  ; Free pointer
-  ptr_free, p_wdgt_state
-  
-  
-  if keyword_set(skip_gui) eq 0 then topo_advanced_vis, /re_run
   
   
 ;  msg = strarr(8)

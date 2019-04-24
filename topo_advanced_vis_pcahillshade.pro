@@ -119,13 +119,13 @@ PRO Topo_advanced_vis_PCAhillshade, in_file, geotiff, $
   
   ; Write results
   out_file = in_file + '.tif'
-  write_image_to_geotiff_float, overwrite, out_file, PCA_image
+  write_image_to_geotiff_float, overwrite, out_file, PCA_image, geotiff=geotiff
   
   ;For 8-bit do an RGB -----------------------------------------------
   PCA_RGB_image = calculate_RGB_from_PCA(PCA_image, dem)
   
   out_file = in_file + '_RGB.tif'
-  write_image_to_geotiff, overwrite, out_file, PCA_RGB_image
+  write_image_to_geotiff, overwrite, out_file, PCA_RGB_image, geotiff=geotiff
     
   ; Free up space ----------------------------------------------------
   PCA_RGB_image = !null & PCA_image = !null

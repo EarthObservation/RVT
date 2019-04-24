@@ -32,7 +32,7 @@ end
 function gen_norm_droplist
   ; Normalization
   norm_droplist = strarr(2)
-  norm_droplist[0] = 'Lin'
+  norm_droplist[0] = 'Value'
   norm_droplist[1] = 'Perc'
 
   return, norm_droplist
@@ -41,17 +41,17 @@ end
 function gen_vis_norm_default
   ; Preferred normalizations for each visualization
   vis_norm = hash()
-  vis_norm += hash('Analytical hillshading','Lin')
-  vis_norm += hash('Hillshading from multiple directions','Lin')
+  vis_norm += hash('Analytical hillshading','Value')
+  vis_norm += hash('Hillshading from multiple directions','Value')
   vis_norm += hash('PCA of hillshading','Perc')
-  vis_norm += hash('Slope gradient','Lin')
+  vis_norm += hash('Slope gradient','Value')
   vis_norm += hash('Simple local relief model','Perc')
-  vis_norm += hash('Sky-View Factor','Lin')
+  vis_norm += hash('Sky-View Factor','Value')
   vis_norm += hash('Anisotropic Sky-View Factor','Perc')
-  vis_norm += hash('Openness - Positive','Lin')
-  vis_norm += hash('Openness - Negative','Lin')
+  vis_norm += hash('Openness - Positive','Value')
+  vis_norm += hash('Openness - Negative','Value')
   vis_norm += hash('Sky illumination','Perc')
-  vis_norm += hash('Local dominance','Lin')
+  vis_norm += hash('Local dominance','Value')
 
   return, vis_norm
 end

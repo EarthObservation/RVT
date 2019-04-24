@@ -42,16 +42,6 @@ function normalize_lin, image, min, max
     return, image
 end
 
-;function normalize_perc, image, perc
-;    if (perc GT 1.0 AND perc LE 100.0) then perc = perc / 100.0
-;    
-;    distribution = cgPercentiles(image, Percentiles=[perc, 1.0-perc])
-;    min = min(distribution)
-;    max = max(distribution)
-;    
-;    return, normalize_lin(image, min, max)
-;end
-
 pro lin_cutoff_calc_from_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
   if (min GT 1.0 AND min LE 100.0) then min = min / 100.0
   if (max GT 1.0 AND max LE 100.0) then max = max / 100.0
@@ -68,7 +58,7 @@ function normalize_perc, image, min, max, min_lin=min_lin, max_lin=max_lin
 end
 
 function topo_advanced_normalization, image, min, max, normalization
-  if (normalization EQ 'Lin') then begin
+  if (normalization EQ 'Value') then begin
     ;equ_image = HIST_EQUAL(image, MINV=min, MAXV=max, TOP=1.0)
     equ_image = normalize_lin(image, min, max)
   endif
@@ -82,7 +72,7 @@ function topo_advanced_normalization, image, min, max, normalization
   return, equ_image
 end
 
-function mixer_normalize_image, image, visualization, min_norm, max_norm, normalization
+function mixer_normalize_image_tile, image, visualization, min_norm, max_norm, normalization
   ; for slope, putting this to one will invert scale
   ; meaning high slopes will be black
   switch_slope_scale = 1
@@ -93,7 +83,7 @@ function mixer_normalize_image, image, visualization, min_norm, max_norm, normal
   ; for RGB images, because they are
   ; on scale 0 to 255, not 0.0 - 1.0,
   ; we use multiplier to get proper values
-  if normalization eq 'Lin' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
+  if normalization eq 'Value' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
     if max(image) gt 100.0  and (size(image, /N_DIMENSIONS) eq 3) then begin
       ; limit normalization 0.0 to 1.0;
       ; all numbers below are 0.0,
@@ -107,8 +97,19 @@ function mixer_normalize_image, image, visualization, min_norm, max_norm, normal
   endif
 
   image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+  
+  ; make sure it scales 0 to 1
+  if max(image) gt 1.0 then begin
+    if (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
+      ; from RGB to float
+      image = RGB_to_float(image)
+    endif else begin
+      ; scale 0 to 1
+      print, 'WARNING: unexpected values!'
+    endelse
+  endif
 
-  ;TODO: inverted greyscale for negative openess
+  ; inverted greyscale for negative openess
   if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
     image = 1 - image
   endif
@@ -121,10 +122,6 @@ end
 pro mixer_normalize_images_on_layers, event
     widget_control, event.top, get_uvalue = p_wdgt_state
     
-    ; for slope and negative openess, putting this to one will invert scale 
-    ; meaning high slopes will be black
-    switch_scale = 1
-    
     layers = (*p_wdgt_state).current_combination.layers
     images = (*p_wdgt_state).mixer_layer_images
  
@@ -132,8 +129,7 @@ pro mixer_normalize_images_on_layers, event
     nr_layers = layers.length
     if (images.length NE count) then print, 'Error: Number of layers does not match number of images!'
     
-    for i=0,nr_layers-1 do begin
-      
+    for i=0,nr_layers-1 do begin      
       visualization = layers[i].vis
       if (visualization EQ '<none>') then continue
       image = images[i]
@@ -145,35 +141,43 @@ pro mixer_normalize_images_on_layers, event
       ; for RGB images, because they are 
       ; on scale 0 to 255, not 0.0 - 1.0, 
       ; we use multiplier to get proper values
-      if normalization eq 'Lin' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
-        if max(image) gt 100.0  and (size(image, /N_DIMENSIONS) eq 3) then begin
+      if normalization eq 'Value' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin 
+        if max(image) gt 100.0 and (size(image, /N_DIMENSIONS) eq 3) then begin
           ; limit normalization 0.0 to 1.0;
           ; all numbers below are 0.0, 
           ; numbers above are 1.0
           if min_norm lt 0.0 then min_norm = 0.0 
           if max_norm gt 1.0 then max_norm = 1.0
-          ;TODO: change this ... regardless of whether max(RGB)=2 or max(RGB)=255, it will normalize to 255 value set!
           
           min_norm = round(min_norm * 255)
           max_norm = round(max_norm * 255)
-        endif        
+        endif
       endif
 
-      (*p_wdgt_state).mixer_layer_images[i] = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+      norm_image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
       
+      ; make sure it scales 0 to 1
+      if max(norm_image) gt 1.0 then begin
+        if (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
+          ; from RGB to float
+          norm_image = RGB_to_float(norm_image)
+        endif else begin
+          ; scale 0 to 1
+          ;norm_image = scale_0_to_1(norm_image)
+          print, 'WARNING: unexpected values! MAX > 1.0'
+        endelse
+      endif
+      if min(norm_image) lt 0.0 then begin
+        print, 'WARNING: unexpected values! MIN < 0.0'
+      endif
+      
+      ; for slope and negative openess, invert scale
+      ; meaning high slopes will be black
       if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient') then begin
-        image = (*p_wdgt_state).mixer_layer_images[i]
-        (*p_wdgt_state).mixer_layer_images[i] = 1 - image
+        image = 1 - norm_image
       endif      
 
-;      image = images[i]
-;      vizualization = layers[i].vis
-;      min_norm = float(layers[i].min)
-;      max_norm = float(layers[i].max)
-;      normalization = layers[i].normalization
-;      
-;      norm_image = mixer_normalize_image(image, vizualization, min_norm, max_norm, normalization)
-;      (*p_wdgt_state).mixer_layer_images[i] = norm_image
+      (*p_wdgt_state).mixer_layer_images[i] = image
     endfor
 end
 
@@ -185,16 +189,6 @@ end
 function float_to_RGB, float_value
     rgb = fix(float_value * 255)
     return, rgb
-end
-
-function RGB_to_luminance, rgb
-  r = reform(rgb[0, *, *])
-  g = reform(rgb[1, *, *])
-  b = reform(rgb[2, *, *])
-
-  gs = (0.3 * R) + (0.59 * G) + (0.11 * B)
-
-  return, gs
 end
 
 ; Either float or integer
@@ -253,86 +247,6 @@ function scale_0_to_1, numeric_value
     endif else begin
       return, scale_strict_0_to_1(numeric_value)
     endelse
-end
-
-function grayscale_to_RGB, grayscale
-  r = grayscale/0.3
-  g = grayscale/0.59
-  b = grayscale/0.11
-  
-  dimensions = size(grayscale, /DIMENSIONS)
-  x_size = dimensions[0]
-  y_size = dimensions[1]
-  RGB = make_array(3, x_size, y_size)
-  RGB[0, *, *] = reform(r, 1, x_size, y_size)
-  RGB[1, *, *] = reform(g, 1, x_size, y_size)
-  RGB[2, *, *] = reform(b, 1, x_size, y_size)
-
-  scaled = scale_0_to_1(RGB)
-  RGB = float_to_RGB(scaled) 
-  
-;  dimensions = size(gs, /DIMENSIONS)
-;  x_size = dimensions[0]
-;  y_size = dimensions[1]
-;  RGB = make_array(3, x_size, y_size)
-;  RGB[0, *, *] = reform(r, 1, x_size, y_size)
-;  RGB[1, *, *] = reform(g, 1, x_size, y_size)
-;  RGB[2, *, *] = reform(b, 1, x_size, y_size)
-
-;  - - - - B:
-
-;  dimensions = size(grayscale, /DIMENSIONS)
-;  x_size = dimensions[0]
-;  y_size = dimensions[1]
-  
-;  YUV_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 1.0)
-;  scaled = scale_0_to_1(grayscale)
-;  YUV_RGB[1, *, *] = reform(scaled, 1, x_size, y_size)
-;  COLOR_CONVERT, YUV_RGB, RGB, /YUV_RGB
-
-  return, RGB
-end
-
-function grayscale_to_RGB_1, grayscale
-  dimensions = size(grayscale, /DIMENSIONS)
-  x_size = dimensions[0]
-  y_size = dimensions[1]
-
-  YUV_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
-;  grayscale = scale_0_to_1(grayscale)
-  YUV_RGB[0, *, *] = reform(grayscale, 1, x_size, y_size)
-;  YUV_RGB[1, *, *] = make_array(x_size, y_size, /FLOAT, VALUE = 0.436)
-;  YUV_RGB[2, *, *] = make_array(x_size, y_size, /FLOAT, VALUE = 0.615)
-  COLOR_CONVERT, YUV_RGB, RGB, /YUV_RGB
-    
-;  YIQ_RGB = make_array(3, x_size, y_size, /FLOAT, VALUE = 0.0)
-;  ;  grayscale = scale_0_to_1(grayscale)
-;  YIQ_RGB[1, *, *] = reform(grayscale, 1, x_size, y_size)
-;  COLOR_CONVERT, YIQ_RGB, RGB, /YIQ_RGB
-
-    return, RGB
-end
-
-function grayscale_to_RGB_4, grayscale
-  r = grayscale
-  g = grayscale
-  b = grayscale
-
-  dimensions = size(grayscale, /DIMENSIONS)
-  x_size = dimensions[0]
-  y_size = dimensions[1]
-  RGB = make_array(3, x_size, y_size)
-  RGB[0, *, *] = reform(r, 1, x_size, y_size)
-  RGB[1, *, *] = reform(g, 1, x_size, y_size)
-  RGB[2, *, *] = reform(b, 1, x_size, y_size)
-
-  RGB = scale_0_to_1(RGB)
-  
-  ;scaled = scale_0_to_1(RGB)
-  ;RGB = float_to_RGB(scaled)
-
-
-  return, RGB
 end
 
 ; Either float or integer

@@ -84,14 +84,13 @@ PRO Topo_advanced_vis_hillshade, in_file, geotiff, $
   if keyword_set(suppress_output) eq 0 then begin
     
     out_file = in_file + '.tif'  
-    write_image_to_geotiff_float, overwrite, out_file, cosi
-      
+    write_image_to_geotiff_float, overwrite, out_file, cosi, geotiff=geotiff
       
     ; Hillshade, 8 bit -------------------------------------------------------------------------
     cosi = Bytscl(cosi, max=sc_hls_ev[1], min=sc_hls_ev[0])
     
     out_file = in_file + '_8bit.tif'
-    write_image_to_geotiff, overwrite, out_file, cosi
+    write_image_to_geotiff, overwrite, out_file, cosi, geotiff=geotiff
       
     ; Free up space ----------------------------------------------------------------------------
     cosi = !null
