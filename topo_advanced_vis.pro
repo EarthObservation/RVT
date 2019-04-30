@@ -11,22 +11,20 @@ pro user_widget_do_nothing, event
   ; dummy pro
 end
 
-
-
 ; When user presses About button
 pro user_widget_about, event 
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
   msg = strarr(16)
   msg[0] = 'Relief Visualization Toolbox (RVT), ver. ' + (*p_wdgt_state).rvt_vers
   msg[1] = '-------------------------------------------------------------------'
-  msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar and Ziga Kokalj'
+  msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar, Maja Somrak and Ziga Kokalj'
   msg[4] = '* Online resource and manual'
   msg[5] = 'http://iaps.zrc-sazu.si/en/rvt'
-  msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to peter.pehani@zrc-sazu.si'
+  msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to zkokalj@zrc-sazu.si'
   msg[8] = '* License agreement'
   msg[9] = 'This software is distributed without any warranty and without even the implied warranty of merchantability or fitness for a particular purpose.'
   msg[11] = '* Acknowledgment'
-  msg[12] = "Development of RVT was partly financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project."
+  msg[12] = "Development of RVT was partly financed by the European Commission's Culture Programme through the ArchaeoLandscapes Europe project and by the Slovenian Research Agency core funding No. P2-0406, and by research projects No. J6-7085 and No. J6-9395."
   msg[14] = '* Copyright'
   msg[15] = '(c) Research Centre of the Slovenian Academy of Sciences and Arts (ZRC SAZU), ' + (*p_wdgt_state).rvt_year
   show_about = dialog_message(msg, title='About RVT', /information)
@@ -58,7 +56,7 @@ end
 ; When user un/checks Hillshading from multiple directions (prerequisite also for PCA of hillshading)
 pro user_widget_toggle_mhls_checkbox, event
   ; get status the Multiple checkbox itself, and id of its parameters
-  id_mhls_checkbox = widget_info(event.top, find_by_uname='u_mhls_checkbox')   
+  id_mhls_checkbox = widget_info(event.top, find_by_uname='u_mhls_checkbox')  
   id_mhls_checkbox_get = widget_info(id_mhls_checkbox, /button_set) 
   id_mhls_params = widget_info(event.top, find_by_uname='u_mhls_params')   
   if id_mhls_checkbox_get then begin
@@ -100,7 +98,6 @@ pro user_widget_toggle_mhls_pca_checkbox, event
 end
 
 
-
 ; When user un/checks SVF (prerequisite also for Anisotropic SVF, Openness and Negative openness)
 pro user_widget_toggle_svf_checkbox, event
   ; get status the SVF checkbox itself, and id of its parameters
@@ -125,7 +122,6 @@ pro user_widget_toggle_svf_checkbox, event
 end
 
 
-
 ; When user un/checks Anisotropic SVF (dependent on SVF)
 pro user_widget_toggle_asvf_checkbox, event
   ; first toggle the Anisotropic SVF itself, 
@@ -141,7 +137,7 @@ pro user_widget_toggle_asvf_checkbox, event
     ; ... if status is un-checked, and if also SVF and the other two dependent methods are un-checked, hide SVF params  
     id_svf_checkbox = widget_info(event.top, find_by_uname='u_svf_checkbox')   
     id_svf_checkbox_get = widget_info(id_svf_checkbox, /button_set)
-    id_open_checkbox = widget_info(event.top, find_by_uname='u_open_checkbox')   
+    id_open_checkbox = widget_info(event.top, find_by_uname='u_open_checkbox')
     id_open_checkbox_get = widget_info(id_open_checkbox, /button_set) 
     id_open_neg_checkbox = widget_info(event.top, find_by_uname='u_open_neg_checkbox')   
     id_open_neg_checkbox_get = widget_info(id_open_neg_checkbox, /button_set) 
@@ -177,7 +173,6 @@ pro user_widget_toggle_open_checkbox, event
     endif
   endelse  
 end
-
 
 
 ; When user un/checks Negative openness (dependent on SVF)
@@ -255,8 +250,6 @@ pro user_widget_all, event
   widget_control, id_locald_params, sensitive=1
 end
 
-
-
 ; When user presses Select none button
 pro user_widget_none, event
   id_hls_checkbox = widget_info(event.top, find_by_uname='u_hls_checkbox')   
@@ -312,7 +305,10 @@ pro user_widget_cancel, event
   (*p_wdgt_state).user_cancel = 1
   ;widget_control, event.top, set_uvalue=wdgt_state  ; pass changes back to calling procedure
   widget_control, event.top, /destroy
+  
   file_delete, programrootdir()+'settings\temp_settings.sav', /allow_nonexistent, /quiet
+  
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 
@@ -341,20 +337,21 @@ pro user_widget_convert, event
   progress_bar2 = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
     nocancel=0)
   progress_bar2 -> Start
-  ; ... define values to assist bthe display
+  ; ... define values to assist the display
   progress_step = 100. / n_files
   progress_curr = progress_step/2
   progress_bar2 -> Update, progress_curr  
   
   for nF = 0, n_files -1 do begin
-    date = Systime(/Julian)
-    Caldat, date, Month, Day, Year, Hour, Minute, Second
-    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+;    date = Systime(/Julian)
+;    Caldat, date, Month, Day, Year, Hour, Minute, Second
+;    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
+;    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
+;    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
+;    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
+;    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
+;    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+    date_time = date_time()
     
     last_dot = strpos(panel_text[nF], '.' , /reverse_search)
     if last_dot eq -1 or (last_dot gt 0 and strlen(panel_text[nF])-last_dot ge 6) then out_file = panel_text[nF] $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
@@ -373,6 +370,7 @@ pro user_widget_convert, event
   progress_bar2 -> Update, progress_curr 
   progress_bar2 -> Destroy
 
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 ; When user presses Create mosaic button under Mosaic tab
@@ -398,14 +396,15 @@ pro user_widget_mosaic, event
   progress_bar2 -> Update, progress_curr
 
   nf = 0
-  date = Systime(/Julian)
-  Caldat, date, Month, Day, Year, Hour, Minute, Second
-  IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-  IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-  IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-  IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-  IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-  date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+;  date = Systime(/Julian)
+;  Caldat, date, Month, Day, Year, Hour, Minute, Second
+;  IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
+;  IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
+;  IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
+;  IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
+;  IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
+;  date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
+  date_time = date_time()
 
   last_dot = strpos(panel_text[nF], '.' , /reverse_search)
   if last_dot eq -1 or (last_dot gt 0 and strlen(panel_text[nF])-last_dot ge 6) then out_file = panel_text[nF] $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
@@ -419,6 +418,7 @@ pro user_widget_mosaic, event
   progress_bar2 -> Update, progress_curr
   progress_bar2 -> Destroy
 
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
 end
 
 ; When shadow modelling under Sky illumination is toggled
@@ -434,12 +434,106 @@ pro user_widget_toggle_shadow_model, event
   widget_control, widget_info(event.top, find_by_uname='skyilm_el_text'), sensitive=sens
 end
 
+function hash_visualizations_tab_widget_unames
+  hashmap = hash('Analytical hillshading', 'u_hls')
+  hashmap += hash('Hillshading from multiple directions', 'u_mhls')
+  hashmap += hash('PCA of hillshading', 'u_mhls_pca')
+  hashmap += hash('Slope gradient', 'u_slp')
+  hashmap += hash('Simple local relief model', 'u_slrm')
+  hashmap += hash('Sky-View Factor', 'u_svf')
+  hashmap += hash('Anisotropic Sky-View Factor', 'u_asvf')
+  hashmap += hash('Openness - Positive', 'u_open')
+  hashmap += hash('Openness - Negative', 'u_open_neg')
+  hashmap += hash('Sky illumination', 'u_skyilm')
+  hashmap += hash('Local dominance', 'u_locald')
+  return, hashmap
+end
+
+; For a visualization, used in mixer,
+; select checkbox in first tab ('Visualizations')
+pro select_used_visualization_mixer, visualization, hash_unames, event_top
+  uname = hash_unames[visualization]
+
+  ; check if visualization is already set, otherwise select it
+  id_checkbox = widget_info(event_top, find_by_uname=uname+'_checkbox')
+  widget_control, id_checkbox, set_button=1
+  
+  ; enable setting parameters for selected visualization
+  id_params = widget_info(event_top, find_by_uname=uname+'_params')
+  widget_control, id_params, sensitive=1
+  ;endif
+end
+
+; For all visualizations that are NOT used in mixer,
+; deselect their checkboxes in first tab ('Visualizations')
+pro deselect_unused_visualizations_mixer, hash_unames, event_top
+  widget_control, event_top, get_uvalue = p_wdgt_state
+
+  foreach visualization, (*p_wdgt_state).vis_droplist do begin
+    if (visualization EQ '<none>') then continue
+
+    ; Check for visualization if it's used in mixer
+    vis_used = boolean(0)
+    foreach layer,(*p_wdgt_state).mixer_widgetIDs.layers do begin
+      selected_visualization = widget_info(layer.vis, /combobox_gettext)
+      ;visualization = (*p_wdgt_state).current_combination.layers[layer].vis
+
+      if (selected_visualization EQ visualization) then vis_used = boolean(1)
+    endforeach
+
+    ; If visualization is not used, deselect it on first tab
+    if (vis_used EQ 0) then begin
+      uname = hash_unames[visualization]
+      ; de-select checkbox and parameters
+      id_checkbox = widget_info(event_top, find_by_uname=uname+'_checkbox')
+      widget_control, id_checkbox, set_button=0
+      id_params = widget_info(event_top, find_by_uname=uname+'_params')
+      widget_control, id_params, sensitive=0
+    endif
+  endforeach
+end
+
+; Trigger when 'Mix selected' button is pressed
+; For each visualization on layers
+pro mixer_select_checkboxes_visualizations_tab, event_top
+  widget_control, event_top, get_uvalue = p_wdgt_state  ; structure containing widget state
+
+  ; Select/deselect checkboxes on Visualizations tab according to Mixer's layers' configurations
+  hash_unames = hash_visualizations_tab_widget_unames()
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+
+  ; go through all visualizations, only use those, which will be used for layers
+  for layer=0,nr_layers-1 do begin
+    visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+
+    if (visualization NE '<none>') then begin
+      select_used_visualization_mixer, visualization, hash_unames, event_top
+    endif
+  endfor
+
+  ; deselect other visualizations?
+  deselect_unused_visualizations_mixer, hash_unames, event_top
+end
+
+pro get_input_files, event
+   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+   
+   id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
+   widget_control, id_selection_panel, get_value=panel_text
+   in_delimiter = ';'
+   panel_text = strtrim(strsplit(strjoin(panel_text, in_delimiter), in_delimiter, /extract),2) ; split possible multiple entries within same string
+   panel_text_string = strjoin(panel_text, '#')  ; concatenate all inputs into a single loooong string
+   (*p_wdgt_state).selection_str = panel_text_string
+end
+
 ;=====================================================================================
 ; When user presses OK button ========================================================
-pro user_widget_ok, event
+pro user_widget_save_state, event
   widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
   
   ; Input files, folders, lists ----------------
+  get_input_files, event
+  
   id_selection_panel = widget_info(event.top, find_by_uname='u_selection_panel')
   widget_control, id_selection_panel, get_value=panel_text
   in_delimiter = ';'
@@ -452,9 +546,8 @@ pro user_widget_ok, event
   (*p_wdgt_state).overwrite = do_overwrite
 
   ; Vertical exaggeration ---
-  widget_control, (*p_wdgt_state).ve_entry, get_value=ve 
+  widget_control, (*p_wdgt_state).ve_entry, get_value=ve
   (*p_wdgt_state).ve = ve
-
 
   ; Hillshading ----------------
   hls_use = widget_info((*p_wdgt_state).hls_checkbox, /button_set) 
@@ -588,13 +681,476 @@ pro user_widget_ok, event
 
   ; user 
   (*p_wdgt_state).user_cancel = 0
-  ;widget_control, event.top, set_uvalue=wdgt_state  ; pass changes back to calling procedure
+
+end
+
+pro user_widget_ok, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  ;user_widget_mixer_validate_visualization_all, p_wdgt_state
+
+  user_widget_save_state, event
+    
   widget_control, event.top, /destroy
+  topo_advanced_make_visualizations, p_wdgt_state, $
+    (*p_wdgt_state).temp_sav, $
+    (*p_wdgt_state).selection_str, $
+    (*p_wdgt_state).rvt_version, $
+    (*p_wdgt_state).rvt_issue_year
+  
+  ; Pop-up notify end of processing
+  pop_up_finished_processing
+    
+  if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis, /re_run
+end
+
+pro mixer_default_combination_selected, default_idx, p_wdgt_state, event_top
+  widgetIDs = (*p_wdgt_state).mixer_widgetIDs
+  nr_layers = widgetIDs.layers.length
+  combination =(*p_wdgt_state).all_combinations[default_idx]
+
+  for i=0,nr_layers-1 do begin
+    widget_control, widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
+    widget_control, widgetIDs.layers[i].min, set_value = strtrim(combination.layers[i].min, 1)
+    widget_control, widgetIDs.layers[i].max, set_value = strtrim(combination.layers[i].max, 1)
+    widget_control, widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
+    widget_control, widgetIDs.layers[i].opacity, set_value = strtrim(combination.layers[i].opacity, 1)
+    widget_control, widgetIDs.layers[i].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[combination.layers[i].normalization]
+  endfor
+
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
+  mixer_select_checkboxes_visualizations_tab, event_top
+end
+
+;pro user_widget_mixer_add_layer, event
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  
+;  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length()
+;  nr_layers++
+;  
+;  layers_tag = (*p_wdgt_state).layers_tag
+;  if (layers_tag.length LT nr_layers) then begin
+;    print, 'Maximum number of layers already reached!'
+;    return
+;  endif
+;  
+;;  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
+;;  widget_layers = REPLICATE(widget_layer, nr_layers)
+;;  
+;;  for i=0, nr_layers-2 do begin
+;;    cp = (*p_wdgt_state).mixer_widgetIDs.layers[i]
+;;    
+;;    ; foreach tag, TAG_NAMES(widget_layers[i]) do     
+;;    widget_layers[i].base = cp.base
+;;    widget_layers[i].params = cp.params
+;;    widget_layers[i].row = cp.row
+;;    widget_layers[i].text = cp.text
+;;    widget_layers[i].vis = cp.vis    
+;;    widget_layers[i].normalization = cp.normalization
+;;    widget_layers[i].min = cp.min
+;;    widget_layers[i].max = cp.max
+;;    widget_layers[i].blend_mode = cp.blend_mode
+;;    widget_layers[i].opacity = cp.opacity
+;;  endfor
+;;  
+;;  nl = new_mixer_layer((*p_wdgt_state).base_mixer_layers, LONG(nr_layers), (*p_wdgt_state).layers_tag[nr_layers], (*p_wdgt_state).vis_droplist, (*p_wdgt_state).blend_droplist, (*p_wdgt_state).norm_droplist)
+;;  widget_layers[nr_layers-1].base = nl.base
+;;  widget_layers[nr_layers-1].params = nl.params
+;;  widget_layers[nr_layers-1].row = nl.row
+;;  widget_layers[nr_layers-1].text = nl.text
+;;  widget_layers[nr_layers-1].vis = nl.vis
+;;  widget_layers[nr_layers-1].normalization = nl.normalization
+;;  widget_layers[nr_layers-1].min = nl.min
+;;  widget_layers[nr_layers-1].max = nl.max
+;;  widget_layers[nr_layers-1].blend_mode = nl.blend_mode
+;;  widget_layers[nr_layers-1].opacity = nl.opacity
+;
+;  (*p_wdgt_state).mixer_widgetIDs = create_struct('layers', widget_layers)
+;end
+
+; combination_selected => index of selected combination (on radio buttons)
+; when inputing parameters of the combination simply choose combination in an array
+pro user_widget_mixer_toggle_combination_radio, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  user_widget_mixer_save_combination_radio, event
+
+  combination_selected = (*p_wdgt_state).combination_index
+  print, 'Selected combination: ', combination_selected+1 ; because indices start with 0 in array, but with 1 in GUI
+  
+  WIDGET_CONTROL, event.ID, GET_VALUE=combination_name
+  IF event.SELECT  EQ 1 THEN BEGIN
+    ;set_preset_mixer, combination_name, event
+    user_widget_mixer_set_combination, event, combination_selected, combination_name
+  ENDIF
+
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
+  
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event.top
+  
+end
+
+; Compare two combination configurations (only layers' values, not the title!)
+function is_equal_combination_config, combination1_config, combination2_config
+  nr_layers1 = combination1_config.layers.LENGTH;
+  nr_layers2 = combination2_config.layers.LENGTH;
+  if (nr_layers1 NE nr_layers2) then return, BOOLEAN(0)
+  
+ ;nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+
+  for i=0,nr_layers1-1 do begin
+    if (combination1_config.layers[i].vis NE combination2_config.layers[i].vis) then return, BOOLEAN(0) 
+    ; if vis is '<none>' then it doesn't matter anyway!
+    if ((combination1_config.layers[i].vis EQ '<none>') AND (combination2_config.layers[i].vis EQ '<none>')) then continue
+      
+    if (combination1_config.layers[i].normalization NE combination2_config.layers[i].normalization) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].min NE combination2_config.layers[i].min) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].max NE combination2_config.layers[i].max) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].blend_mode NE combination2_config.layers[i].blend_mode) then return, BOOLEAN(0)
+    if (combination1_config.layers[i].opacity NE combination2_config.layers[i].opacity) then return, BOOLEAN(0)
+    
+  endfor
+  return, BOOLEAN(1)
+end
+
+pro user_widget_mixer_save_combination_radio, event
+  ; (*p_wdgt_state).combination_selected -> integer than corresponds to selected combination
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  for i=0,(*p_wdgt_state).combination_radios.length-1 do begin
+    if (1 EQ widget_info((*p_wdgt_state).combination_radios[i], /button_set)) then begin
+      (*p_wdgt_state).combination_index = i
+      return
+    endif
+  endfor
+  
+  ;TO-DO: ENABLE/DISABLE user_defined_combination_text,
+;  if (*p_wdgt_state).combination_index eq (*p_wdgt_state).combination_radios.length-1 then begin
+;    widget_control, (*p_wdgt_state).user_defined_combination_text, get_value = val_min
+;  endif
+end
+
+; It's the opposite of combination_to_mixer_widgets
+pro user_widget_mixer_save_current_combination, event
+  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+
+  combination = user_widget_mixer_state_to_combination((*p_wdgt_state).mixer_widgetIDs, 'Custom combination')
+  (*p_wdgt_state).current_combination = combination
+end
+
+function gen_combination, title, nr_layers
+  combination_layer = create_empty_mixer_layer()
+  combination_layers = REPLICATE(combination_layer, nr_layers)
+  combination = create_struct('title', title, 'layers', combination_layers)
+  return, combination
+end
+
+function user_widget_mixer_state_to_combination, widgetIDs, custom_combination_name
+  ; inherit number of layers from widgets
+  nr_layers = widgetIDs.layers.length
+
+  combination = gen_combination(custom_combination_name, nr_layers)
+
+  for i=0,nr_layers-1 do begin
+    val_vis = widget_info(widgetIDs.layers[i].vis, /combobox_gettext)
+    combination.layers[i].vis = val_vis
+    
+    widget_control, widgetIDs.layers[i].min, get_value = val_min
+    combination.layers[i].min = float(val_min)
+    
+    widget_control, widgetIDs.layers[i].max, get_value = val_max
+    combination.layers[i].max = float(val_max)
+    
+    val_blend_mode = widget_info(widgetIDs.layers[i].blend_mode, /combobox_gettext)
+    combination.layers[i].blend_mode = val_blend_mode
+    
+    widget_control, widgetIDs.layers[i].opacity, get_value = val_opacity
+    combination.layers[i].opacity = fix(val_opacity)
+    
+    val_norm = widget_info(widgetIDs.layers[i].normalization, /combobox_gettext)
+    combination.layers[i].normalization = val_norm
+  endfor
+  
+  return, combination
+end
+
+pro user_widget_mixer_set_combination_radio, event, index
+  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+  
+  ; maybe it is triggered automatically in case block when using widget_control?
+  (*p_wdgt_state).combination_index = index
+  
+  widget_control, (*p_wdgt_state).combination_radios[index], set_button=1
+  
+  ; Set custom combination title to reflect preset combination title / radio label
+  widget_control, (*p_wdgt_state).combination_radios[index], get_value = combination_radio_title
+  (*p_wdgt_state).current_combination.title = combination_radio_title
+  
+end
+
+; Checking if current custom mixer configuration is actually a preset combination 
+; WHEN LAYERS' PARAMETERS ARE CHANGED
+pro user_widget_mixer_check_if_preset_combination, event
+  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+  
+  user_widget_mixer_save_current_combination, event
+  preset_found = BOOLEAN(0)
+
+  nr_combinations = (*p_wdgt_state).all_combinations.length
+  for index=0,nr_combinations-1 do begin
+    ; if current configuration is equal to some preset configuration
+    preset_combination = (*p_wdgt_state).all_combinations[index]
+    if (is_equal_combination_config((*p_wdgt_state).current_combination, preset_combination)) then begin
+        ; switch radio button to corresponding preset combination
+        user_widget_mixer_set_combination_radio, event, index
+        preset_found = BOOLEAN(1)
+      return 
+    endif
+  endfor
+  if (preset_found EQ BOOLEAN(0)) then begin
+    ; change to custom combination
+      widget_control, (*p_wdgt_state).combination_radios[nr_combinations], set_button=1  
+      (*p_wdgt_state).combination_index = nr_combinations
+      
+      ;TODO: Show element with textbox for user_defined_combination_name that the user can change
+  endif
+end
+
+; Generate widgets for mixer's layers
+function user_widget_mixer_gen_widgets_2, widget_layers, i, base_mixer, nr_layers, layers_tag, vis_droplist, blend_droplist, norm_droplist
+  if (layers_tag.length NE nr_layers) then print, 'Number of layers and number of labels dont match!'
+  for i=0,nr_layers-1 do begin
+    widget_layers[i] = new_mixer_layer(base_mixer, LONG(i), layers_tag[i], vis_droplist, blend_droplist, norm_droplist)
+  endfor
+
+  return, create_struct('layers', widget_layers)
+end
+
+function mixer_get_paths_to_input_files, event, source_image_file
+    widget_control, event.top, get_uvalue = p_wdgt_state
+    layers = (*p_wdgt_state).current_combination.layers
+        
+    ; Get file name with full path (but without file extension)
+    in_filter = allowed_image_extensions(as_array=1)
+    foreach extension, in_filter do begin
+      in_file = StrJoin(StrSplit(source_image_file, extension, /Regex, /Extract, /Preserve_Null), '')
+      if STRMATCH(in_file, source_image_file) eq 0 then break
+    end
+
+    input_files = (*p_wdgt_state).output_files_array[in_file]
+    format_ending = '.tif'
+    
+    file_names = MAKE_ARRAY(layers.length, /STRING)
+    for i=0,layers.length-1 do begin
+      visualization = layers[i].vis
+      if (visualization eq '<none>') then continue
+
+        file_names[i] = input_files[visualization] + format_ending
+    endfor
+    
+    (*p_wdgt_state).current_combination_file_names = file_names
+    
+    return, file_names
+end
+
+; 
+pro mixer_input_images_to_layers, event, source_image_file
+  widget_control, event.top, get_uvalue = p_wdgt_state
+  
+  ; Get paths to input files
+  file_names = mixer_get_paths_to_input_files(event, source_image_file)
+  
+  ; Open the files into appropriate layers
+  mixer_layer_images = orderedhash()
+  layers = (*p_wdgt_state).current_combination.layers
+  
+  for i=0,layers.length-1 do begin
+    visualization = layers[i].vis
+    
+    if (visualization EQ '<none>') then continue
+
+    in_orientation=(*p_wdgt_state).in_orientation
+    image = read_tiff(file_names[i], orientation=in_orientation)
+    dim = size(image, /N_DIMENSIONS)
+    
+    ;TODO: images will be already normalized later (delete row below?)
+    ; RGB to float
+    if max(image) gt 2 and min(image) ge 0 and typename(image) eq 'INT' then $
+      image = RGB_to_float(image)
+    
+    mixer_layer_images += hash(i, image)
+
+  endfor
+  (*p_wdgt_state).mixer_layer_images = mixer_layer_images
+  (*p_wdgt_state).mixer_layer_filepaths = file_names
+end
+
+pro user_widget_mixer_unit_test, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  wdgt_state = *p_wdgt_state
+
+  get_input_files, event
+  in_file_string = (*p_wdgt_state).selection_str
+
+  in_file_list = strsplit(in_file_string, '#', /extract)
+  for nF = 0,in_file_list.length-1 do begin
+    ;Input file
+    in_file = in_file_list[nF]
+    
+    unit_test_mixer, event, in_file
+  endfor
+
+end
+
+;function get_combination_title, event
+;  widget_control, event.top, get_uvalue=p_wdgt_state
+;  
+;  return, (*p_wdgt_state).current_combination.title
+;
+;  nr_combinations = (*p_wdgt_state).combination_radios.length-1
+;  if (*p_wdgt_state).combination_index eq nr_combinations then begin
+;    return, (*p_wdgt_state).user_defined_combination_name
+;  endif else begin
+;    return, (*p_wdgt_state).current_combination.title
+;  endelse
+;end
+
+pro write_blend_log, p_wdgt_state, in_file, tiling, elapsed, log_list 
+  out_file_name = get_out_image_name_from_input(p_wdgt_state, in_file)
+  
+  log_file = log_list[in_file]
+  Get_lun, unit
+  Openw, unit, log_file, /append 
+
+  date_time = date_time()
+  out_folder = file_dirname(in_file)
+  str_elapsed = string(elapsed, format='(d10.4)')
+  printf, unit, ''
+  printf, unit, ''
+  printf, unit, ''
+  printf, unit, 'Mixer processing time (sec): '+ str_elapsed
+  test_memory, log=blend_log, /omit_timestamp
+  if (tiling eq 1) then printf, unit, '> Used tiling on input image.' else printf, unit, '> No tiling neccessary.'
+  printf, unit, ''
+
+  ; write configurations for all layers
+  layers = (*p_wdgt_state).current_combination.layers ;(*p_wdgt_state).mixer_widgetIDs.layers
+  cnt = 0
+
+  printf, unit, '========================================================================='
+  printf, unit, '  Blend combination: '+ STRUPCASE((*p_wdgt_state).current_combination.title)
+  printf, unit, '========================================================================='
+  printf, unit, ''
+  
+  printf, unit, '=== TOP LAYER === '
+  printf, unit, ''
+
+  foreach layer, layers do begin
+    cnt += 1
+    if (layer.vis ne '<none>') then begin
+      printf, unit, 'Layer: ' + strtrim(cnt,2)
+      printf, unit, 'Visualization: '+ layer.vis
+      if layer.normalization eq 'Value' then begin
+        printf, unit, 'Linear normalization, min: '+ strtrim(layer.min,2) + ', max: '+ strtrim(layer.max,2)
+      endif else begin
+        if layer.normalization eq 'Perc' then begin
+          printf, unit, 'Percentile based normalization, replaced bottom '+ strtrim(layer.min,2) +' % and top '+ strtrim(layer.max,2) + ' % of values'; with min = ' + strtrim(min_lin,2) +' and max = ' + strtrim(max_lin,2) + ', respectively.';, /omit_timestamp
+        endif
+      endelse
+      printf, unit, 'Blend mode: '+ layer.blend_mode
+      printf, unit, 'Opacity: '+ strtrim(layer.opacity,2)
+      printf, unit, ''
+    endif
+  endforeach
+  
+  printf, unit, '=== BOTTOM LAYER === '
+  printf, unit, ''
+  
+  printf, unit, 'Visualizations blend is made by stacking visualizations in order from the bottom layer towards the top layer.'
+  printf, unit, ''
+
+  printf, unit, ''
+  printf, unit, 'OUTPUT IMAGE: '+out_file_name
+  
+  free_lun, unit
+end
+
+; Clean mixer state from previous run (run = when 'Mix selected' was pressed)
+pro mixer_clean_previous_run, p_wdgt_state
+   (*p_wdgt_state).output_blend_images_paths = list() 
+end
+
+; Mixer blending 
+pro topo_advanced_vis_mixer_blending_main, event, log_list
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  
+  ; clear settings from previous mixer run
+  mixer_clean_previous_run, p_wdgt_state
+
+  if do_i_need_tiling(event) eq 1 then begin
+    ; Blending visualizations with mixer, tiled
+    tiling = 1
+    topo_advanced_vis_mixer_tiled_blend_modes, event, log_list 
+  endif else begin
+    ; Blending, non-tiled
+    topo_advanced_vis_mixer_blend_modes, event, log_list
+  endelse
+end
+
+pro pop_up_finished_processing, event
+  ;result = dialog_message('Processing finished!', /INFORMATION)
+end
+
+pro user_widget_mixer_ok, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  wdgt_state = *p_wdgt_state
+
+  ; Combination index - radio buttons
+  user_widget_mixer_save_combination_radio, event
+
+  ; Bottom layer validate
+  user_widget_mixer_bottom_layer_validate, p_wdgt_state
+
+  ; Current combination - wiget configuration by layers
+  user_widget_mixer_save_current_combination, event
+  
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event.top
+  
+  ; Only save state after checkboxes on 'Visualizations' tab are changed, too
+  user_widget_save_state, event
+  
+  ; start measuring time
+  TIC
+
+  ; Make visualizations
+  topo_advanced_make_visualizations, p_wdgt_state, $
+                                     (*p_wdgt_state).temp_sav, $
+                                     (*p_wdgt_state).selection_str, $
+                                     (*p_wdgt_state).rvt_version, $
+                                     (*p_wdgt_state).rvt_issue_year, $
+                                     /INVOKED_BY_MIXER, $                                                               
+                                     log_list = log_list
+  ; Bleding of images in mixer
+  topo_advanced_vis_mixer_blending_main, event, log_list
+  
+  ; start measuring time
+  TOC
+  
+  ; Pop-up notify end of processing
+  pop_up_finished_processing
+end
+
+function allowed_image_extensions, as_array = as_array    
+    if keyword_set(as_array) then begin
+      return, ['.tif','.tiff','.img','.bin','.xyz','.dat','.txt','.asc','.jp2','.bsq']
+    endif else return, ['*.tif;*.tiff;*.img;*.bin;*.xyz;*.dat;*.txt;*.asc;*.jp2;*.bsq']
 end
 
 ; Called when user presses Add file(s) button
 pro user_select_files, event
-  in_filter = ['*.tif;*.tiff;*.img;*.bin;*.xyz;*.dat;*.txt;*.asc;*.jp2;*.bsq']
+  in_filter = allowed_image_extensions()
   dialog_title = 'Select one or more input files'
   in_fname = dialog_pickfile(title=dialog_title, filter=in_filter, /multiple_files, path = 'C:/')
   if n_elements(in_fname) gt 0 then panel_new_entry, in_fname, event
@@ -717,25 +1273,27 @@ pro resize_event, event
   tab_all = widget_info(event.top, find_by_uname='base_tab_window_all')
   tab_mosaic = widget_info(event.top, find_by_uname='base_tab_mosaic')
   tab_converter = widget_info(event.top, find_by_uname='base_tab_converter')
+  tab_mixer = widget_info(event.top, find_by_uname='base_tab_mixer')
   new_y_size = (event.y - magic_y_size_number) > 1
   widget_control, tab, ysize = new_y_size
   widget_control, tab_all, ysize = new_y_size
   widget_control, tab_mosaic, ysize = new_y_size
   widget_control, tab_converter, ysize = new_y_size
+  widget_control, tab_mixer, ysize = new_y_size
 ;  print, event.x, event.y
 end
 
-pro disable_last_row, event  
-  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
-  tab = widget_info((*p_wdgt_state).base_tab, /tab_current)
-  if tab gt 0 then begin
-    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
-    widget_control, buttons, scr_xsize = 0
-  endif else begin
-    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
-    widget_control, buttons, scr_xsize = 600
-  endelse
-end
+;pro disable_last_row, event  
+;  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+;  tab = widget_info((*p_wdgt_state).base_tab, /tab_current)
+;  if tab gt 0 then begin
+;    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
+;    widget_control, buttons, scr_xsize = 0
+;  endif else begin
+;    buttons = widget_info(event.top, find_by_uname='buttons_last_raw')
+;    widget_control, buttons, scr_xsize = 600
+;  endelse
+;end
 
 function test_tag, tag, tags
   return, total(tag eq tags)
@@ -794,6 +1352,290 @@ pro save_to_sav, wdgt_struct, sav_path
 end
 
 
+; lower two functions are actually the same
+function user_widget_mixer_read_all_combinations, file_path
+  all_combinations = read_combinations_from_file(file_path)
+  return, all_combinations
+end
+
+function get_mixer_layer, event
+  widget_control, event.ID, get_uvalue=active_layer
+  return, active_layer
+end
+
+; It's the opposite of  user_widget_mixer_state_to_combination
+pro combination_to_mixer_widgets, p_wdgt_state, combination, SET_TITLE = set_title
+  widgetIDs = (*p_wdgt_state).mixer_widgetIDs
+  nr_layers = widgetIDs.layers.length
+
+  for i=0,nr_layers-1 do begin
+    widget_control, widgetIDs.layers[i].vis, set_combobox_select = (*p_wdgt_state).hash_vis_get_index[combination.layers[i].vis]
+    widget_control, widgetIDs.layers[i].min, set_value = strtrim(combination.layers[i].min, 1)
+    widget_control, widgetIDs.layers[i].max, set_value = strtrim(combination.layers[i].max, 1)
+    widget_control, widgetIDs.layers[i].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[combination.layers[i].blend_mode]
+    widget_control, widgetIDs.layers[i].opacity, set_value = strtrim(combination.layers[i].opacity, 1)
+    widget_control, widgetIDs.layers[i].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[combination.layers[i].normalization]
+  endfor
+  
+  if (KEYWORD_SET(SET_TITLE)) then begin
+    (*p_wdgt_state).current_combination.title = combination.title
+  endif
+end
+
+; The lowest mixer layer with visualization set (other than '<none>')
+; has max opacity and no blending mode
+pro user_widget_mixer_bottom_layer_validate, p_wdgt_state
+  widgetIDs = (*p_wdgt_state).mixer_widgetIDs
+  combination = user_widget_mixer_state_to_combination(widgetIDs, (*p_wdgt_state).current_combination.title)
+
+  combination = combination_bottom_layer_validate(combination)
+  ; update in p_wdgt_state and widgets itself
+  (*p_wdgt_state).current_combination = combination
+  combination_to_mixer_widgets, p_wdgt_state, combination
+end
+
+pro user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].opacity, sensitive = sensitivity
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, sensitive = sensitivity
+end
+
+pro user_widget_mixer_disable_layer, p_wdgt_state, layer
+  user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 0
+end
+
+pro user_widget_mixer_enable_layer, p_wdgt_state, layer
+  user_widget_mixer_switch_layer_sensitivity, p_wdgt_state, layer, 1
+end
+
+;TODO user_widget_mixer_show_input_custom_file
+pro user_widget_mixer_show_input_custom_file, p_wdgt_state, layer
+  ;TODO: hide other elements
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, xsize = 0
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, xsize = 0
+  ;TODO: show path to input file where Lin/Perc, min, max, and Visualization elements are shown
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].input_custom_file, xsize = 160
+end
+
+pro user_widget_mixer_hide_input_custom_file, p_wdgt_state, layer
+  ;TODO: hide other elements
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, xsize = 5
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, xsize = 5
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, xsize = 100
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, xsize = 50
+  ;TODO: show path to input file where Lin/Perc, min, max, and Visualization elements are shown
+  widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].input_custom_file, xsize = 0
+end
+
+pro user_widget_mixer_validate_visualization_all, p_wdgt_state
+  nr_layers = (*p_wdgt_state).mixer_widgetIDs.layers.length
+
+  for layer=0,nr_layers-1 do begin
+    visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+    
+    IF (visualization EQ '<none>') THEN BEGIN
+      ; disable other fields: min, max, blend_mode, opacity
+      ; TODO automatic input of empty layer to widgets
+      empty_layer = create_empty_mixer_layer()
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = empty_layer.min
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = empty_layer.max
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].blend_mode, set_combobox_select = (*p_wdgt_state).hash_blend_get_index[empty_layer.blend_mode]
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].opacity, set_value = empty_layer.opacity
+      widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[empty_layer.normalization]
+      user_widget_mixer_disable_layer, p_wdgt_state, layer
+      
+    ENDIF ELSE BEGIN
+        ; make sure other elements are enabled(min, max, blend_mode, opacity)
+        user_widget_mixer_enable_layer, p_wdgt_state, layer
+        
+        ;set default min and max values if the field was empty before
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, get_value = min_str
+        widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, get_value = max_str
+      
+        if (min_str EQ '') then begin
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
+        endif else begin
+          number = validate_number_limits(float(min_str), visualization, p_wdgt_state)
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(string(number),1)
+        endelse
+        
+        if (max_str EQ '') then begin
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
+        endif else begin
+          number = validate_number_limits(float(max_str), visualization, p_wdgt_state)
+          widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(string(number),1)
+        endelse
+  
+    ENDELSE
+  endfor
+  
+  ; bottom layer: blend mode & opacity
+  user_widget_mixer_bottom_layer_validate, p_wdgt_state
+  
+end
+
+pro mixer_widget_change_vis, event
+  widget_control, event.top, get_uvalue=p_wdgt_state
+  layer = get_mixer_layer(event)
+  
+  ;TODO: get terrain type, thenn get hash for terrain_type
+  ;
+  ; TO-DO: ? If previous vis selection was the same, don't alter min and max values?
+  visualization = widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+  IF (visualization NE '<none>') THEN BEGIN
+    default_norm = get_norm_default(visualization, p_wdgt_state)
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].normalization, set_combobox_select = (*p_wdgt_state).hash_norm_get_index[default_norm]
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].min, set_value = strtrim(get_min_default(visualization, p_wdgt_state),1)
+    widget_control, (*p_wdgt_state).mixer_widgetIDs.layers[layer].max, set_value = strtrim(get_max_default(visualization, p_wdgt_state),1)
+  ENDIF 
+  
+  user_widget_mixer_check_if_preset_combination, event
+  user_widget_mixer_validate_visualization_all, p_wdgt_state
+  
+  ; Transfer visualizations parameters between 'Mixer' tab and Visualizations tab
+  mixer_select_checkboxes_visualizations_tab, event.top  
+end
+
+pro mixer_widget_change_norm, event
+  user_widget_mixer_check_if_preset_combination, event
+end
+ 
+pro mixer_widget_change_blend_mode, event
+  user_widget_mixer_check_if_preset_combination, event
+end
+
+; uname = type of ''
+function get_widget_sibling, event, uname
+  child_widgets = widget_info(event.top, /all_children)
+  foreach child, child_widgets do begin
+    widget = widget_info(child, find_by_uname=uname)
+    if (widget gt 0) then break
+  endforeach
+  return, widget
+end
+
+function validate_number_limits, number, visualization, p_wdgt_state
+ 
+  min_limit = float(get_min_limit(visualization, p_wdgt_state))
+  max_limit = float(get_max_limit(visualization, p_wdgt_state))
+
+  if (number gt max_limit) then begin
+    number = max_limit
+  endif
+  if (number lt min_limit) then begin
+    number = min_limit
+  endif
+  return, number
+end
+
+pro mixer_widget_change_min, event
+  widget_control, event.top, get_uvalue=p_wdgt_state 
+  layer = get_mixer_layer(event)
+  
+  vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+  widget_control, event.ID, GET_VALUE=str_number
+
+  number = validate_number_limits(float(str_number), vis_value, p_wdgt_state)
+  widget_control, event.ID, set_value = strtrim(string(number),1)
+  
+  user_widget_mixer_check_if_preset_combination, event
+end
+
+pro mixer_widget_change_max, event
+  widget_control, event.top, get_uvalue=p_wdgt_state 
+  layer = get_mixer_layer(event)
+ 
+  vis_value =  widget_info((*p_wdgt_state).mixer_widgetIDs.layers[layer].vis, /combobox_gettext)
+  widget_control, event.ID, GET_VALUE=str_number
+
+  number = validate_number_limits(float(str_number), vis_value, p_wdgt_state)
+  widget_control, event.ID, set_value = strtrim(string(number),1)
+  
+  user_widget_mixer_check_if_preset_combination, event
+end
+
+;TODO: does change in opacity means blend combination is changed as well?
+pro mixer_widget_change_opacity, event
+  layer = get_mixer_layer(event)
+  widget_control, event.ID, GET_VALUE=slider_value
+  
+  user_widget_mixer_check_if_preset_combination, event
+end
+
+; Change values of widgets to contain selected combination values
+; Also include combination index, too
+pro user_widget_mixer_set_combination, event, index, combination_name
+  widget_control, event.top, get_uvalue=p_wdgt_state  ; structure containing widget state
+
+  IF (combination_name EQ (*p_wdgt_state).custom_combination_name) THEN BEGIN
+    print, 'Custom mixer combination/configuration selected'
+      IF ((*p_wdgt_state).combination_index NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
+    ;IF (combination_selected NE (*p_wdgt_state).all_combinations.length) then print, 'Index and type of combination do not match!'
+  ENDIF ELSE BEGIN
+    print, 'Selected preset configuration:' + combination_name 
+    ;IF (strmatch(combination_name, (*p_wdgt_state).all_combinations[index].title) NE 1) print, 'Index and title of combination do not match!'
+    IF (combination_name NE (*p_wdgt_state).all_combinations[index].title) then print, 'Index and title of combination do not match!'
+    
+    combination = (*p_wdgt_state).all_combinations[index]
+    widgetIDs = (*p_wdgt_state).mixer_widgetIDs
+    combination_to_mixer_widgets, p_wdgt_state, combination
+  ENDELSE
+
+end
+
+function new_mixer_layer, base_mixer, layer_index, label_text, vis_droplist, blend_droplist, norm_droplist
+  COMMON topo_advanced_tab_widgets, ysize_row, ysize_bigrow, xsize_frame_method_name, xsize_params, xsize_one_param, xsize_short_label, xsize_slider, xsize_wide_row
+
+  txt_layer = 'layer'+strtrim(layer_index+1, 1)
+
+  mixer_row_layer = widget_base(base_mixer, /row)
+  layer_params = widget_base(mixer_row_layer, /row, xsize=xsize_wide_row, ysize=ysize_bigrow, /frame, $ ;sensitive=preset_mix,
+    uname='u_'+txt_layer+'_params')
+    
+  layer = create_struct('base', mixer_row_layer, 'params', layer_params)
+
+  layer_row = widget_base(layer_params, /row, ysize=ysize_bigrow)
+  ;layer_label = widget_label(layer_row, value=label_text, xsize = xsize_short_label)
+  layer_label = widget_label(layer_row, value=label_text, xsize = xsize_short_label-50)
+  
+  layer = create_struct(layer, 'row', layer_row, 'text', layer_label)
+
+  layer_vis = widget_combobox(layer_row, event_pro='mixer_widget_change_vis', xsize = xsize_short_label*2, value=vis_droplist[*], $
+    uname=txt_layer+'_vis', uvalue=layer_index)  
+  widget_control, layer_vis, set_combobox_select = vis_droplist.LENGTH-1
+  
+  layer_norm = widget_combobox(layer_row, event_pro='mixer_widget_change_norm', xsize = 50, value=norm_droplist[*], $
+    uname=txt_layer+'_norm', uvalue=layer_index)
+  
+  layer_min = widget_text(layer_row, event_pro='mixer_widget_change_min', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
+    uname=txt_layer+'_min', uvalue=layer_index)
+  layer_max = widget_text(layer_row, event_pro='mixer_widget_change_max', scroll=0, value='', xsize = 5, ysize = 1, /editable, $
+    uname=txt_layer+'_max', uvalue=layer_index)
+  layer_blend_mode = widget_combobox(layer_row, event_pro='mixer_widget_change_blend_mode', xsize = xsize_short_label, value=blend_droplist[*], $
+    uname=txt_layer+'_blend_mode', uvalue=layer_index)
+  ;layer_opacity_text = widget_text(layer_row, event_pro='mixer_change_opacity_txt', value='0', scroll=0, xsize = 5, ysize = 1, /editable)
+  layer_opacity_slider = widget_slider(layer_row, event_pro='mixer_widget_change_opacity', value=100, xoffset=50, xsize = xsize_slider, ysize = 20, min=0, max=100, $
+    uname=txt_layer+'_opacity', uvalue=layer_index) ;/SUPPRESS_VALUE)
+    
+  layer = create_struct(layer, 'vis', layer_vis)
+  layer = create_struct(layer, 'normalization', layer_norm)
+  layer = create_struct(layer, 'min', layer_min)
+  layer = create_struct(layer, 'max', layer_max)
+  layer = create_struct(layer, 'blend_mode', layer_blend_mode)
+  layer = create_struct(layer, 'opacity', layer_opacity_slider)
+    
+  return, layer  
+end
+
+function new_struct_layer
+  return, create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
+end
+
+
 ;=====================================================================================
 ;=====================================================================================
 ;=== Main program ====================================================================
@@ -826,6 +1668,7 @@ end
 ;       Kristof Ostir
 ;       Peter Pehani
 ;       Klemen Cotar (ver 1.1+)
+;       Maja Somrak 
 ;
 ; DEPENDENCIES:
 ;       modified version of ProgressBar__define.pro (by David W. Fanning; http://www.dfanning.com)
@@ -841,23 +1684,23 @@ end
 ;                         keyword that enables settings to be stored between consecutive sessions. Overwrite keyword added 
 ;                         to all function/procesures that produce some kind of raster output.
 ;            September 2016: Added local dominance visualization procedure.
+;       1.4  
 ;-
 
 pro topo_advanced_vis, re_run=re_run
-
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '1.3'
-  rvt_issue_year = '2016'
+  rvt_version = '2.0'
+  rvt_issue_year = '2019'
   
   ; Establish error handler
   catch, theError
   if theError ne 0 then begin
     catch, /cancel
     help, /last_message, output=errText
-    errMsg = dialog_message(errText, /error, title='Error processing request')
-    return
+    errMsg = dialog_message(errText, /error, title='Error processing request. Restarting program')
+    if (*p_wdgt_state).skip_gui eq 0 then topo_advanced_vis
   endif
   
   ; Start the main program
@@ -874,6 +1717,7 @@ pro topo_advanced_vis, re_run=re_run
   temp_sav = programrootdir()+'settings\temp_settings.sav'
   if keyword_set(re_run) and file_test(temp_sav) then begin
     restore, temp_sav
+    
   endif else begin
     set_file = programrootdir()+'settings\default_settings.txt'
     if file_test(set_file) then input_settings = get_settings(set_file) $
@@ -952,7 +1796,7 @@ pro topo_advanced_vis, re_run=re_run
     if test_tag('max_radius', settings_tags) then max_radius = input_settings.max_radius $
     else max_radius = 0
     
-    
+       
     process_file = programrootdir()+'settings\process_files.txt'
     if file_test(process_file) then begin
       n_lines = file_lines(process_file)
@@ -962,8 +1806,8 @@ pro topo_advanced_vis, re_run=re_run
         readf, txt_proc, files_to_process
         free_lun, txt_proc
         skip_gui = 1
-      endif
-    endif    
+      endif 
+    endif 
   endelse  
   
   ;=========================================================================================================
@@ -980,7 +1824,8 @@ pro topo_advanced_vis, re_run=re_run
   ;Multiple hillshading
   sc_mhls_n_dir = [4,16,8,32,64,360]   ;number of directions; drop-down menu values: 16,8,32,64; editable!
   sc_mhls_n_dir = [0., 75.]            ;solar vertical elevation angle in degres
-  sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  ;sc_mhls_a_rgb = [315., 15., 75.]     ;azimuth for RGB components
+  sc_mhls_a_rgb = [315., 22.5, 90.]     ;azimuth for RGB components
   sc_mhls_n_psc = [3, 5]               ;number of principal componnents to save
   
   ;Simple local relief model
@@ -1006,90 +1851,14 @@ pro topo_advanced_vis, re_run=re_run
 
   ;If input DEM is larger as the size below, do tiling
   sc_tile_size = 5L*10L^6
-
   
-  ;=========================================================================================================
-  ;=== Select input DEM and verify geotiff information =====================================================
-  ;=========================================================================================================
+  ;  =========================================================================================================
+  ;  === Select input DEM and verify geotiff information =====================================================
+  ;  =========================================================================================================
+  ;  WAS ERASED ...
+  ;  restored in file ''
+  
 
-;  in_filter = ['*.tif;*.tiff']
-;  ;in_fname = 'e:\2projekti\IDL_SkyView\DEM\barje.tif'
-;;  in_fname = 'e:\2projekti\IDL_SkyView\DEM\dem_k_conv.tif'
-;  ;in_fname = 'D:\_arhiv\ZRC\2007\Sky\Kobarid\dmr4.tif'
-;  ;in_fname = 'e:\2projekti\IDL_AlesPolinom\input_ikonos_orto3.tif'
-;  in_path = 'd:\'
-;  dialog_title = 'Relief Visualization Toolbox, ver. ' + rvt_version + ' - Select input DEM (*.TIF): '
-;  in_fname = dialog_pickfile(title=dialog_title, filter=in_filter, path=in_path)
-;  print, '# Metadata of the input file'
-;  print, '     Input filename:    ', in_fname
-;  if in_fname eq '' then return
-;  
-;  ; Open the file and read data
-;  in_orientation = 1
-;  in_rotation = 7
-;  heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
-;
-;  ; Define number of bands
-;  in_file_dims = size(heights, /dimensions)
-;  in_nb = n_elements(in_file_dims) > 2 ? in_file_dims[2] : 1   
-;  if (in_nb ne 1) then begin
-;    print
-;    print, 'Processing stopped! Only one band is allowed for DEM files.'
-;    errMsg = dialog_message('Processing stopped! Only one band is allowed for DEM files.', /error, title='Error')
-;    return
-;  endif
-;
-;  ; Extract raster parameters
-;  heights_min = min(heights)
-;  heights_max = max(heights)
-;
-;  in_file_dims = size(heights, /dimensions)  ; due to rotation calculate again
-;  nrows = in_file_dims[1]
-;  ncols = in_file_dims[0]
-;
-;  in_geotiff_elements = n_elements(in_geotiff) 
-;  if (in_geotiff_elements gt 0) then begin  ; in_geotiff defined
-;    in_geotiff_tags = strlowcase(tag_names(in_geotiff))
-;    tag_exists = where(in_geotiff_tags eq strlowcase('ModelPixelScaleTag'))
-;    if (tag_exists[0] eq -1) then begin  ; tif without tag ModelPixelScaleTag
-;      in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
-;      in_crs = 1
-;    endif else begin 
-;      in_pixel_size = in_geotiff.ModelPixelScaleTag
-;    endelse
-;    
-;    tag_exists = where(in_geotiff_tags eq strlowcase('GTModelTypeGeoKey'))
-;    if (tag_exists[0] gt -1) then begin ; geotiff with defined tag GTModelTypeGeoKey
-;      ; possible tag values: 1=projected, 2=geographic lat/lon, 3=geocentric (X,Y,Z)
-;      in_crs = in_geotiff.GTModelTypeGeoKey
-;      in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
-;    endif else begin  ; tif file (with tfw), or geotiff without tag GTModelTypeGeoKey
-;      ; distinction based on pixel size
-;      in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
-;    endelse
-;  
-;  endif else begin  ; in_geotiff undefined
-;    in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
-;    in_crs = 1
-;  endelse
-;  ve_degrees = (in_crs eq 2) ? 1 : 0  ; units Degrees or Meters 
-;  
-;  ; Output to IDL console
-;  print, '     Number of columns: ', strtrim(ncols,2)
-;  print, '     Number of rows:    ', strtrim(nrows,2)
-;  print, '     Number of bands:   ', strtrim(in_nb,2)
-;  if (in_crs eq 2) then begin  ; geographic coordinate system
-;    print, format='("     Resolution (x, y): ", f0.6, ", ", f0.6)', $ 
-;    in_pixel_size[0], in_pixel_size[1]
-;    wtext_resolution = string(format='("     Resolution (x, y):   ", f0.6, ", ", f0.6)', $
-;    in_pixel_size[0], in_pixel_size[1])
-;  endif else begin   ; projected or geocentric coordinate system
-;    print, format='("     Resolution (x, y): ", f0.1, ", ", f0.1)', $
-;    in_pixel_size[0], in_pixel_size[1]
-;    wtext_resolution = string(format='("     Resolution (x, y):   ", f0.1, ", ", f0.1)', $
-;    in_pixel_size[0], in_pixel_size[1])
-;  endelse
-;  resolution = in_pixel_size[1]
 
 
   ;=========================================================================================================
@@ -1102,21 +1871,15 @@ pro topo_advanced_vis, re_run=re_run
   base_main = widget_base(title=base_title, xoffset=window_x_offset, yoffset=window_y_offset, xsize=710, uname='base_main_window',$
                 xpad=15, ypad=15, space=0, /column, tab_mode=1, /TLB_Size_Events)             
   
+  COMMON topo_advanced_tab_widgets, ysize_row, ysize_bigrow, xsize_frame_method_name, xsize_params, xsize_one_param, xsize_short_label, xsize_slider, xsize_wide_row
   ysize_row = 32
+  ysize_bigrow = 40
   xsize_frame_method_name = 195
   xsize_params = 440
   xsize_one_param = 200
-  
-  ; input file metadata
-;  wtext = ['Input file:   ' + in_fname, $
-;    'Size (cols, rows):   ' + strtrim(ncols,2) + ' x ' + strtrim(nrows,2), $
-;    strmid(wtext_resolution,5,strlen(wtext_resolution)-5), $
-;    string(format='("Data range (min, max):   ", f0.2, ", ", f0.2)', $
-;    heights_min, heights_max)]
-
-
-  ;about_row = widget_base(base_main, /row, /align_right)
-  ;bt_about = widget_button(about_row, event_pro='user_widget_about', value='About', xoffset=330, yoffset=20, scr_xsize=65)
+  xsize_short_label = 100
+  xsize_slider = 140
+  xsize_wide_row = 640
   
   main_row_0 = widget_base(base_main, /row)
   add_files_text = widget_label(main_row_0, value='List of currently selected input files: ')
@@ -1129,22 +1892,22 @@ pro topo_advanced_vis, re_run=re_run
   add_files_btn = widget_button(main_row_1, event_pro='panel_remove_all', value='Remove all files', xoffset=5, yoffset=20, scr_xsize=100)
   
   ;overwrite checkbox
-  add_files_text = widget_label(main_row_1, value='                                                                                     ')
+  add_files_text = widget_label(main_row_1, value='                                                                         ')
   overwrite_namebox = widget_base(main_row_1, /nonexclusive)
   overwrite_checkbox = widget_button(overwrite_namebox, event_pro='user_widget_do_nothing', $
-    value='Overwrite existing files', uname='u_overwrite_checkbox')
-  widget_control, overwrite_checkbox, set_button=overwrite
-  
+    value='Overwrite existing output files', uname='u_overwrite_checkbox')
+  widget_control, overwrite_checkbox, set_button=overwrite  
   
   empty_text_row = widget_label(base_main, value='  ', scr_ysize=10)
-  base_tab = WIDGET_TAB(base_main, event_pro='disable_last_row', uname = 'base_tab_window')
+  base_tab = WIDGET_TAB(base_main, event_pro='user_widget_do_nothing', uname = 'base_tab_window')
+  ;base_tab = WIDGET_TAB(base_main, event_pro='disable_last_row', uname = 'base_tab_window')
   base_all = WIDGET_BASE(base_tab, TITLE='   Visualizations   ', /COLUMN, xsize=655, /scroll, uname = 'base_tab_window_all')
   
   ; exaggetarion factor
   ve_floor = sc_ve_ex[0]
   ve_ceil = sc_ve_ex[1]
 
-  base_row_1 = widget_base(base_all, /row)
+  base_row_1 = widget_base(base_all, /row, yoffset=10)
   ve_text = widget_label(base_row_1, value='Vertical exaggetarion factor (used in all methods) (min=-1000., max=1000.):  ')
   ve_entry = widget_text(base_row_1, uvalue='u_ve', scroll=0, value=string(exaggeration_factor, format='(F0.2)'), xsize=5, /editable)
  
@@ -1283,7 +2046,7 @@ pro topo_advanced_vis, re_run=re_run
   svf_rn_checkbox = widget_button(svf_rn_nonexclusive, event_pro='user_widget_toggle_method_checkbox', value='Remove noise')
   widget_control, svf_rn_checkbox, set_button=remove_noise
   svf_rn_row = widget_base(svf_rn_base, /row, sensitive=remove_noise)
-  svf_rn_text = widget_label(svf_rn_row, value='level of noise removal:  ')
+  svf_rn_text = widget_label(svf_rn_row, value='Level of noise removal:  ')
   svf_rn_entry = widget_combobox(svf_rn_row, event_pro='user_widget_do_nothing', value=svf_rn_droplist)
 
   ; ... and Anisotropic Sky-View Factor --------------------
@@ -1346,12 +2109,18 @@ pro topo_advanced_vis, re_run=re_run
     
   skyilm_row_1 = widget_base(skyilm_params, /row)  
   skyilm_droplist = strarr(2)
+  ;TODO: remove temp solution
+  if sky_model eq !NULL or sky_model eq '' then sky_model = 'overcast'
+  ;END-TODO
   skyilm_droplist[0] = sky_model
   skyilm_droplist[1] = 'uniform'
   skyilm_droplist_text = widget_label(skyilm_row_1, value='Sky model:     ')
   skyilm_droplist_entry = widget_combobox(skyilm_row_1, event_pro='user_widget_do_nothing', value=skyilm_droplist)
   
   skyilm_droplist2 = strarr(2)
+  ;TODO: remove temp solution
+  if number_points eq !NULL or number_points eq '' then number_points = 250
+  ;END-TODO
   skyilm_droplist2[0] = strtrim(number_points,2)
   skyilm_droplist2[1] = '500'
   skyilm_droplist2_text = widget_label(skyilm_row_1, value='            Number of sampling points:  ')
@@ -1359,6 +2128,9 @@ pro topo_advanced_vis, re_run=re_run
   
   skyilm_row_4 = widget_base(skyilm_params, /row)
   skyilm_droplist3 = strarr(4)
+  ;TODO: remove temp solution
+  if max_shadow_dist eq !NULL or max_shadow_dist eq '' then max_shadow_dist = 100
+  ;END-TODO
   skyilm_droplist3[0] = strtrim(max_shadow_dist,2)
   skyilm_droplist3[1] = '50'
   skyilm_droplist3[2] = '500'
@@ -1390,18 +2162,22 @@ pro topo_advanced_vis, re_run=re_run
     
   locald_row_1 = widget_base(locald_params, /row)
   locald_text_1 = widget_label(locald_row_1, value='Minimum radius:  ')
-  locald_min_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(min_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
+  ;TODO: remove temp solution
+  if min_radius eq !NULL or strtrim(min_radius,2) eq '' then min_radius = 2 else min_radius = strtrim(min_radius,2)
+  locald_min_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=min_radius, xsize=5, /editable, uname='locald_min_entry')
   locald_text_2 = widget_label(locald_row_1, value='                   ')
   locald_text_3 = widget_label(locald_row_1, value='Maximum radius:  ')
-  locald_max_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=strtrim(max_radius,2), xsize=5, /editable, uname='skyilm_el_entry')
+  ;TODO: remove temp solution
+  if max_radius eq !NULL or strtrim(max_radius,2) eq '' then max_radius = 0 else max_radius = strtrim(max_radius,2)
+  locald_max_entry = widget_text(locald_row_1, event_pro='user_widget_do_nothing', scroll=0, value=max_radius, xsize=5, /editable, uname='locald_max_entry')
 
 
   ; Buttons --------------------
-  bt_row = widget_base(base_main, /align_left, uname='buttons_last_raw', scr_ysize = 45, scr_xsize=600)
+  bt_row = widget_base(base_all, /align_left, uname='buttons_last_raw', scr_ysize = 45, scr_xsize=600)
   bt_all = widget_button(bt_row, event_pro='user_widget_all', value='Select all', xoffset=5, yoffset=20, scr_xsize=65)
-  bt_none = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=65)
-  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=330, yoffset=20, scr_xsize=65)
-  bt_cancel = widget_button(bt_row, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
+  bt_none = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=70)
+  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=330, yoffset=20, scr_xsize=90, /align_center)
+  ;bt_cancel = widget_button(bt_row, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
 ;  tole je varianta z le dvema gumboma Start in Cancel
 ;  bt_row = widget_base(base_all, /align_center)
 ;  bt_ok = widget_button(bt_row, event_pro='user_widget_ok', value='Start', xoffset=0, yoffset=20, scr_xsize=60)
@@ -1472,19 +2248,126 @@ pro topo_advanced_vis, re_run=re_run
     value='Enable', uname = 'erdas_checkbox' , sensitive=0)
   widget_control, erdas_checkbox, set_button=0
   
-  bt_row2 = widget_base(base_convert, /align_left)
-  ;bt_all2 = widget_button(bt_row, event_pro='user_widget_all', value='Select all', xoffset=5, yoffset=20, scr_xsize=65)
-  ;bt_none2 = widget_button(bt_row, event_pro='user_widget_none', value='Select none', xoffset=85, yoffset=20, scr_xsize=65)
-  bt_ok2 = widget_button(bt_row2, event_pro='user_widget_convert', value='Convert', xoffset=330, yoffset=20, scr_xsize=65)
-  bt_cancel2 = widget_button(bt_row2, event_pro='user_widget_cancel', value='Cancel', xoffset=430, yoffset=20, scr_xsize=65)
+  bt_row2 = widget_base(base_convert, yoffset=20, /align_center)
+  ;btx = widget_label(bt_row2, value='  ', scr_ysize=30)
+  bt_ok2 = widget_button(bt_row2, event_pro='user_widget_convert', value='Convert', xoffset=5, yoffset=20, scr_xsize=90, /align_center) ; value='Convert', xoffset=5, yoffset=20, 
   
   ; Mosaic tab --------------------
   base_mosaic = WIDGET_BASE(base_tab, TITLE='   Mosaic   ', /COLUMN, /scroll, uname = 'base_tab_mosaic', xsize=655)
-  mosaic_row_0 = widget_label(base_mosaic, value='  ', scr_ysize=30)
-  mosaic_row_1 = widget_base(base_mosaic, /align_left)
-  bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 20, yoffset=20, scr_xsize=120)
-  bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+  ;mosaic_row_0 = widget_label(base_mosaic, value='  ', scr_ysize=30)
+  mosaic_row_1 = widget_base(base_mosaic, /align_center)
+  bt_mosaic_ok = widget_button(mosaic_row_1, event_pro='user_widget_mosaic', value='Create mosaic', xoffset= 5, yoffset=20, scr_xsize=110)
+  ;bt_mosaic_cancel = widget_button(mosaic_row_1, event_pro='user_widget_cancel', value='Cancel', xoffset= 160, yoffset=20, scr_xsize=65)
+ 
+  ; Mixer tab --------------------
+  base_mixer = WIDGET_BASE(base_tab, TITLE='   Mixer   ', /COLUMN, /scroll, uname = 'base_tab_mixer', xsize=655) 
   
+  output_files_array = orderedhash() ; could be just hash() for this one
+  output_blend_images_paths = list()
+  mixer_layer_images = orderedhash()
+  mixer_layers_rgb = ['Hillshading from multiple directions', 'PCA of hillshading']
+  is_blend_image_rbg = boolean(0)
+ 
+  ; --- Preset blend combinations ---
+  mixer_row_0 = widget_base(base_mixer, /row)
+  mixer_row_0_empty = widget_label(base_mixer, value='  ', scr_ysize=30)
+  mixer_row_1_text_preset = widget_label(base_mixer, value='  Blend combination:   ', /align_left)
+  
+  mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_frame_method_name*3)
+  mixer_checkboxes = widget_base(mixer_row_2, /row, /exclusive, xsize=xsize_frame_method_name*3, ysize=ysize_row)
+    
+  ; Select visualizations to blend
+  mixer_row_2 = widget_base(base_mixer, /row, xsize=xsize_wide_row)
+  mixer_row_2_col0 = widget_label(mixer_row_2, value=' ', xsize = 8)
+  ;mixer_row_2_col1 = widget_label(mixer_row_2, value='Order of layering', xsize = xsize_short_label) ; -50
+  mixer_row_2_col1 = widget_label(mixer_row_2, value='Layers: ', xsize = xsize_short_label-50)
+  mixer_row_2_col2 = widget_label(mixer_row_2, value='Visualization method', xsize = xsize_short_label*2)
+  mixer_row_2_col1 = widget_label(mixer_row_2, value='Norm', xsize = 50)
+  mixer_row_2_col3 = widget_label(mixer_row_2, value='Min', xsize = 40)
+  mixer_row_2_col4 = widget_label(mixer_row_2, value='Max', xsize = 40)
+  mixer_row_2_col5 = widget_label(mixer_row_2, value='Blending mode', xsize = xsize_short_label)
+  mixer_row_2_col6 = widget_label(mixer_row_2, value='Opacity', xsize = xsize_short_label * 1.5)
+
+  vis_droplist = gen_vis_droplist()
+  blend_droplist = gen_blend_droplist()
+  norm_droplist = gen_norm_droplist()
+ 
+  hash_vis_get_index = gen_hash_strings(vis_droplist)     ;gen_vis_hash_strings()
+  hash_blend_get_index = gen_hash_strings(blend_droplist) ;gen_blend_hash_strings()
+  hash_norm_get_index = gen_hash_strings(norm_droplist)   ;gen_norm_hash_strings() 
+  
+  hash_vis_norm_default = gen_vis_norm_default()
+ 
+  file_settings_combinations = programrootdir()+'settings\default_mixer_combinations.txt'
+  vis_min_limit = set_vis_min_limit(vis_droplist, -1000)
+  vis_max_limit = set_vis_max_limit(vis_droplist, 1000)
+  
+  vis_defaults = read_default_min_max_from_file(file_settings_combinations)
+  
+  vis_min_default = vis_defaults.min_hash
+  vis_max_default = vis_defaults.max_hash
+ 
+  ; --- Mixer Tab: Layers
+  ; Dinamically generated layer rows with widgets 
+  nr_layers = 5 
+  layers_tag = ['1st:', '2nd:', '3rd:', '4th:', '5th']
+  base_mixer_layers = widget_base(base_mixer, row=8)
+  mixer_layer_filepaths = make_array(nr_layers, /string)
+  file_names = MAKE_ARRAY(nr_layers, /STRING, VALUE = '')
+  
+  widget_layer = create_struct('base', 0, 'params', 0, 'row', 0, 'text', 0, 'vis', 0, 'normalization', 0, 'min', 0, 'max', 0, 'blend_mode', 0, 'opacity', 100)
+  widget_layers = REPLICATE(widget_layer, nr_layers)
+
+  mixer_widgetIDs = user_widget_mixer_gen_widgets_2(widget_layers, i, base_mixer_layers, nr_layers, layers_tag, vis_droplist, blend_droplist, norm_droplist)
+  
+  ; Custom combination
+  custom_combination_name = 'Custom'
+  current_combination = user_widget_mixer_state_to_combination(mixer_widgetIDs, custom_combination_name) 
+ 
+  all_combinations = user_widget_mixer_read_all_combinations(file_settings_combinations)
+  
+  ; TODO: If more preset visualizations are needed, rethink the placement of radio buttons
+  nr_combinations = 6
+  
+  all_combinations = limit_combinations(all_combinations, nr_combinations)
+  nr_combinations = all_combinations.length
+  
+  combination_radios = []
+  ; nr_combinations + 1 = nr_radio_buttons
+  for i = 0,nr_combinations-1 do begin
+    combination_radios = [combination_radios, widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=all_combinations[i].title)]
+  endfor
+  combination_radios = [combination_radios, widget_button(mixer_checkboxes, event_pro='user_widget_mixer_toggle_combination_radio', value=custom_combination_name)]
+
+  ; default combination radio button set to first combination (index can go from 0 to nr_combinations; not to nr_combinations-1 becuase there's always extra 'Custom' combination)
+  
+  ; To preselect first combination available
+  widget_control, combination_radios[0], set_button=1
+  combination_index = 0
+  
+  
+  
+;  ; To preselect Custom combination
+;  widget_control, combination_radios[nr_combinations], set_button=1
+;  combination_index = nr_combinations
+
+  ; --- Mixer Tab: Buttons to Blend images
+  mixer_row_finish = widget_base(base_mixer, /align_center)
+  bt_mixer_ok = widget_button(mixer_row_finish, event_pro='user_widget_mixer_ok', value='Blend images', xoffset= 5, yoffset=20, scr_xsize=110, /align_center)
+  
+   ; UNIT TEST BUTTON  
+;  mixer_row_finish_test = widget_base(mixer_row_finish, /align_left)
+;  bt_mixer_test = widget_button(mixer_row_finish_test, event_pro='user_widget_mixer_unit_test', value='Unit test', xoffset= 160, yoffset=20, scr_xsize=120)
+;  WIDGET_CONTROL, mixer_row_finish_test, MAP=0 ; hide test button
+  
+   ; ADD LAYER BUTTON
+;  bt_mixer_add_layer = widget_button(mixer_row_finish, event_pro='user_widget_mixer_add_layer', value='Add layer', xoffset= 160, yoffset=20, scr_xsize=120)
+
+  ; --- Preset visualizations ---
+
+
+  ;---------------------------------------------------------
+
   ;modify ysize of the GUI depending on user screen resolution
   gui_geometry = widget_info(base_main, /geometry)
   ;get information about user screen resolution
@@ -1497,8 +2380,6 @@ pro topo_advanced_vis, re_run=re_run
     gui_size_event = create_struct('TOP', base_main, 'X', gui_geometry.xsize, 'Y', new_y_size)
     resize_event, gui_size_event
   endif
-  
-  
 
   ; Realize user widget ===========================
   ve = 1.0
@@ -1544,7 +2425,10 @@ pro topo_advanced_vis, re_run=re_run
 
   user_cancel = 0   ; user
   
-  selection_str = ''; Input files
+  if selection_str eq !null then selection_str = ''; Input files
+
+  skip_gui = keyword_set(skip_gui)
+  ; if keyword_set(skip_gui) eq 0 then skip_gui = 0 else skip_gui = 1
   
   
   ; Create a pointer to annonymous structure, containing state of widgets
@@ -1573,25 +2457,64 @@ pro topo_advanced_vis, re_run=re_run
                              asvf_dr_entry:asvf_dr_entry, asvf_dr:asvf_dr, $ 
                         open_checkbox:open_checkbox, open_use:open_use, $      ; Openness
                         open_neg_checkbox:open_neg_checkbox, open_neg_use:open_neg_use, $  ; Negative openness
-                        user_cancel:user_cancel, convert_dropdown:convert_dropdown, selection_str:selection_str,$
+                        user_cancel:user_cancel, convert_dropdown:convert_dropdown, $
+                        selection_str:selection_str, $
                         convert_dropdown_envi:convert_dropdown_envi,tzw_checkbox:tzw_checkbox,erdas_checkbox:erdas_checkbox,$
                         erdas_stat_checkbox:erdas_stat_checkbox,$
-                        skyilm_checkbox:skyilm_checkbox, skyilm_checkbox2:skyilm_checkbox2, skyilm_use:skyilm_use, skyilm_shadow_use:skyilm_shadow_use, skyilm_shadow_dist:skyilm_shadow_dist, $  ;Sky illumination
+                        skyilm_checkbox:skyilm_checkbox, skyilm_checkbox2:skyilm_checkbox2, $
+                            skyilm_use:skyilm_use, skyilm_shadow_use:skyilm_shadow_use, skyilm_shadow_dist:skyilm_shadow_dist, $  ;Sky illumination
                             skyilm_model:skyilm_model, skyilm_points:skyilm_points, skyilm_az:skyilm_az, skyilm_el:skyilm_el,$
-                            skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, skyilm_droplist3_entry:skyilm_droplist3_entry,$
-                            skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
-                        locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry,locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
-                        jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text}, /no_copy)  ; data stored in heap only
-;                        jpgq_text:jpgq_text
+                            skyilm_droplist_entry:skyilm_droplist_entry, skyilm_droplist2_entry:skyilm_droplist2_entry, $
+                            skyilm_droplist3_entry:skyilm_droplist3_entry, skyilm_az_entry:skyilm_az_entry, skyilm_el_entry:skyilm_el_entry, $
+                        locald_checkbox:locald_checkbox,locald_use:locald_use,locald_min_entry:locald_min_entry, locald_max_entry:locald_max_entry, $
+                            locald_min_rad:locald_min_rad, locald_max_rad:locald_max_rad,  $
+                        jp2000loss_checkbox:jp2000loss_checkbox, jp2000q_text:jp2000q_text, $
+                        output_files_array:output_files_array, $ ; of visualizations
+                        output_blend_images_paths:output_blend_images_paths, $
+                        base_mixer_layers:base_mixer_layers, $
+                        mixer_layer_filepaths:mixer_layer_filepaths, $
+                        mixer_layer_images:mixer_layer_images, $
+                        mixer_layers_rgb:mixer_layers_rgb, $
+                        in_orientation:1, $             ; tiff reading parameters
+                        mixer_row_0:mixer_row_0, mixer_row_2:mixer_row_2, $     ; Mixer states
+                        vis_droplist:vis_droplist, $
+                        blend_droplist:blend_droplist, $
+                        norm_droplist:norm_droplist, $
+                        hash_vis_norm_default:hash_vis_norm_default, $
+                        hash_vis_get_index:hash_vis_get_index, $
+                        hash_norm_get_index:hash_norm_get_index, $
+                        hash_blend_get_index:hash_blend_get_index, $
+;                        nr_layers:nr_layers, $
+                        layers_tag:layers_tag, $
+                        vis_max_limit:vis_max_limit, $
+                        vis_min_limit:vis_min_limit, $
+                        vis_max_default:vis_max_default, $
+                        vis_min_default:vis_min_default, $
+                        custom_combination_name:custom_combination_name, $ 
+                        nr_combinations:nr_combinations, $
+                        combination_radios:combination_radios, $
+                        ; user_defined_combination_name:user_defined_combination_name, $
+                        mixer_row_finish:mixer_row_finish, bt_mixer_ok:bt_mixer_ok, $ ;bt_mixer_test:bt_mixer_test, $
+                        mixer_widgetIDs:mixer_widgetIDs, $
+                        current_combination:current_combination, $
+                        current_combination_file_names:file_names, $
+                        all_combinations:all_combinations, combination_index:combination_index, $
+                        is_blend_image_rbg:is_blend_image_rbg, $
+                        temp_sav:temp_sav, rvt_version:rvt_version, rvt_issue_year:rvt_issue_year, $
+                        skip_gui:skip_gui}, $
+                        /no_copy)  ; data stored in heap only
 
   ;skip GUI creation if user specied any files in process_files text file
-  widget_control, base_main, set_uvalue=p_wdgt_state    
+  widget_control, base_main, set_uvalue=p_wdgt_state
+  mixer_default_combination_selected, 0, p_wdgt_state, base_main
+  
   if keyword_set(skip_gui) then user_widget_ok, create_struct('TOP', base_main) $
   else begin
     widget_control, base_main, /realize     ; create the widget
+    user_widget_mixer_validate_visualization_all, p_wdgt_state
     xmanager, 'resize', base_main ; wait for the events
   endelse
-;  xmanager, 'rvt_sa_v1', base_main    ; wait for the events
+  ;  xmanager, 'rvt_sa_v1', base_main    ; wait for the eventsjh
   
   ; Get the user values and free the pointer
   wdgt_state = *p_wdgt_state
@@ -1601,7 +2524,7 @@ pro topo_advanced_vis, re_run=re_run
 ;  restore, 'skyview_tmp.sav'   ;  restores from C:\Documents and Settings\UserName\
 ;  file_delete, 'skyview_tmp.sav', /allow_nonexistent
   if wdgt_state.user_cancel eq 3 then topo_advanced_vis  ;user_cancel state from converter
-  if wdgt_state.user_cancel then begin    
+  if wdgt_state.user_cancel then begin
     file_delete, temp_sav, /allow_nonexistent, /quiet
     return
   endif
@@ -1612,898 +2535,13 @@ pro topo_advanced_vis, re_run=re_run
   save_to_sav, wdgt_state, temp_sav
 
   ;=========================================================================================================
+  ;=== Setup constnants that cannot be changed by the user =================================================
   ;=== Initialize input parameters by user-selected values =================================================
+  ;=== Start processing metadata TXT file ==================================================================
+  ;=== Select input DEM and verify geotiff information =====================================================
+  ;=== Start processing  ===================================================================================
+  ;=== Write processing metadata into TXT metafile =========================================================
   ;=========================================================================================================
-  
-  ;Initialize input parameters by user-selected values
-
-  ;Overwrite
-  overwrite = float(wdgt_state.overwrite) 
-  
-  ;Vertical exaggeration
-  in_ve_ex = float(wdgt_state.ve)                   ;-1000. to 1000.
-
-  ;Hillshading
-  in_hls = byte(wdgt_state.hls_use)                 ;1-run, 0-don't run
-  in_hls_sun_a = float(wdgt_state.hls_az)           ;solar azimuth angle in degrees
-  in_hls_sun_h = float(wdgt_state.hls_el)           ;solar vertical elevation angle in degres
-  shadow_use = byte(wdgt_state.shadow_use)  
-
-  ;Multiple hillshading + PCA
-  in_mhls = byte(wdgt_state.mhls_use)               ;1-run, 0-don't run
-  in_mhls_n_dir = fix(wdgt_state.mhls_nd)           ;number of directions
-  in_mhls_sun_h = float(wdgt_state.mhls_el)         ;solar vertical elevation angle in degres
-  ;in_mhls_rgb = 1                                   ;1-make multiple hillshaing RGB, 0-don't
-  in_mhls_pca = byte(wdgt_state.mhls_pca_use)       ;1-run PCA hillshading, 0-don't run
-  in_mhls_n_psc = fix(wdgt_state.mhls_pca_nc)       ;number of principal componnents to save
-
-  ;Slope gradient
-  in_slp = byte(wdgt_state.slp_use)                 ;1-run, 0-don't run
-
-  ;Simple local relief model
-  in_slrm = byte(wdgt_state.slrm_use)               ;1-run, 0-don't run
-  in_slrm_r_max = float(wdgt_state.slrm_dist)       ;radius in pixels
-
-  ;SVF + Openness + Negative openness
-  in_svf = byte(wdgt_state.svf_use)                 ;1-run, 0-don't run
-  in_svf_n_dir = fix(wdgt_state.svf_nd)             ;number of directions
-  in_svf_r_max = float(wdgt_state.svf_sr)           ;maximal search radius
-  in_svf_noise = fix(wdgt_state.svf_rn)             ;level of noise to remove (0- no removal, 1-low, 2-medium, 3-high)
-  in_asvf = byte(wdgt_state.asvf_use)               ;1-run anisotropic SVF, 0-don't run
-  in_asvf_level = fix(wdgt_state.asvf_lv)           ;0-low level (2, 0.5), 1-high level (5, 0.2)
-  in_asvf_dir = float(wdgt_state.asvf_dr)           ;main direction of anisotropy in degrees
-  in_open = byte(wdgt_state.open_use)               ;1-run openess, 0-don't run
-  in_open_negative = fix(wdgt_state.open_neg_use)   ;1-compute negative openess, 0-positive
-  
-  ;Sky illumination
-  in_skyilm = byte(wdgt_state.skyilm_use) 
-  in_skyilm_shadow = byte(wdgt_state.skyilm_shadow_use) 
-  in_skyilm_model = wdgt_state.skyilm_model
-  in_skyilm_points = wdgt_state.skyilm_points
-  in_skyilm_shadow_dist = wdgt_state.skyilm_shadow_dist
-  in_skyilm_az = float(wdgt_state.skyilm_az)
-  in_skyilm_el = float(wdgt_state.skyilm_el) 
-  
-  ;Local domination
-  in_locald = byte(wdgt_state.locald_use) 
-  in_locald_min_rad = ulong(wdgt_state.locald_min_rad)
-  in_locald_max_rad = ulong(wdgt_state.locald_max_rad)
-
-  ;Get file names stored inside selection panel on top of the GUI
-  ;id_selection_panel = widget_info(base_main, find_by_uname='u_selection_panel')
-  in_file_string = wdgt_state.selection_str
-  if (in_file_string eq '') then begin 
-    print
-    print, '# WARNING: No input files selected. Processing stopped!'
-    file_delete, temp_sav, /allow_nonexistent, /quiet
-    return
-  endif
-  in_file_list = strsplit(in_file_string, '#', /extract)
-  n_files = n_elements(in_file_list)
-  
-  ; Initate progress-bar display (withot cancel button), ...
-  statText = 'Generating selected visualizations from selected input files.
-  progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
-    nocancel=1)
-  progress_bar -> Start
-  ; ... define values to assist the display
-  progress_total = in_hls + in_mhls + in_mhls_pca + in_slp + in_slrm + in_svf + in_open + in_asvf + in_open_negative + in_skyilm + in_locald ; number of selected procedures
-  progress_step = 100. / progress_total /n_files
-  progress_step_image = 100. /n_files
-  progress_curr = progress_step / 2
-  ; ... and display progress
-  ;  ; since prograss-bar has no cancel button, this lines are omitted
-  ;  IF progress_bar->CheckCancel() THEN BEGIN
-  ;     ok = Dialog_Message('Processing cancelled.')
-  ;     progress_bar -> Destroy ; Destroy the progress bar.
-  ;     return
-  ;  ENDIF
-  progress_bar -> Update, progress_curr
-  
-  
-  for nF = 0, n_files-1 do begin     
-    
-    ;Input file
-    in_fname = in_file_list[nF]
-    in_file = in_fname
-    
-    ;========================================================================================================
-    ;Start processing metadata TXT file
-    ;========================================================================================================
-    ;Define metadata filename
-    date = Systime(/Julian)
-    Caldat, date, Month, Day, Year, Hour, Minute, Second
-    IF month LT 10 THEN month = '0' + Strtrim(month,1) ELSE month = Strtrim(month,1)
-    IF day LT 10 THEN day = '0' + Strtrim(day,1) ELSE day = Strtrim(day,1)
-    IF Hour LT 10 THEN Hour = '0' + Strtrim(Hour,1) ELSE Hour = Strtrim(Hour,1)
-    IF Minute LT 10 THEN Minute = '0' + Strtrim(Minute,1) ELSE Minute = Strtrim(Minute,1)
-    IF Second LT 10 THEN Second = '0' + Strtrim(Round(Second),1) ELSE Second = Strtrim(Round(Second),1)
-    date_time = Strtrim(Year,1) + '-' + month + '-' + day + '_' + hour + '-' + minute + '-' + second
-    
-    last_dot = strpos(in_file, '.' , /reverse_search)
-    if last_dot eq -1 or (last_dot gt 0 and strlen(in_file)-last_dot ge 6) then out_file = in_file $  ;input file has no extension or extensions is very long (>=6) e.q. there is no valid extension or dost is inside filename
-    else out_file = strmid(in_file, 0, last_dot)
-    out_file += '_process_log_' + date_time + '.txt'
-    ;out_file = strmid(in_file,0,strlen(in_file)-4) + '_process_log_' + date_time + '.txt'
-    ;Open metadata ASCII for writing    
-
-    ; Write header of the metadata file
-    Get_lun, unit
-    Openw, unit, out_file, /append
-    Printf, unit
-    Printf, unit, '==============================================================================================='
-    Printf, unit, 'Relief Visualization Toolbox (version ' + rvt_version + '); (c) ZRC SAZU, ' + rvt_issue_year
-    Printf, unit, '==============================================================================================='
-    Free_lun, unit
-
-    
-    ;=========================================================================================================
-    ;Check if input file is TIFF, else convert it
-    if strpos(strlowcase(in_file), '.tif') eq -1 and strpos(strlowcase(in_file), '.tiff') eq -1 then begin
-      topo_advanced_vis_converter, in_file, 'GeoTIFF', out_file, out_img_file=out_img_file
-      in_fname = out_img_file
-      in_file = out_img_file
-    endif
-    
-    
-    ;=========================================================================================================
-    ;=== Select input DEM and verify geotiff information =====================================================
-    ;=========================================================================================================
-  
-    Get_lun, unit
-    Openw, unit, out_file, /append
-    Printf, unit
-    Printf, unit
-    Printf, unit
-    Printf, unit, 'Processing info about visualizations'
-    Printf, unit, '==============================================================================================='
-    Free_lun, unit
-  
-    ; Open the file and read data
-    in_orientation = 1
-    in_rotation = 7
-    
-    if file_test(in_fname) eq 0 then begin
-      errMsg = 'ERROR: Processing stopped! Selected TIF image was not found. '+ in_fname
-      Get_lun, unit
-      Openw, unit, out_file, /append
-      Printf, unit
-      Printf, unit, errMsg
-      Printf, unit
-      Free_lun, unit
-      print, errMsg
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step_image
-      continue
-    endif $
-    else begin
-      heights = read_tiff(in_fname, orientation=in_orientation, geotiff=in_geotiff)
-      if size(in_geotiff, /type) ne 8 then begin
-        ;geotiff is not a structure type, try to read world file
-        world_temp = read_worldfile(in_fname, pixels_size_temp, ul_x_temp, ul_y_temp, /to_geotiff)
-        if world_temp gt 1 then begin
-          in_geotiff = {MODELPIXELSCALETAG: [pixels_size_temp, pixels_size_temp, 0d], $
-                        MODELTIEPOINTTAG: [0, 0, 0, ul_x_temp, ul_y_temp, 0]}
-        endif        
-      endif
-    endelse
-    
-    ; Define number of bands
-    in_file_dims = size(heights, /dimensions)
-    in_nb = n_elements(in_file_dims) > 2 ? in_file_dims[2] : 1
-    if (in_nb ne 1) then begin
-      errMsg = 'ERROR: Processing stopped! Only one band is allowed for DEM files.'
-      Get_lun, unit
-      Openw, unit, out_file, /append
-      Printf, unit
-      Printf, unit, errMsg
-      Printf, unit
-      Free_lun, unit
-      print, errMsg      
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step_image
-      continue
-    endif
-  
-    ; Extract raster parameters
-    heights_min = min(heights)
-    heights_max = max(heights)
-  
-    in_file_dims = size(heights, /dimensions)  ; due to rotation calculate again
-    nrows = in_file_dims[1]
-    ncols = in_file_dims[0]
-  
-    in_geotiff_elements = n_elements(in_geotiff)
-    if (in_geotiff_elements gt 0) then begin  ; in_geotiff defined
-      in_geotiff_tags = strlowcase(tag_names(in_geotiff))
-      tag_exists = where(in_geotiff_tags eq strlowcase('ModelPixelScaleTag'))
-      if (tag_exists[0] eq -1) then begin  ; tif without tag ModelPixelScaleTag
-        in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
-        in_crs = 1
-      endif else begin
-        in_pixel_size = in_geotiff.ModelPixelScaleTag
-;        if in_pixel_size[0] eq 0 and in_pixel_size [1] eq 0 then begin  ;geotiff with pixelsize eq to 0
-;          in_pixel_size[0] = 0.02002
-;          in_pixel_size[1] = 0.02002
-;        endif
-      endelse
-  
-      tag_exists = where(in_geotiff_tags eq strlowcase('GTModelTypeGeoKey'))
-      if (tag_exists[0] gt -1) then begin ; geotiff with defined tag GTModelTypeGeoKey
-        ; possible tag values: 1=projected, 2=geographic lat/lon, 3=geocentric (X,Y,Z)
-        in_crs = in_geotiff.GTModelTypeGeoKey
-        in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
-      endif else begin  ; tif file (with tfw), or geotiff without tag GTModelTypeGeoKey
-        ; distinction based on pixel size
-        in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
-      endelse
-  
-    endif else begin  ; in_geotiff undefined
-      in_pixel_size = dblarr(2) & in_pixel_size[0] = 1d & in_pixel_size[1] = 1d
-      in_crs = 1
-    endelse
-    ve_degrees = (in_crs eq 2) ? 1 : 0  ; units Degrees or Meters
-  
-    ; Output to IDL console
-    print, '     Number of columns: ', strtrim(ncols,2)
-    print, '     Number of rows:    ', strtrim(nrows,2)
-    print, '     Number of bands:   ', strtrim(in_nb,2)
-    if (in_crs eq 2) then begin  ; geographic coordinate system
-      print, format='("     Resolution (x, y): ", f0.6, ", ", f0.6)', $
-      in_pixel_size[0], in_pixel_size[1]
-      wtext_resolution = string(format='("     Resolution (x, y):   ", f0.6, ", ", f0.6)', $
-      in_pixel_size[0], in_pixel_size[1])
-    endif else begin   ; projected or geocentric coordinate system
-      print, format='("     Resolution (x, y): ", f0.1, ", ", f0.1)', $
-      in_pixel_size[0], in_pixel_size[1]
-      wtext_resolution = string(format='("     Resolution (x, y):   ", f0.1, ", ", f0.1)', $
-      in_pixel_size[0], in_pixel_size[1])
-    endelse
-    resolution = in_pixel_size[1]
-  
-    Get_lun, unit
-    Openw, unit, out_file, /append
-    ;Start writing metadata into the file
-    ;DEM
-    Printf, unit
-    Printf, unit, '# Metadata of the input file'
-    Printf, unit, '     Input filename:     ' + in_fname
-    Printf, unit, '     Number of columns:  ', Strtrim(ncols,2)
-    Printf, unit, '     Number of rows:     ', Strtrim(nrows,2)
-    Printf, unit, '     Number of bands:    ', Strtrim(in_nb,2)
-    IF (in_crs EQ 2) THEN BEGIN  ; geographic coordinate system
-      Printf, unit, format='("     Resolution (x, y):  ", f0.6, ", ", f0.6)', $
-        in_pixel_size[0], in_pixel_size[1]
-    ENDIF ELSE BEGIN   ; projected or geocentric coordinate system
-      Printf, unit, format='("     Resolution (x, y):  ", f0.1, ", ", f0.1)', $
-        in_pixel_size[0], in_pixel_size[1]
-    ENDELSE
-    
-  
-    ;=== Change parameter values that are not within allowed intervals of values =============================
-  
-    print
-    print, '# Warnings'
-    Printf, unit
-    Printf, unit, '# Warnings'
-  
-    ; Checks for overwrite setting
-    if keyword_set(overwrite) eq 0 then begin
-      print, '     ! Files with the same name as RVT outputs WILL NOT BE overwritten if they already exist!'
-      Printf, unit, '     ! Files with the same name as RVT outputs WILL NOT BE overwritten if they already exist!'
-    endif else begin
-      print, '     ! Files with the same name as RVT outputs WILL BE overwritten if they already exist!'
-      Printf, unit, '     ! Files with the same name as RVT outputs WILL BE overwritten if they already exist!'
-    endelse
-    ; Checks for Vertical exagerattion 
-    if in_ve_ex eq 0. then begin
-      in_ve_ex = 1.
-      print, '     ! Vertical exaggeration was changed to 1.0 (value 0.0 is not allowed)!'
-      Printf, unit, '     ! Vertical exaggeration was changed to 1.0 (value 0.0 is not allowed)!'
-    endif
-    if in_ve_ex lt ve_floor then begin
-      in_ve_ex = ve_floor
-      print, '     ! Vertical exaggeration was changed to minimal allowed value ' + string(ve_floor, format="(f0.1)") +  '!'
-      Printf, unit, '     ! Vertical exaggeration was changed to minimal allowed value ' + string(ve_floor, format="(f0.1)") +  '!'
-    endif
-    if in_ve_ex gt ve_ceil then begin
-      in_ve_ex = ve_ceil
-      print, '     ! Vertical exaggeration was changed to maximal allowed value ' + string(ve_ceil, format="(f0.1)") +  '!'
-      Printf, unit, '     ! Vertical exaggeration was changed to maximal allowed value ' + string(ve_ceil, format="(f0.1)") +  '!'
-    endif
-    if ve_degrees eq 1 then begin
-      print, '     ! The input DEM is given in geographic cooridnates. To account for the difference between angular and metric unit '
-      print, '       the approximate metric pixel resolution is considered in further computation!'
-      Printf, unit, '     ! The input DEM is given in geographic cooridnates. To account for the difference between angular and metric unit '
-      Printf, unit, '       the approximate metric pixel resolution is considered in further computation!'
-    endif
-   
-    ; Checks for Analytical hillshading 
-    if in_hls_sun_a lt 0. or in_hls_sun_a gt 360. then begin
-      in_hls_sun_a = 360. < in_hls_sun_a > 0.
-      print, '     ! Analytical hillshading: Sun azimuth was trimmed to fit into the allowed interval 0.0-360.0 degrees!'
-      Printf, unit, '     ! Analytical hillshading: Sun azimuth was trimmed to fit into the allowed interval 0.0-360.0 degrees!'
-    endif
-    if in_hls_sun_h lt 0. or in_hls_sun_h gt 360. then begin
-      in_hls_sun_h = 90. < in_hls_sun_h > 0.
-      print, '     ! Analytical hillshading: Sun elevation angle was trimmed to fit into the allowed interval 0.0-90.0 degrees!'
-      Printf, unit, '     ! Analytical hillshading: Sun elevation angle was trimmed to fit into the allowed interval 0.0-90.0 degrees!'
-    endif
-  
-    ; Checks for Hillshading from multiple directions 
-    if in_mhls_n_dir lt 4 or in_mhls_n_dir gt 360 then begin
-      in_mhls_n_dir = 360 < in_mhls_n_dir > 4
-      print, '     ! Hillshading from multiple directions: Number of directions was trimmed to the interval 4-360!'
-      Printf, unit, '     ! Hillshading from multiple directions: Number of directions was trimmed to the interval 4-360!'
-    endif
-    if in_mhls_sun_h lt 0. or in_mhls_sun_h gt 75. then begin
-      in_mhls_sun_h = 75. < in_mhls_sun_h > 0.
-      print, '     ! Hillshading from multiple directions: Sun elevation angle was trimmed to fit into the allowed interval 0.0-75.0 degrees!'
-      Printf, unit, '     ! Hillshading from multiple directions: Sun elevation angle was trimmed to fit into the allowed interval 0.0-75.0 degrees!'
-    endif
-    
-    ; Checks for PCA: number of principal components to be saved 
-    if in_mhls_pca then begin
-      if in_mhls_n_psc ge in_mhls_n_dir then begin
-        in_mhls_n_psc = in_mhls_n_dir - 1
-        print, '     ! PCA: Number of principal components was changed into ' + strtrim(in_mhls_n_psc,2) + $
-             ' (has to be smaller than number of direction of Hillshading from multiple directions method)!'
-        Printf, unit, '     ! PCA: Number of principal components was changed into ' + strtrim(in_mhls_n_psc,2) + $
-             ' (has to be smaller than number of direction of Hillshading from multiple directions method)!'
-      endif 
-      if in_mhls_n_psc lt 3 then begin
-        in_mhls_n_psc = 3
-        print, '     ! PCA: Number of principal components was changed into ' + strtrim(in_mhls_n_psc,2) + $
-             ' (i.e. minimal number of direction of Hillshading from multiple directions method)!'
-        Printf, unit, '     ! PCA: Number of principal components was changed into ' + strtrim(in_mhls_n_psc,2) + $
-             ' (i.e. minimal number of direction of Hillshading from multiple directions method)!'
-      endif    
-    endif
-  
-    ; Checks for Simple local relief model 
-    if in_slrm_r_max lt 10. or in_slrm_r_max gt 50. then begin
-      in_slrm_r_max = 50. < in_slrm_r_max > 10.
-      print, '     ! Simple local relief model: Radius for trend assessment was trimmed to the allowed interval 10-50 pixels!'
-      Printf, unit, '     ! Simple local relief model: Radius for trend assessment was trimmed to the allowed interval 10-50 pixels!'
-    endif
-  
-    ; Checks for SVF + Openness + Negative openness
-    if in_svf_n_dir lt 4 or in_svf_n_dir gt 360 then begin
-      in_svf_n_dir = 360 < in_svf_n_dir > 4
-      print, '     ! Sky-View Factor: Number of search directions was trimmed to the allowed interval 4-360!'
-      Printf, unit, '     ! Sky-View Factor: Number of search directions was trimmed to the allowed interval 4-360!'
-    endif
-    if in_svf_r_max lt 5 or in_svf_r_max gt 100 then begin
-      in_svf_r_max = 100 < in_svf_r_max > 5
-      print, '     ! Sky-View Factor: Search radius was trimmed to the allowed interval 5-100 pixels!'
-      Printf, unit, '     ! Sky-View Factor: Search radius was trimmed to the allowed interval 5-100 pixels!'
-    endif
-    if in_asvf_dir lt 0 or in_asvf_dir gt 360 then begin
-      in_asvf_dir = 360 < in_asvf_dir > 0
-      print, '     ! Anisotropic Sky-View Factor: Main direction of anisotropy was trimmed to the allowed interval 0.0-360.0 degrees!'
-      Printf, unit, '     ! Anisotropic Sky-View Factor: Main direction of anisotropy was trimmed to the allowed interval 0.0-360.0 degrees!'
-    endif
-    
-    ; Close metadata file
-    Close, unit
-      
-    ;=== Print selected parameter values =============================
-  
-    print
-    print, '# Selected visualization parameter'
-    print, '     Vertical exaggeration factor:  ', in_ve_ex
-    ;print, format='("No data value:  ", f0.2)', nodata_value
-    print
-    print, '# The following visualizations will be performed:  '
-  
-    if in_hls then begin
-      print, '     > Analytical hillshading'
-      print, '          Sun azimuth [deg.]: ', in_hls_sun_a 
-      print, '          Sun elevation angle [deg.]: ', in_hls_sun_h 
-    endif
-    
-    ;Multiple hillshading + PCA
-    if in_mhls then begin
-      print, '     > Hillshading from multiple directions'
-      print, '          Number of directions: ', in_mhls_n_dir
-      print, '          Sun elevation angle [deg.]: ', in_mhls_sun_h
-      ;in_mhls_rgb = 1                                   ;1-make multiple hillshaing RGB, 0-don't
-    endif
-    if in_mhls_pca then begin
-      print, '     > PCA of hillshading'
-      print, '          Number of components to save: ', in_mhls_n_psc
-      print, '          Note: Components are taken from the Hillshading from multiple directions method'
-      print, '          and are prepared with the following parameters:'
-      print, '               Number of directions: ', in_mhls_n_dir
-      print, '               Sun elevation angle [deg.]: ', in_mhls_sun_h
-    endif
-    
-    ;Slope gradient
-    if in_slp then begin
-      print, '     > Slope gradient'
-      print, '          Note: No parameters required.'
-    endif
-    
-    ;Simple local relief model
-    if in_slrm then begin
-      print, '     > Simple local relief model'
-      print, '          Radius for trend assessment [pixels]: ', in_slrm_r_max
-    endif
-    
-    ;SVF + Openness + Negative openness
-    if in_svf then begin
-      print, '     > Sky-View Factor'
-      print, '          Number of search directions: ', in_svf_n_dir
-      print, '          Search radius [pixels]: ', in_svf_r_max
-      case in_svf_noise of
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        else: str_in_svf_noise = 'no removal'
-      endcase  
-      print, '          Level of noise removal:       ', str_in_svf_noise
-    endif
-    if in_asvf then begin
-      print, '     > Anisotropic Sky-View Factor'
-      case in_asvf_level of
-        1: str_in_asvf_level = 'low'
-        2: str_in_asvf_level = 'high'
-        else: str_in_asvf_level = 'no removal'
-      endcase  
-      print, '          Level of anisotropy:       ', str_in_asvf_level
-      print, '          Main direction of anisotropy [degrees]:       ', in_asvf_dir
-      print, '          Note: Other parameters are taken from the Sky-View Factor method:'
-      print, '               Number of search directions: ', in_svf_n_dir
-      print, '               Search radius [pixels]: ', in_svf_r_max
-      case in_svf_noise of
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        else: str_in_svf_noise = 'no removal'
-      endcase  
-      print, '               Level of noise removal:       ', str_in_svf_noise
-    endif
-    if in_open then begin
-      print, '     > Openness - Positive'
-      print, '          Note: Parameters are taken from the Sky-View Factor method:'
-      print, '               Number of search directions: ', in_svf_n_dir
-      print, '               Search radius [pixels]: ', in_svf_r_max
-      case in_svf_noise of
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        else: str_in_svf_noise = 'no removal'
-      endcase  
-      print, '               Level of noise removal:       ', str_in_svf_noise
-    endif
-    if in_open_negative then begin
-      print, '     > Openness - Negative'
-      print, '          Note: Parameters are taken from the Sky-View Factor method:'
-      print, '               Number of search directions: ', in_svf_n_dir
-      print, '               Search radius [pixels]: ', in_svf_r_max
-      case in_svf_noise of
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        else: str_in_svf_noise = 'no removal'
-      endcase  
-      print, '               Level of noise removal:       ', str_in_svf_noise
-    endif
-    if in_skyilm then begin
-      print, '     > Sky illumination'
-      print, '          Sky model: ', in_skyilm_model
-      print, '          Number of sampling points: ', in_skyilm_points
-      if in_skyilm_shadow then begin
-      print, '          Note: Shadow modelling enabled.'
-      print, '               Sun azimuth [deg.]: ', in_skyilm_az
-      print, '               Sun elevation angle [deg.]: ', in_skyilm_el
-      endif $
-      else print, '          Note: Shadow modelling disabled.'
-    endif
-    if in_locald then begin
-      print, '     > Local dominance'
-      print, '          Minimum radius: ', in_locald_min_rad
-      print, '          Maximum radius: ', in_locald_max_rad
-    endif
-  
-    
-    
-    ;========================================================================================================
-    ;=== Start processing  ==================================================================================
-    ;========================================================================================================
-    
-    
-    starttime = Systime(/seconds)
-    Print
-    Print
-    Print, '# Computation started at  ', Systime()  
-     
-    ; Main part of the program
-  
-    ;Correct vertical scale if data are not projected (unprojected lon, lat data)
-    heights = Float(heights) * in_ve_ex
-    IF (ve_degrees) THEN  resolution = 111300. * resolution
-    
-    ;Correct filename
-    len_in_file = Strlen(in_file)
-    in_file = Strmid(in_file, 0, len_in_file-4)     ;preffix to add proccessing parameters
-    str_ve = '_Ve' + String(in_ve_ex, Format='(F0.1)')  ;vertical exageration
-    IF in_ve_ex EQ 1. then str_ve = ''
-    
-    ;save tiff that was multiplied by vertical exageration
-    if in_ve_ex ne 1. then begin
-      out_file_ve = in_file + str_ve + '.tif'
-      if keyword_set(overwrite) eq 0 and file_test(out_file_ve) eq 1 then $
-        print, ' Image already exists ('+out_file_ve+')' $
-      else $
-        write_tiff, out_file_ve, heights, compression=1, /float, geotiff=in_geotiff
-    endif
-    
-    ;Hillshading
-    IF in_hls EQ 1 THEN BEGIN
-      out_file_hls = in_file + '_HS_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
-      Topo_advanced_vis_hillshade, out_file_hls, in_geotiff, $
-        heights, resolution, $                ;relief
-        in_hls_sun_a, in_hls_sun_h, $                   ;solar position
-        sc_hls_ev, $
-        overwrite=overwrite
-      ; ... display progress
-      out_file_shadow_only = in_file + '_shadow_A' + Strtrim(Long(in_hls_sun_a), 2) + '_H' + Strtrim(Long(in_hls_sun_h), 2) + str_ve
-      if shadow_use then begin 
-        Topo_advanced_vis_skyillumination, out_file_shadow_only, in_geotiff,$
-          heights, resolution, $
-          '', '', '', '', $
-          in_hls_sun_a, in_hls_sun_h, /shadow_only, $
-          overwrite=overwrite
-      endif
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step < 100
-    ENDIF
-    
-    ;Multiple hillshading
-    IF in_mhls EQ 1 THEN BEGIN
-      out_file_mhls = in_file + '_MULTI-HS_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
-      Topo_advanced_vis_multihillshade, out_file_mhls, in_geotiff, $
-        heights, resolution, $                ;relief
-        in_mhls_n_dir, in_mhls_sun_h, $                 ;solar position
-        sc_mhls_a_rgb, sc_hls_ev , $       ;directions for RGB outputRGB
-        overwrite=overwrite                       
-      ; ... display progress
-      progress_bar = obj_new('progressbar', title='Relief Visualization Toolbox - Progress ...', text=statText, xsize=300, ysize=20, $
-      nocancel=1, /start, percent = fix(progress_curr<100))
-      progress_curr += progress_step
-    ENDIF
-    
-    ;PCA hillshading
-    IF in_mhls_pca EQ 1 THEN BEGIN
-      out_file_mhls_pca = in_file + '_PCA_D' + Strtrim(Long(in_mhls_n_dir), 2) + '_H' + Strtrim(Long(in_mhls_sun_h), 2) + str_ve
-      Topo_advanced_vis_PCAhillshade, out_file_mhls_pca, in_geotiff, $
-          heights, resolution, $     ;relief
-          in_mhls_n_dir, in_mhls_sun_h, $  ;solar position
-          in_mhls_n_psc, sc_hls_ev, $     ;number of PCs to save
-          overwrite=overwrite         
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step
-    ENDIF
-    
-    ;Slope
-    IF in_slp EQ 1 THEN BEGIN
-      out_file_slp = in_file + '_SLOPE' + str_ve
-      topo_advanced_vis_gradient, out_file_slp, in_geotiff, $
-        heights, resolution, $                    ;relief
-        sc_slp_ev, $
-        overwrite=overwrite
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step
-    ENDIF
-    
-    ;Local releif
-    IF in_slrm EQ 1 THEN BEGIN
-      out_file_slrm = in_file + '_SLRM_R' + Strtrim(Long(in_slrm_r_max), 2) + str_ve
-      topo_advanced_vis_localrelief, out_file_slrm, in_geotiff, $
-        heights, resolution, $                    ;relief
-        in_slrm_r_max, sc_slrm_ev, $
-        overwrite=overwrite
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step
-    ENDIF
-    
-    ;SVF / anisotropic SVF / openess
-    IF in_svf+in_open+in_asvf NE 0 THEN BEGIN
-      CASE in_svf_noise OF
-        0: str_noise = ''
-        1: str_noise = '_NRlow'
-        2: str_noise = '_NRmedium'
-        3: str_noise = '_NRstrong'
-      ENDCASE
-      CASE in_asvf_level OF
-        1: str_aniso = '_AIlow'
-        2: str_aniso = '_AIstrong'
-      ENDCASE 
-      out_file_svf = [in_file + '_SVF_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve, $
-                      in_file + '_SVF-A_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + '_A' + Strtrim(round(in_asvf_dir), 2) + str_aniso + str_noise + str_ve, $
-                      in_file + '_OPEN-POS_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
-      Topo_advanced_vis_svf, out_file_svf, in_svf, in_open, in_asvf, in_geotiff, $
-        heights, resolution, $                    ;elevation
-        in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
-        in_svf_noise, sc_svf_r_min, $                       ;noise
-        sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-        in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
-        overwrite=overwrite
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step*(in_svf+in_open+in_asvf)
-    ENDIF
-    
-    ;Negative openess
-    IF in_open_negative EQ 1 THEN BEGIN
-      CASE in_svf_noise OF
-        0: str_noise = ''
-        1: str_noise = '_NRlow'
-        2: str_noise = '_NRmedium'
-        3: str_noise = '_NRstrong'
-      ENDCASE
-      CASE in_asvf_level OF
-        1: str_aniso = '_AIlow'
-        2: str_aniso = '_AIstrong'
-      ENDCASE 
-      heights = heights * (-1.)
-      out_file_no = ['', '', in_file + '_OPEN-NEG_R' + Strtrim(Round(in_svf_r_max), 2) + '_D' + Strtrim(in_svf_n_dir, 2) + str_noise + str_ve]
-      Topo_advanced_vis_svf, out_file_no, 0, 1, 0, in_geotiff, $
-          heights, resolution, $                    ;elevation
-          in_svf_n_dir, in_svf_r_max, $                       ;search dfinition
-          in_svf_noise, sc_svf_r_min, $                       ;noise
-          sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
-          in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol, $    ;anisotropy
-          overwrite=overwrite
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step*(in_svf+in_open+in_asvf)
-    ENDIF
-    
-    ;Sky illumination
-    IF in_skyilm EQ 1 THEN BEGIN
-      out_file_skyilm = in_file + '_SIM_' +in_skyilm_model + '_' + in_skyilm_points+'sp'
-      ;set minimum shadow distance
-      if ulong(in_skyilm_shadow_dist) lt 5 then in_skyilm_shadow_dist = '5'
-      ;round to whole numbers
-      in_skyilm_shadow_dist = strtrim(ulong(in_skyilm_shadow_dist),2)
-      if in_skyilm_shadow_dist eq 'unlimited' then out_file_skyilm += '_'+in_skyilm_shadow_dist+'_px' $
-      else out_file_skyilm += '_'+in_skyilm_shadow_dist+'px'
-      if in_skyilm_shadow then begin
-        Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
-              heights, resolution, $
-              in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$              
-              sc_skyilu_ev, $
-              in_skyilm_az, in_skyilm_el, $
-              overwrite=overwrite
-      endif else begin
-        Topo_advanced_vis_skyillumination, out_file_skyilm, in_geotiff,$
-              heights, resolution, $
-              in_skyilm_model, in_skyilm_points, in_skyilm_shadow_dist,$
-              sc_skyilu_ev, $
-              overwrite=overwrite
-      endelse
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step*(in_skyilm)
-    ENDIF   
-    
-    ;Local dominance
-    IF in_locald EQ 1 THEN BEGIN
-      out_file_ld = in_file + '_LD_R_M'+strtrim(in_locald_min_rad,2)+'-'+strtrim(in_locald_max_rad,2)+'_DI1_A15_OH1.7' + str_ve
-      topo_advanced_vis_local_dominance, out_file_ld, in_geotiff, $
-                                         heights, sc_ld_ev, $
-                                         min_rad=in_locald_min_rad, max_rad=in_locald_max_rad, $  ;input visualization parameters
-                                         overwrite=overwrite
-      ; ... display progress
-      progress_bar -> Update, progress_curr
-      progress_curr += progress_step
-    ENDIF
-   
-   
-    ; End processing 
-    endtime = Systime(/seconds)
-    Print
-    Print, '# Computation finished at ', Systime()
-    Print, format='("# Computation time ", I3.2, ":", I2.2, ":", F0.1)', (endtime-starttime)/3600,$
-      ((endtime-starttime)/60) MOD 60, (endtime-starttime) MOD 60
-    Print
-    Print, '# Processing logfile: ', out_file
-    Print, '------------------------------------------------------------------------------------------------------'
-  
-
-    ;========================================================================================================
-    ;Write processing metadata into TXT metafile
-    ;========================================================================================================
-    ;Start writing processing metadata into the file
-    Openw, unit, out_file, /append
-    ;Outputs
-    Printf, unit
-    Printf, unit, '# Selected visualization parameter'
-    Printf, unit, '     Vertical exaggeration factor:  ', in_ve_ex
-    Printf, unit
-    Printf, unit, '# The following visualizations have been performed:  '
-    ;Hillshade
-    IF in_hls THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Analytical hillshading --------------------------------------------------------'
-      Printf, unit, '          Sun azimuth [deg.]: ', in_hls_sun_a
-      Printf, unit, '          Sun elevation angle [deg.]: ', in_hls_sun_h
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_hls + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between 0 and 1 for 8-bit output): '
-      Printf, unit, '              ' + out_file_hls + '_8bit.tif'
-      if shadow_use then begin
-        Printf, unit, '          >> Output file 3 (binary shadow image): '
-        Printf, unit, '              ' + out_file_shadow_only + '.tif'
-      endif
-    ENDIF
-    ;Multiple hillshading + PCA
-    IF in_mhls THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Hillshading from multiple directions ------------------------------------------'
-      Printf, unit, '          Number of directions: ', in_mhls_n_dir
-      Printf, unit, '          Sun elevation angle [deg.]: ', in_mhls_sun_h
-      Printf, unit, '          >> Output file 1 (each band corresponds to shading from one direction; linear histogram strech between 0 and 1): '
-      Printf, unit, '              ' + out_file_mhls + '.tif'
-      Printf, unit, '          >> Output file 2 (RGB; Red-315°, Green-15°, Blue-75°; linear histogram strech between 0 and 1): '
-      Printf, unit, '              ' + out_file_mhls + '_RGB.tif'
-    ENDIF
-    IF in_mhls_pca THEN BEGIN
-      Printf, unit
-      Printf, unit, '     PCA of hillshading ------------------------------------------------------------'
-      Printf, unit, '          Number of components to save: ', in_mhls_n_psc
-      Printf, unit, '          Note: Components are taken from the Hillshading from multiple directions method'
-      Printf, unit, '          and are prepared with the following parameters:'
-      Printf, unit, '               Number of directions: ', in_mhls_n_dir
-      Printf, unit, '               Sun elevation angle [deg.]: ', in_mhls_sun_h
-      Printf, unit, '          >> Output file 1 (each band corresponds to one PC): '
-      Printf, unit, '              ' + out_file_mhls_pca + '.tif'
-      Printf, unit, '          >> Output file 2 (RGB; Red-PC1, Green-PC2, Blue-PC3; histogram equal. with 2% cut-off for 8-bit output): '
-      Printf, unit, '              ' + out_file_mhls_pca + '_RGB.tif'
-    ENDIF
-    ;Slope gradient
-    IF in_slp THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Slope gradient ----------------------------------------------------------------'
-      Printf, unit, '          Note: No parameters required.'
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_slp + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between 0 and 51° for 8-bit output): '
-      Printf, unit, '              ' + out_file_slp + '_8bit.tif'
-    ENDIF
-    ;Simple local relief model
-    IF in_slrm THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Simple local relief model -----------------------------------------------------'
-      Printf, unit, '          Radius for trend assessment [pixels]: ', in_slrm_r_max
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_slrm + '.tif'
-      Printf, unit, '          >> Output file 2 (histogram equal. with 2% cut-off for 8-bit output): '
-      Printf, unit, '              ' + out_file_slrm + '_8bit.tif'
-    ENDIF
-    ;SVF + Openness + Negative openness
-    IF in_svf THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Sky-View Factor ---------------------------------------------------------------'
-      Printf, unit, '          Number of search directions: ', in_svf_n_dir
-      Printf, unit, '          Search radius [pixels]: ', in_svf_r_max
-      CASE in_svf_noise OF
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        ELSE: str_in_svf_noise = 'no removal'
-      ENDCASE
-      Printf, unit, '          Level of noise removal:       ', str_in_svf_noise
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_svf[0] + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between 0.64 and 1.00 for 8-bit output): '
-      Printf, unit, '              ' + out_file_svf[0] + '_8bit.tif'
-    ENDIF
-    IF in_asvf THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Anisotropic Sky-View Factor ---------------------------------------------------'
-      CASE in_asvf_level OF
-        1: str_in_asvf_level = 'low'
-        2: str_in_asvf_level = 'high'
-        ELSE: str_in_asvf_level = 'no removal'
-      ENDCASE
-      Printf, unit, '          Level of anisotropy:       ', str_in_asvf_level
-      Printf, unit, '          Main direction of anisotropy [degrees]:       ', in_asvf_dir
-      Printf, unit, '          Note: Other parameters are taken from the Sky-View Factor method:'
-      Printf, unit, '               Number of search directions: ', in_svf_n_dir
-      Printf, unit, '               Search radius [pixels]: ', in_svf_r_max
-      CASE in_svf_noise OF
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        ELSE: str_in_svf_noise = 'no removal'
-      ENDCASE
-      Printf, unit, '               Level of noise removal:       ', str_in_svf_noise
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_svf[1] + '.tif'
-      Printf, unit, '          >> Output file 2 (histogram equal. with 2% cut-off for 8-bit output): '
-      Printf, unit, '              ' + out_file_svf[1] + '_8bit.tif'
-    ENDIF
-    IF in_open THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Openness - Positive -----------------------------------------------------------'
-      Printf, unit, '          Note: Parameters are taken from the Sky-View Factor method:'
-      Printf, unit, '               Number of search directions: ', in_svf_n_dir
-      Printf, unit, '               Search radius [pixels]: ', in_svf_r_max
-      CASE in_svf_noise OF
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        ELSE: str_in_svf_noise = 'no removal'
-      ENDCASE
-      Printf, unit, '               Level of noise removal:       ', str_in_svf_noise
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_svf[2] + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between 60° and 95° for 8-bit output): '
-      Printf, unit, '              ' + out_file_svf[2] + '_8bit.tif'
-    ENDIF
-    IF in_open_negative THEN BEGIN
-      Printf, unit
-      Printf, unit, '     Openness - Negative -----------------------------------------------------------'
-      Printf, unit, '          Note: Parameters are taken from the Sky-View Factor method:'
-      Printf, unit, '               Number of search directions: ', in_svf_n_dir
-      Printf, unit, '               Search radius [pixels]: ', in_svf_r_max
-      CASE in_svf_noise OF
-        1: str_in_svf_noise = 'low'
-        2: str_in_svf_noise = 'medium'
-        3: str_in_svf_noise = 'high'
-        ELSE: str_in_svf_noise = 'no removal'
-      ENDCASE
-      Printf, unit, '               Level of noise removal:       ', str_in_svf_noise
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_no[2] + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between 60° and 95° for 8-bit output): '
-      Printf, unit, '              ' + out_file_no[2] + '_8bit.tif'
-    ENDIF
-    if in_skyilm then begin
-      Printf, unit, '     > Sky illumination'
-      Printf, unit, '          Sky model: ', in_skyilm_model
-      Printf, unit, '          Number of sampling points: ', in_skyilm_points
-      Printf, unit, '          Maximum search radius for calculation of shadows: ', in_skyilm_shadow_dist
-;      if in_skyilm_shadow then begin
-;        Printf, unit, '          Note: Shadow modelling enabled.'
-;        Printf, unit, '               Sun azimuth [deg.]: ', in_skyilm_az
-;        Printf, unit, '               Sun elevation angle [deg.]: ', in_skyilm_el
-;      endif $
-;      else Printf, unit, '          Note: Shadow modelling disabled.'
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_skyilm + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch with lower '+string(sc_skyilu_ev[0],format="(f3.1)")+'% and upper '+string(sc_skyilu_ev[1],format="(f3.1)")+'% values cut-off for 8-bit output):'
-      Printf, unit, '              ' + out_file_skyilm + '_8bit.tif'
-    endif    
-    if in_locald then begin
-      Printf, unit, '     > Local dominance'
-      Printf, unit, '          Minimum radius: ', in_locald_min_rad
-      Printf, unit, '          Maximum radius: ', in_locald_max_rad
-      Printf, unit, '          >> Output file 1 (without results manipulation): '
-      Printf, unit, '              ' + out_file_ld + '.tif'
-      Printf, unit, '          >> Output file 2 (linear histogram stretch between '+string(sc_ld_ev[0], format="(f3.1)")+' and '+string(sc_ld_ev[1], format="(f3.1)")+' for 8-bit output):'
-      Printf, unit, '              ' + out_file_ld + '_8bit.tif'
-    endif
-    
-    ; Computation time
-    Printf, unit
-    Printf, unit, format='("# Computation time ", I3.2, ":", I2.2, ":", F0.1)', (endtime-starttime)/3600,$
-      ((endtime-starttime)/60) MOD 60, (endtime-starttime) MOD 60
-    ;Close metadata file
-    Free_lun, unit
-    
-  
-  endfor
-  
-  ; End display progress
-  progress_bar -> Destroy
-  
-  if keyword_set(skip_gui) eq 0 then topo_advanced_vis, /re_run
   
   
 ;  msg = strarr(8)

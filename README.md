@@ -1,4 +1,4 @@
-## RVT
+﻿# RVT
 
 Relief Visualization Toolbox was produced to help scientist visualize raster elevation model datasets. We have narrowed down the selection to include techniques that have proven to be effective for identification of small scale features. Default settings therefore assume working with high resolution digital elevation models, derived from airborne laser scanning missions (lidar).
 
@@ -11,10 +11,10 @@ Methods currently implemented are:
 *   PCA of hillshading,
 *   slope gradient,
 *   simple local relief model,
+*   sky illumination,
 *   sky-view factor (as developed by our team),
 *   anisotropic sky-view factor,
 *   positive and negative openness,
-*   sky illumination, and
 *   local dominance.
 
 For a more detailed description see references given at each method in the manual and a comparative paper describing them (e.g. Kokalj and Hesse 2017, see below).
@@ -34,6 +34,7 @@ Please report any bugs and suggestions for improvements.
 
 When using the tools, please cite:
 
-*   Kokalj, Ž., somrak, M. 2019. Why Not a Single Image? Combining Visualizations to Facilitate Fieldwork and On-Screen Mapping. Remote Sensing 11(7): 747.
+*   Kokalj, Ž., Somrak, M. 2019. Why Not a Single Image? Combining Visualizations to Facilitate Fieldwork and On-Screen Mapping. Remote Sensing 11(7): 747.
+*   Zakšek, K., Oštir, K., Kokalj, Ž. 2011. Sky-View Factor as a Relief Visualization Technique. Remote Sensing 3: 398-415.
 *   Kokalj, Ž., Zakšek, K., Oštir, K. 2011. Application of Sky-View Factor for the Visualization of Historic Landscape Features in Lidar-Derived Relief Models. Antiquity 85, 327: 263-273.
 

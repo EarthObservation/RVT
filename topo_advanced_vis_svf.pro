@@ -416,7 +416,7 @@ PRO Topo_advanced_vis_svf, in_file, in_svf, in_opns, in_asvf, geotiff, $
     in_svf_noise, sc_svf_r_min, $                       ;noise
     sc_tile_size, sc_svf_ev, sc_opns_ev, $              ;tile size
     in_asvf_dir, in_asvf_level, sc_asvf_min, sc_asvf_pol,$;anisotropy
-    overwrite=ovverwrite
+    overwrite=overwrite
   
   ;Time
   ttt = Systime(1)  
@@ -561,17 +561,16 @@ PRO Topo_advanced_vis_svf, in_file, in_svf, in_opns, in_asvf, geotiff, $
       svf_out[*, line1:line2] = svf
     ENDFOR
     out_file = in_file[0] + '.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, svf_out, compression=1, geotiff=geotiff, /float
+    
+    write_image_to_geotiff_float, overwrite, out_file, svf_out, geotiff=geotiff
+
     svf_out = Bytscl(svf_out, max=sc_svf_ev[1], min=sc_svf_ev[0])
     out_file = in_file[0] + '_8bit.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, svf_out, compression=1, geotiff=geotiff
+    
+    write_image_to_geotiff, overwrite, out_file, svf_out, geotiff=geotiff
+
     svf_out = !null & svf = !null
+
   ENDIF
 
   ;ASVF
@@ -587,16 +586,14 @@ PRO Topo_advanced_vis_svf, in_file, in_svf, in_opns, in_asvf, geotiff, $
       asvf_out[*, line1:line2] = asvf
     ENDFOR
     out_file = in_file[1] + '.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, asvf_out, compression=1, geotiff=geotiff, /float
+    
+    write_image_to_geotiff_float, overwrite, out_file, asvf_out, geotiff=geotiff
+
     asvf_out = Hist_equal(asvf_out, percent=2);Bytscl(asvf_out, max=sc_svf_ev[1], min=sc_svf_ev[0])
     out_file = in_file[1] + '_8bit.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, asvf_out, compression=1, geotiff=geotiff
+    
+    write_image_to_geotiff, overwrite, out_file, asvf_out, geotiff=geotiff
+
     asvf_out = !null & asvf = !null
   ENDIF
   
@@ -614,16 +611,14 @@ PRO Topo_advanced_vis_svf, in_file, in_svf, in_opns, in_asvf, geotiff, $
     ENDFOR
     opns_out = opns_out * !radeg
     out_file = in_file[2] + '.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, opns_out, compression=1, geotiff=geotiff, /float
+    
+    write_image_to_geotiff_float, overwrite, out_file, opns_out, geotiff=geotiff
+
     opns_out = Bytscl(opns_out, max=sc_opns_ev[1], min=sc_opns_ev[0])
     out_file = in_file[2] + '_8bit.tif'
-    if keyword_set(overwrite) eq 0 and file_test(out_file) eq 1 then $
-      print, ' Image already exists ('+out_file+')' $
-    else $
-      Write_tiff, out_file, opns_out, compression=1, geotiff=geotiff
+    
+    write_image_to_geotiff, overwrite, out_file, opns_out, geotiff=geotiff
+      
     opns_out = !null & opns = !null
   ENDIF    
 

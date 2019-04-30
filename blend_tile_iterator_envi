@@ -1,0 +1,102 @@
+;pro get_min_max_luminosity_tiled, iterator_active, iterator_background, min_c=min_c, max_c=max_c
+;  FOR count=1, iterator_background.NTILES DO BEGIN
+;    ; next tile
+;    background = iterator_background.Next()
+;    active = iterator_active.Next()
+;
+;    ; float representation
+;    background = RGB_to_float(background)
+;    active = RGB_to_float(active)
+;
+;    ; luminosity
+;    lum = lum(active) - lum(background)
+;
+;    ; from luminosity blend loop
+;    R = reform(background[0, *, *]) + lum
+;    G = reform(background[1, *, *]) + lum
+;    B = reform(background[2, *, *]) + lum
+;
+;    dimensions = size(background, /DIMENSIONS)
+;    x_size = dimensions[1]
+;    y_size = dimensions[2]
+;
+;    c = make_array(3, x_size, y_size)
+;    c[0, *, *] = reform(r, 1, x_size, y_size)
+;    c[1, *, *] = reform(g, 1, x_size, y_size)
+;    c[2, *, *] = reform(b, 1, x_size, y_size)
+;
+;    ; from clip_color
+;    R = reform(c[0, *, *])
+;    G = reform(c[1, *, *])
+;    B = reform(c[2, *, *])
+;
+;    min_tile = min([R, G, B])
+;    max_tile = max([R, G, B])
+;
+;    if (isa(min_c, /null)) then min_c = min_tile else min_c = min(min_tile, min_c)
+;    if (isa(max_c, /null)) then max_c = max_tile else max_c = max(max_tile, max_c)
+;  endfor
+;end
+;
+;
+;;TODO: make it actually tiled
+;function normalize_image_tiled_envi, image_path, normalization, norm_min=norm_min, norm_max=norm_max, min=min, max=max
+;
+;  raster_image = e.OpenRaster(image_path)
+;  iterator_image = raster_image.CreateTileIterator()
+;
+;  ; Create a new raster
+;  newFile = e.GetTemporaryFilename()
+;  normalized_image_name = ENVIRaster(URI=newFile, $
+;    NROWS=raster_image.NROWS, $
+;    NCOLUMNS=raster_image.NCOLUMNS, $
+;    NBANDS=raster_image.NBANDS, $
+;    DATA_TYPE=raster_image.DATA_TYPE)
+;
+;
+;  ; PARAMETERS:
+;  ; for percentual normalization
+;  if (normalization EQ 'Perc') then begin
+;    perc = max
+;    if(perc GT 0.5 AND perc LT 100.0001) then perc = perc / 100.0
+;
+;    min_values = []
+;    max_values = []
+;
+;    ; find min, max for linear normalization
+;    FOR count=1, iterator_image.NTILES DO BEGIN
+;      image_tile = iterator_image.Next()
+;      distribution = cgPercentiles(image_tile, Percentiles=[perc, 1.0-perc])
+;      min_values = [ min_values, distribution[0] ]
+;      max_values = [ max_values, distribution[1] ]
+;    endfor
+;
+;    ; norm_min & norm_max are hash tables - they contain min & max thresholds for linear normalization of images on each layer
+;    norm_min[visualization] = mean(min_values, /nan)
+;    norm_max[visualization] = mean(max_values, /nan)
+;
+;  endif else begin
+;    ; for linear normalization
+;    norm_min[visualization] = min
+;    norm_max[visualization] = max
+;  endelse
+;
+;  ; NORMALIZE
+;  FOR count=1, iterator_image.NTILES DO BEGIN
+;    ; next tile
+;    image_tile = iterator_image.Next()
+;    ; process
+;    normalized_tile = normalize_lin(image, norm_min[visualization], norm_max[visualization])
+;    ;
+;    currentSubRect = tileIterator.CURRENT_SUBRECT
+;    normalized_image_name.SetData, normalized_tile, SUB_RECT=currentSubRect
+;  endfor
+;
+;  normalized_image_name.Save
+;
+;  ; Display new raster
+;  View = e.GetView()
+;  Layer = View.CreateLayer(normalized_image_name)
+;
+;  return, normalized_image_name
+;end
