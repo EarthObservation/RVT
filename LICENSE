@@ -186,7 +186,9 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2019 ZRC SAZU
+   Copyright (c) 2019 ZRC SAZU
+
+RVT uses several functions (cgerrormsg.pro, cgpercentiles.pro, cgscalevector.pro, convert_to_type.pro, fpufix.pro) by Fanning Software Consulting, Inc. Copyright (c) 2013, by Fanning Software Consulting, Inc. All rights reserved. 
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
