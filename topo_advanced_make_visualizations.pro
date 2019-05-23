@@ -286,10 +286,11 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
       if (tag_exists[0] gt -1) then begin ; geotiff with defined tag GTModelTypeGeoKey
         ; possible tag values: 1=projected, 2=geographic lat/lon, 3=geocentric (X,Y,Z)
         in_crs = in_geotiff.GTModelTypeGeoKey
-        in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
+        ; pixel size changed decreased to 0.001 in order to recognize it as being in degrees, else this is equvalent to 0.001 mm
+        in_crs = (in_pixel_size[1] gt 0.001) ? 1 : 2
       endif else begin  ; tif file (with tfw), or geotiff without tag GTModelTypeGeoKey
         ; distinction based on pixel size
-        in_crs = (in_pixel_size[1] gt 0.1) ? 1 : 2
+        in_crs = (in_pixel_size[1] gt 0.001) ? 1 : 2
       endelse
 
     endif else begin  ; in_geotiff undefined
@@ -578,7 +579,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
 
     ;Correct vertical scale if data are not projected (unprojected lon, lat data)
     heights = Float(heights) * in_ve_ex
-    IF (ve_degrees) THEN  resolution = 111300. * resolution
+    ;IF (ve_degrees) THEN  resolution = 111300. * resolution
 
     ;Correct filename
     len_in_file = Strlen(in_file)

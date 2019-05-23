@@ -87,7 +87,7 @@ pro topo_advanced_vis__RUN_IDL
   ; Main part of the program
   ;Correct vertical scale if data are not projected (unprojected lon, lat data)
   heights = Float(heights) * in_ve_ex
-  IF (ve_degrees) THEN  resolution = 111300. * resolution
+  ;IF (ve_degrees) THEN  resolution = 111300. * resolution
   
   ;Correct filename
   len_in_file = Strlen(in_file)
