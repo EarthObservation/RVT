@@ -12,7 +12,7 @@ pro compile_rvt
 
 
 ; Set location, folder that contains this file (and other files)
-rvt_dir = 'C:\Users\Maja\IDLWorkspace\RVT-IDL\'
+rvt_dir = 'C:\Users\msomrak\Documents\GitHub\RVT\'
 ; Set location of GDAL, parameters, additional libraries used
 gdal_dir = rvt_dir + 'GDAL\'
 param_dir = rvt_dir + 'settings\'
@@ -57,6 +57,7 @@ resolve_routine, 'topo_morph_shade', /is_function
 resolve_routine, 'topo_advanced_vis_raster_mosaic'
 ;resolve_routine, 'image_access', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_make_visualizations', /COMPILE_FULL_FILE ;/is_function,
+resolve_routine, 'topo_advanced_vis_mixer_terrain_settings', /COMPILE_FULL_FILE
 resolve_routine, 'topo_advanced_vis', /COMPILE_FULL_FILE
 resolve_routine, 'unit_test_mixer', /COMPILE_FULL_FILE
 
@@ -64,7 +65,7 @@ resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
 ;naredi pripadajoči exe
-out_subdir = 'RVT_2.0_Win64'
+out_subdir = 'RVT_2.2.1_Win64'
 ;file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
 make_rt, out_subdir, rvt_dir, savefile=rvt_dir+'topo_advanced_vis.sav', /overwrite, /win64
 

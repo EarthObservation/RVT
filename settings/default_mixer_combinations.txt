@@ -104,7 +104,7 @@ Local dominance, max, 1.8
 # SECTION 2: Visualizations combinations
 #
 
-combination = VAT normal terrain
+combination = Archaeological (VAT)
 
 layer:1, vis:Sky-View Factor, norm:Value, min:0.7, max:1.0, blend_mode:Multiply, opacity:25
 layer:2, vis:Openness - Positive, norm:Value, min:68, max:93, blend_mode:Overlay, opacity:50
@@ -112,12 +112,12 @@ layer:3, vis:Slope gradient, norm:Value, min:0, max:50, blend_mode:Luminosity, o
 layer:4, vis:Analytical hillshading, norm:Value, min:0, max:1, blend_mode:Normal, opacity:100
 layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
 
-combination = VAT flat terrain
+combination = Prismatic openness
 
-layer:1, vis:Sky-View Factor, norm:Value, min:0.9, max:1.0, blend_mode:Multiply, opacity:25
-layer:2, vis:Openness - Positive, norm:Value, min:85, max:93, blend_mode:Overlay, opacity:50
-layer:3, vis:Slope gradient, norm:Value, min:0, max:15, blend_mode:Luminosity, opacity:50
-layer:4, vis:Analytical hillshading, norm:Value, min:0, max:1, blend_mode:Normal, opacity:100
+layer:1, vis:Openness - Positive, norm:Value, min:68, max:93, blend_mode:Normal, opacity:50
+layer:2, vis:Openness - Negative, norm:Value, min:68, max:95, blend_mode:Normal, opacity:50
+layer:3, vis:Hillshading from multiple directions, norm:Perc, min:1, max:1, blend_mode:Normal, opacity:100
+layer:4, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
 layer:5, vis:<none>, norm:, min:, max:, blend_mode:, opacity:
 
 #combination = Geomorphological

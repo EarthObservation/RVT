@@ -52,9 +52,94 @@ function gen_vis_norm_default
   vis_norm += hash('Openness - Negative','Value')
   vis_norm += hash('Sky illumination','Perc')
   vis_norm += hash('Local dominance','Value')
-
   return, vis_norm
 end
+
+function noise_removal_levels
+  svf_rn_droplist = strarr(3)
+  svf_rn_droplist[0] = 'low'
+  svf_rn_droplist[1] = 'medium'
+  svf_rn_droplist[2] = 'high'
+  return, svf_rn_droplist
+end 
+
+function gen_terrain_types
+  terrains = ['general', 'flat', 'steep']
+  return, terrains
+end
+
+function flat_terrain_settings
+  flat_ts = hash()
+  flat_ts += hash('hs_sun_elevation',15)
+  flat_ts += hash('mhs_sun_elevation',15)
+  flat_ts += hash('slrm_radius',10)
+  flat_ts += hash('svf_noise','high')
+  flat_ts += hash('svf_radius',20)
+  flat_ts += hash('ld_radius_min',10)
+  flat_ts += hash('ld_radius_max',20)
+  flat_ts += hash('slope_min',0.0)
+  flat_ts += hash('slope_max',15.0)
+  flat_ts += hash('svf_min',0.9)
+  flat_ts += hash('svf_max',1.0)
+  flat_ts += hash('pos_open_min',85.0)
+  flat_ts += hash('pos_open_max',93.0)
+  flat_ts += hash('neg_open_min',75.0)
+  flat_ts += hash('neg_open_max',95.0)
+  flat_ts += hash('ld_min',0.5)
+  flat_ts += hash('ld_max',3.0)
+;  steep_ts += hash('pca_min',1.0)
+;  steep_ts += hash('pca_max',1.0)
+  return, flat_ts
+end
+
+function general_terrain_settings
+  general_ts = hash()
+  general_ts += hash('hs_sun_elevation',35)
+  general_ts += hash('mhs_sun_elevation',35)
+  general_ts += hash('slrm_radius',20)
+  general_ts += hash('svf_noise','none')
+  general_ts += hash('svf_radius',10)
+  general_ts += hash('ld_radius_min',10)
+  general_ts += hash('ld_radius_max',20)
+  general_ts += hash('slope_min',0.0)
+  general_ts += hash('slope_max',50.0)
+  general_ts += hash('svf_min',0.7)
+  general_ts += hash('svf_max',1.0)
+  general_ts += hash('pos_open_min',68.0)
+  general_ts += hash('pos_open_max',93.0)
+  general_ts += hash('neg_open_min',60.0)
+  general_ts += hash('neg_open_max',95.0)
+  general_ts += hash('ld_min',0.5)
+  general_ts += hash('ld_max',1.8)
+;  steep_ts += hash('pca_min',1.0)
+;  steep_ts += hash('pca_max',1.0)
+  return, general_ts
+end
+
+function steep_terrain_settings
+  steep_ts = hash()
+  steep_ts += hash('hs_sun_elevation',55)
+  steep_ts += hash('mhs_sun_elevation',45)
+  steep_ts += hash('slrm_radius',50)
+  steep_ts += hash('svf_noise','none')
+  steep_ts += hash('svf_radius',10)
+  steep_ts += hash('ld_radius_min',10)
+  steep_ts += hash('ld_radius_max',10)  
+  steep_ts += hash('slope_min',0.0)
+  steep_ts += hash('slope_max',60.0)
+  steep_ts += hash('svf_min',0.55)
+  steep_ts += hash('svf_max',1.0)
+  steep_ts += hash('pos_open_min',55.0)
+  steep_ts += hash('pos_open_max',95.0)
+  steep_ts += hash('neg_open_min',45.0)
+  steep_ts += hash('neg_open_max',95.0)
+  steep_ts += hash('ld_min',0.55)
+  steep_ts += hash('ld_max',0.95)
+;  steep_ts += hash('pca_min',1.0)
+;  steep_ts += hash('pca_max',1.0)
+  return, steep_ts
+end
+
 
 ;-------------------------------------------------------
 ; Functions to retrieve defaults for eah visualization:

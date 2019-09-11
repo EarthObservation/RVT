@@ -31,12 +31,14 @@
 ;-
 function normalize_lin, image, min, max
     ; Linear cut off
-    idx_min = WHERE(image LT min)
-    idx_max = WHERE(image GT max)
-    image[idx_min] = min
-    image[idx_max] = max
+    idx_min = WHERE(image LT min, count_lt_min)
+    idx_max = WHERE(image GT max, count_gt_max)
+    if (count_lt_min eq 0) and (count_gt_max eq 0) then return, image
     
-    ; Stretch to 0.0-1.0 interval
+    if (count_lt_min gt 0) then image[idx_min] = min
+    if (count_gt_max gt 0) then image[idx_max] = max
+    
+    ; Stretch to 0.0-1.0 interval  pdf = HISTOGRAM(image, LOCATIONS=xbin)  phisto = PLOT(xbin, pdf, TITLE='Histogram', XTITLE='Pixel value', YTITLE='Frequency', MAX_VALUE=max(image), COLOR='red')
     image = (float(image) - float(min)) / (float(max) - float(min))
 
     return, image
@@ -72,47 +74,147 @@ function topo_advanced_normalization, image, min, max, normalization
   return, equ_image
 end
 
+FUNCTION normalize_tiled, active, min_norm, max_norm, normalization
+  dim_active = size(active, /DIMENSIONS)
+  n_channels_active = dim_active.length
+
+  ;if (Size(active_image) NE size(background_image)) then return
+  ; columns and lines/rows
+  ncol = dim_active[dim_active.length-2]
+  nrow = dim_active[dim_active.length-1]
+
+  indx_all = []
+  if (n_channels_active eq 3) then begin
+      single_channel = reform(active[0, *, *])
+      indx_all = indgen(n_elements(single_channel), /LONG) 
+  endif
+  if (n_channels_active le 2) then begin
+    indx_all = indgen(n_elements(active), /LONG)
+  endif
+
+  ; Number of pixels
+  count_all = ncol * nrow
+
+  ;Run it - if it is neccessary, divide everything into more tiles;
+  sc_tile_size = 5L*10L^6
+  nlt = sc_tile_size / ncol  ;the number of rows that can be processed at one moment
+  nlt = ncol * nlt            ;the number of pixels to be processed at one moment
+
+  count_rendered_tiles = 0
+
+  FOR i=0L,count_all-1,nlt DO BEGIN
+    count_rendered_tiles += 1
+
+    ; Processing the last tile (max size or smaller; only tile)
+    IF (i+nlt) GT (nrow*ncol-1) THEN BEGIN
+      nlt0 = nlt
+      nlt = nrow * ncol - i ;?
+      Print, 'Processing last tile...'
+
+    ENDIF ELSE Print, 'Processing tile: ', i/nlt + 1
+
+    indx_ok = indx_all[i:i+nlt-1]       
+    active_tile = make_tile(active, indx_ok, ncol, nrow, nlt)
+ 
+    ; BLEND IMAGES
+    normalized_tile = topo_advanced_normalization(active_tile, min_norm, max_norm, normalization)
+
+    ; SAVE RESULT
+    Save, normalized_tile, File=Strtrim(i, 2)+'norm_tile.sav'
+
+  ENDFOR
+
+  ;============================================================================
+
+  count_height = N_elements(indx_all)   ; number of all elements
+  ;rendered_image = Fltarr(count_height)
+
+  indx_all = !null & indx_ok = !null
+  active = !null
+
+  ; JOIN TILES
+  if count_rendered_tiles gt 0 then begin
+    ; rendered_image ....
+    is_RGB = n_channels_active eq 3
+    if is_RGB then rendered_image_out = Make_array(3, ncol, nrow) $
+    else rendered_image_out = Make_array(ncol, nrow)
+
+    nlt = nlt0
+    FOR i=0L,count_all-1,nlt DO BEGIN
+      IF (i+nlt) GT (nrow*ncol-1) THEN nlt = nrow*ncol - i                    ; IF (i+nlt) GT n_elements(indx_all) THEN nlt = n_elements(indx_all)
+      Restore, Strtrim(i, 2)+'norm_tile.sav'
+      ; line_nr + 'blend.sav' file will be restored
+      ; file restored will be stored in variable 'rendered_tile'
+      File_delete, Strtrim(i, 2)+'norm_tile.sav', /ALLOW_NONEXISTENT
+      line1 = i/Long(ncol)
+      line2 = (i+nlt-1L)/Long(ncol)
+      if is_RGB then begin
+        rendered_image_out[0, *, line1:line2] = normalized_tile[0, *, *]
+        rendered_image_out[1, *, line1:line2] = normalized_tile[1, *, *]
+        rendered_image_out[2, *, line1:line2] = normalized_tile[2, *, *]
+      endif else begin
+        rendered_image_out[*, line1:line2] = normalized_tile
+      endelse
+    ENDFOR
+  endif else rendered_image_out[*, *] = normalized_tile
+
+  return, rendered_image_out
+end
+
 function mixer_normalize_image_tile, image, visualization, min_norm, max_norm, normalization
   ; for slope, putting this to one will invert scale
   ; meaning high slopes will be black
-  switch_slope_scale = 1
+  ;switch_slope_scale = 1
 
   if (visualization EQ '<none>' OR visualization EQ '<custom>') then return, image
 
-  ; Workaround:
-  ; for RGB images, because they are
-  ; on scale 0 to 255, not 0.0 - 1.0,
+     ; Workaround:
+  ; for RGB images, because they are 
+  ; on scale 0 to 255, not 0.0 - 1.0, 
   ; we use multiplier to get proper values
-  if normalization eq 'Value' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
-    if max(image) gt 100.0  and (size(image, /N_DIMENSIONS) eq 3) then begin
+  if normalization eq 'Value' and (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin 
+    if max(image) gt 100.0 and (size(image, /N_DIMENSIONS) eq 3) then begin
       ; limit normalization 0.0 to 1.0;
-      ; all numbers below are 0.0,
+      ; all numbers below are 0.0, 
       ; numbers above are 1.0
-      if min_norm lt 0.0 then min_norm = 0.0
+      if min_norm lt 0.0 then min_norm = 0.0 
       if max_norm gt 1.0 then max_norm = 1.0
-
+      
       min_norm = round(min_norm * 255)
       max_norm = round(max_norm * 255)
     endif
   endif
 
-  image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
-  
+  if normalization eq 'Value' then begin
+    norm_image = normalize_tiled(image, min_norm, max_norm, normalization)
+  endif else begin
+    ;norm_image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+    lin_cutoff_calc_from_perc, image, min_norm, max_norm, min_lin=min_lin, max_lin=max_lin
+    norm_image = normalize_tiled(image, min_lin, max_lin, 'Value')
+  endelse     
+      
   ; make sure it scales 0 to 1
-  if max(image) gt 1.0 then begin
+  if max(norm_image) gt 1.0 then begin
     if (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
       ; from RGB to float
-      image = RGB_to_float(image)
+      norm_image = scale_0_to_1(norm_image) ;RGB_to_float
     endif else begin
       ; scale 0 to 1
-      print, 'WARNING: unexpected values!'
+      norm_image = scale_0_to_1(norm_image)
+      print, 'WARNING: unexpected values! MAX > 1.0'
     endelse
   endif
-
-  ; inverted greyscale for negative openess
-  if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient' and switch_slope_scale) then begin
-    image = 1 - image
+  if min(norm_image) lt 0.0 then begin
+    print, 'WARNING: unexpected values! MIN < 0.0'
   endif
+  
+  ; for slope and negative openess, invert scale
+  ; meaning high slopes will be black
+  if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient') then begin
+    image = 1.0 - norm_image
+  endif else begin
+    image = norm_image
+  endelse
   
   return, image
 end
@@ -137,7 +239,7 @@ pro mixer_normalize_images_on_layers, event
       max_norm = float(layers[i].max)
       normalization = layers[i].normalization
       
-      ; Workaround:
+         ; Workaround:
       ; for RGB images, because they are 
       ; on scale 0 to 255, not 0.0 - 1.0, 
       ; we use multiplier to get proper values
@@ -155,15 +257,16 @@ pro mixer_normalize_images_on_layers, event
       endif
 
       norm_image = topo_advanced_normalization(image, min_norm, max_norm, normalization)
+ 
       
       ; make sure it scales 0 to 1
       if max(norm_image) gt 1.0 then begin
         if (visualization eq 'Hillshading from multiple directions' or visualization eq 'PCA of hillshading') then begin
           ; from RGB to float
-          norm_image = RGB_to_float(norm_image)
+          norm_image = scale_0_to_1(norm_image) ;RGB_to_float
         endif else begin
           ; scale 0 to 1
-          ;norm_image = scale_0_to_1(norm_image)
+          norm_image = scale_0_to_1(norm_image)
           print, 'WARNING: unexpected values! MAX > 1.0'
         endelse
       endif
@@ -174,15 +277,17 @@ pro mixer_normalize_images_on_layers, event
       ; for slope and negative openess, invert scale
       ; meaning high slopes will be black
       if (visualization EQ 'Openness - Negative') OR (visualization EQ 'Slope gradient') then begin
-        image = 1 - norm_image
-      endif      
+        image = 1.0 - norm_image
+      endif else begin
+        image = norm_image
+      endelse
 
       (*p_wdgt_state).mixer_layer_images[i] = image
     endfor
 end
 
 function RGB_to_float, rgb
-    float_value = float(rgb) / 255.0
+    float_value = float(rgb) / float(255.0)
     return, float_value
 end
 
@@ -208,6 +313,12 @@ function scale_strict_0_to_1, numeric_value
 ;  scaled[finite_indices] = float(numeric_value[finite_indices] - min_value) / float(max_value - min_value)
 
   scaled = float(numeric_value - min_value) / float(max_value - min_value)
+  
+  if (min(scaled) GT -0.01) then begin
+    indxs = where(scaled LT 0.0 and scaled GT -0.01, count)
+    scaled[indxs] = 0.0
+  endif
+  
   return, scaled
 end
 
@@ -219,23 +330,29 @@ function scale_within_0_and_1, numeric_value
   ;TODO: Replace min(numeric_value) with inpaint for NaN values
   if (count gt 0) then numeric_value[NaN_indices] = min(numeric_value)
 
-  actual_min = min(numeric_value)
-  norm_min_value = max(0.0, actual_min)
+  actual_min = float(min(numeric_value))
+  norm_min_value = max([0.0, actual_min])
   
-  actual_max = max(numeric_value)
-  norm_max_value = min(1.0, actual_max)
+  actual_max = float(max(numeric_value))
+  norm_max_value = min([1.0, actual_max])
   
   ; Do not scale values where max is between 1 and 255
   ; ... if the max-min values difference is at least 30 and min is >0
   ; ... and numeric values are integer type
-  if (actual_max le 255 and actual_max gt 1.0) then begin
-    if (actual_max - actual_min ge 30) and (actual_min ge 0) and typename(numeric_values) eq 'INT' then begin
+  if (actual_max le 255.0 and actual_max gt 1.0) then begin
+    if (actual_max - actual_min ge 30.0) and (actual_min ge 0.0) then begin ;and typename(numeric_values) eq 'INT' then begin
        scaled = float(numeric_value) / float(255.0)
        return, scaled
     endif
   endif
 
-  scaled = float(numeric_value - norm_min_value) / float(norm_max_value - norm_min_value)
+  scaled = float(float(numeric_value) - norm_min_value) / float(norm_max_value - norm_min_value)
+  
+  if (min(scaled) GT -0.01) then begin
+    indxs = where(scaled LT 0.0 and scaled GT -0.01, count)
+    scaled[indxs] = 0.0
+  endif
+  
   return, scaled
 end
 

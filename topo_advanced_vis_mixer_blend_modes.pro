@@ -213,27 +213,29 @@ function blend_luminosity, active, background, min_c=min_c, max_c=max_c
   lum = lum_active - lum_background
   
   n_channels = size(background, /N_DIMENSIONS)
-  if (n_channels EQ 2) then begin
+  if (n_channels lt 3) then begin
     return, lum_active
-  endif
+  endif 
   
-  if (n_channels EQ 3) then begin
-    R = reform(background[0, *, *]) + lum
-    G = reform(background[1, *, *]) + lum
-    B = reform(background[2, *, *]) + lum
+  ;if (n_channels EQ 3) then begin
+  R = reform(background[0, *, *]) + lum
+  G = reform(background[1, *, *]) + lum
+  B = reform(background[2, *, *]) + lum
     
-    dimensions = size(background, /DIMENSIONS)
-    x_size = dimensions[1]
-    y_size = dimensions[2]
+  dimensions = size(background, /DIMENSIONS)
+  x_size = dimensions[1]
+  y_size = dimensions[2]
     
-    c = make_array(3, x_size, y_size)
-    c[0, *, *] = reform(r, 1, x_size, y_size)
-    c[1, *, *] = reform(g, 1, x_size, y_size)
-    c[2, *, *] = reform(b, 1, x_size, y_size)
-  endif
+  c = make_array(3, x_size, y_size)
+  c[0, *, *] = reform(r, 1, x_size, y_size)
+  c[1, *, *] = reform(g, 1, x_size, y_size)
+  c[2, *, *] = reform(b, 1, x_size, y_size)
   
-  if keyword_set(min_c) and keyword_set(max_c) then clipped_image = clip_color(c, min_c=min_c, max_c=max_c) $
-  else clipped_image = clip_color(c)
+  if keyword_set(min_c) and keyword_set(max_c) then begin
+    clipped_image = clip_color(c, min_c=min_c, max_c=max_c)
+  endif else begin
+    clipped_image = clip_color(c)
+  endelse
 
    return, clipped_image
 end
@@ -325,7 +327,7 @@ function render_all_images, layers, images
       top = blend_images(blend_mode, active, background, min_c=min_c, max_c=max_c)
       rendered_image = render_images(top, background, opacity)
       
-      if (min(background) LT 0.0 OR max(background) GT 1) then begin
+      if (min(background) LT 0.0 OR max(background) GT 1) then begin        
         print, 'Rendered image scale distorted!'
       endif
       
@@ -335,13 +337,18 @@ function render_all_images, layers, images
   return, rendered_image
 end
 
-function get_out_image_name_from_input, p_wdgt_state, in_file;, bit32=bit32
+function get_out_image_name_from_input, p_wdgt_state, in_file, bit32=bit32
   widgetID = (*p_wdgt_state).combination_radios[(*p_wdgt_state).combination_index]
   widget_control, widgetID, get_value = radio_label
+  
+  terrain_type = (*p_wdgt_state).terrain_type  
+  if not strmatch(terrain_type, 'none') then radio_label = radio_label + '_' + terrain_type + '_terrain'
 
   radio_label = StrJoin(StrSplit(radio_label, ' ', /Regex, /Extract, /Preserve_Null), '_') 
-  radio_label_tif = '_'+radio_label+'_8bit.tif'
   
+  if keyword_set(bit32) then radio_label_tif = '_'+radio_label+'.tif' $
+  else radio_label_tif = '_'+radio_label+'_8bit.tif'
+
   out_file = StrJoin(StrSplit(in_file, '.tif', /Regex, /Extract, /Preserve_Null), radio_label_tif)
   
   ;TODO: there is another var holding value of combination name!
@@ -361,9 +368,8 @@ pro write_rendered_image_to_file, p_wdgt_state, in_file, final_image, geotiff=ge
   print, out_file_RGB
   write_image_to_geotiff, overwrite, out_file_RGB, final_image_RGB, geotiff=geotiff
   
-;  out_file_32 = get_out_image_name_from_input(p_wdgt_state, in_file, /bit32)
-;  print, out_file_32
-;  write_image_to_geotiff_float, overwrite, out_file_32, final_image_float, geotiff=geotiff
+  out_file = get_out_image_name_from_input(p_wdgt_state, in_file, /bit32)
+  write_image_to_geotiff_float, overwrite, out_file, final_image_float, geotiff=geotiff
   
   (*p_wdgt_state).output_blend_images_paths.add, out_file_RGB
 end
@@ -411,11 +417,11 @@ pro topo_advanced_vis_mixer_blend_modes, event, log_list
   widget_control, event.top, get_uvalue=p_wdgt_state
   tiling = 0
   in_file_string = (*p_wdgt_state).selection_str
-
  
   print, 'Blending images: '
 
   in_file_list = strsplit(in_file_string, '#', /extract)
+  
   for nF = 0,in_file_list.length-1 do begin
     ; Time start
     start = systime(/seconds)
@@ -432,6 +438,7 @@ pro topo_advanced_vis_mixer_blend_modes, event, log_list
     
     ; Add saving normalized images?
     mixer_write_layer_images, event, in_file
+    ;TODO: omit if disk space is low
 
     ; Apply blend modes, opacity and render into a composed image
     mixer_render_layered_images, event, in_file

@@ -29,7 +29,7 @@ end
 
 
 function normalize_image_tiled, image_path, layer, in_orientation, normalize_image=normalize_image
-  image = read_image_geotiff(image_path, in_orientation)
+  image = read_tiff(image_path, orientation=in_orientation)
 
   ; if no normalization is needed
   if (keyword_set(normalize_image) eq 0) then $
@@ -65,12 +65,18 @@ function where3D
 end
 
 ; Make a tile from full image
-function make_tile, full_image, indx_ok, ncol
+function make_tile, full_image, indx_ok, ncol, nrow, nlt
   dim_image = size(full_image, /DIMENSIONS)
   n_channels_image = dim_image.length
   
-  row_start = indx_ok[0]/ncol
-  row_end = (indx_ok[-1]+1)/ncol - 1
+  row_start = indx_ok[0]/long(ncol)
+  row_end = indx_ok[nlt-1]/long(ncol)
+  ; row_end = indx_ok[-1] - ncol*(row_end-row_start+1)
+  
+;  row_start = i/Long(ncol)
+;  row_end = (i+nlt-1L)/Long(ncol)
+
+  ; dem_ok = dem[*,row_start:row_end]
 
   if (n_channels_image eq 3) then begin
     image_tile = make_array(3, ncol, indx_ok.length / ncol)
@@ -80,6 +86,7 @@ function make_tile, full_image, indx_ok, ncol
   endif else begin
     image_tile = make_array(ncol, indx_ok.length / ncol)
     image_tile[*, *] = full_image[indx_ok]
+;    image_tile[ *, *] = full_image[*, row_start:row_end]
   endelse
   
   return, image_tile
@@ -91,7 +98,8 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
   dim_active = size(active, /DIMENSIONS)
   dim_background = size(background, /DIMENSIONS)
     
-  tmp_img = read_tiff(image_title, in_orientation, geotiff=in_geotiff)
+  tmp_img = read_tiff(image_title, orientation=in_orientation, geotiff=in_geotiff)
+  ;tmp_img = read_tiff(image_title, geotiff=in_geotiff)
   tmp_img = !null
 
   if ((dim_active[dim_active.length-1] ne dim_background[dim_background.length-1]) or $
@@ -110,6 +118,7 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
   ncol = dim_image[dim_image.length-2]
   nrow = dim_image[dim_image.length-1]
 
+  indx_all = []
   if (n_channels_active ne n_channels_background) then begin         
     if (n_channels_active eq 3 and n_channels_background eq 2) then begin
       indx_all = indgen(n_elements(background), /LONG)
@@ -153,8 +162,8 @@ FUNCTION blend_render_tiled, background, active, blend_mode, opacity, image_titl
     ENDIF ELSE Print, 'Processing tile: ', i/nlt + 1
 
     indx_ok = indx_all[i:i+nlt-1]   
-    active_tile = make_tile(active, indx_ok, ncol)
-    background_tile = make_tile(background, indx_ok, ncol)
+    active_tile = make_tile(active, indx_ok, ncol, nrow, nlt)
+    background_tile = make_tile(background, indx_ok, ncol, nrow, nlt)
     
     ; BLEND IMAGES
     top_tile = blend_images(blend_mode, active_tile, background_tile, min_c=min_c, max_c=max_c)
@@ -231,7 +240,8 @@ function render_all_imgs_tiled, event, in_file
  
     paths_images = mixer_get_paths_to_input_files(event, in_file)
     
-    tmp_img = read_tiff(in_file, in_orientation, geotiff=in_geotiff)
+    ;tmp_img = read_tiff(in_file, orientation=in_orientation, geotiff=in_geotiff) image = read_tiff(file_names[i], orientation=in_orientation)
+    tmp_img = read_tiff(in_file, geotiff=in_geotiff, orientation=in_orientation)
     tmp_img = !null
 
     norm_min = hash()
@@ -248,6 +258,9 @@ function render_all_imgs_tiled, event, in_file
         path_rendered_image = paths_images[i]; paths_images[visualization] ; TO-DO: to path
         continue
       endif else begin
+        ; Make sure all intermediate images are deleted
+        clear_tmp_files, ['*blend.sav', 'tmp_*.tif', '*norm_tile.sav']
+        
         ; if current layer has visualization applied, render it as active layer, where old rendered_image is background layer
         path_active = paths_images[i]; paths_images[visualization]
         path_background = path_rendered_image ; this will be image path when returned from
@@ -261,18 +274,12 @@ function render_all_imgs_tiled, event, in_file
         background = normalize_image_tiled(path_background, layers[i+1], in_orientation, normalize_image=normalize_background)  
         
         ; Save temporary normalized layer image
-;        tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'.tif'
-;        write_image_to_geotiff_float, 1, tmp_file, active
-        tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'_RGB.tif'
-        active_rgb = float_to_rgb(active)
-        write_image_to_geotiff, 1, tmp_file, active_rgb, geotiff=in_geotiff
+        tmp_file = 'tmp_'+STRJOIN(STRSPLIT(visualization, /EXTRACT), '_')+'.tif'
+        write_image_to_geotiff_float, 1, tmp_file, active, geotiff=in_geotiff
         
-        if (normalize_background EQ 1) then begin
-;          tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'.tif'
-;          write_image_to_geotiff_float, 1, tmp_file, background
-          tmp_file = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'_RGB.tif'
-          background_rgb = float_to_rgb(background)
-          write_image_to_geotiff, 1, tmp_file, background_rgb, geotiff=in_geotiff
+        tmp_file_bg = 'tmp_'+STRJOIN(STRSPLIT(layers[i+1].vis, /EXTRACT), '_')+'.tif'
+        if (normalize_background EQ 1) then begin          
+          write_image_to_geotiff_float, 1, tmp_file_bg, background, geotiff=in_geotiff
         endif
         
         ; Blending parameters
@@ -283,13 +290,16 @@ function render_all_imgs_tiled, event, in_file
         min_c = float(layers[i].min)
         max_c = float(layers[i].max)
                     
-        path_rendered_image = blend_render_tiled(background, active, blend_mode, opacity, image_title, p_wdgt_state, min_c=min_c, max_c=max_c) ; returns path to image!   
+        ; TODO: for upgrade, include min_c, max_c
+        path_rendered_image = blend_render_tiled(background, active, blend_mode, opacity, image_title, p_wdgt_state) ;min_c=min_c, max_c=max_c) ; returns path to image! 
+        
+        ;file_delete, tmp_file_bg, /ALLOW_NONEXISTENT  
        endelse
     endfor
     
     ; Make sure all intermediate images are deleted
-    clear_tmp_files, ['*blend.sav', 'tmp_*.tif']
-      
+    clear_tmp_files, ['*blend.sav', 'tmp_*.tif', '*norm_tile.sav']    
+         
     return, path_rendered_image
 end
 
