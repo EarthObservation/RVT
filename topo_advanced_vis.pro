@@ -1889,7 +1889,7 @@ pro topo_advanced_vis, re_run=re_run
   ;=========================================================================================================
 
   ;Vertical exaggeration
-  sc_ve_ex = [-1000., 1000.]
+  sc_ve_ex = [-10000., 10000.]
   
   ;Hillshading
   sc_hls_sun_a = [0., 360.]            ;solar azimuth angle in degrees
