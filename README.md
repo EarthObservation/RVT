@@ -26,7 +26,7 @@ Development of RVT was part financed by the European Commission's Culture Progra
 ## Downloads
 
 Relief Visualization Toolbox Standalone version (EXE), Windows 64-bit, version 2.0.
-Relief Visualization Toolbox manual, version 1.3 (Instructions for use)
+Relief Visualization Toolbox manual, version 2.0 (Instructions for use)
 
 Please report any bugs and suggestions for improvements.
 
