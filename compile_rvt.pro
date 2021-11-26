@@ -65,7 +65,7 @@ resolve_all, /continue_on_error, skip_routines='envi'
 save, /routines, filename='topo_advanced_vis.sav'
 
 ;naredi pripadajoči exe
-out_subdir = 'RVT_2.2.1_Win64'
+out_subdir = 'RVT_2.2.2_Win64'
 ;file_delete, rvt_dir + out_subdir, /allow_nonexistent, /quiet, /recursive
 make_rt, out_subdir, rvt_dir, savefile=rvt_dir+'topo_advanced_vis.sav', /overwrite, /win64
 

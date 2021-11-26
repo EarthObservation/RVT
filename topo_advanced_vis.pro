@@ -1763,8 +1763,8 @@ pro topo_advanced_vis, re_run=re_run
   compile_opt idl2
   
   ; Create string for software version and year of issue
-  rvt_version = '2.2.1'
-  rvt_issue_year = '2019'
+  rvt_version = '2.2.2'
+  rvt_issue_year = '2021'
   
   ; Establish error handler
   catch, theError
