@@ -19,7 +19,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   ;=========================================================================================================
 
   ;Vertical exaggeration
-  sc_ve_ex = [-1000., 1000.]
+  sc_ve_ex = [-10000., 10000.]
   
   ; exaggetarion factor
   ve_floor = sc_ve_ex[0]
@@ -71,7 +71,7 @@ pro topo_advanced_make_visualizations, p_wdgt_state, temp_sav, in_file_string, r
   overwrite = float(wdgt_state.overwrite)
 
   ;Vertical exaggeration
-  in_ve_ex = float(wdgt_state.ve)                   ;-1000. to 1000.
+  in_ve_ex = float(wdgt_state.ve)                   ;-10000. to 10000.
 
   ;Hillshading
   in_hls = byte(wdgt_state.hls_use)                 ;1-run, 0-don't run
