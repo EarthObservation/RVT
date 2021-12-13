@@ -37,7 +37,7 @@ pro user_widget_about, event
   msg = strarr(16)
   msg[0] = 'Relief Visualization Toolbox (RVT), ver. ' + (*p_wdgt_state).rvt_vers
   msg[1] = '-------------------------------------------------------------------'
-  msg[2] = 'By Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar, Maja Somrak and Ziga Kokalj'
+  msg[2] = 'By Žiga Kokalj, Klemen Zaksek, Kristof Ostir, Peter Pehani, Klemen Cotar and Maja Somrak'
   msg[4] = '* Online resource and manual'
   msg[5] = 'http://iaps.zrc-sazu.si/en/rvt'
   msg[6] = 'Check for updates from time to time. Please report any bugs and suggestions for improvements to zkokalj@zrc-sazu.si'
